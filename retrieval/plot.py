@@ -153,7 +153,7 @@ def plot_slot(masks, model_name, id, v, raw, actor, pred_actor, logdir, threshol
                     plt.axis('off')
                     plt.show()
 
-                    seg_path = os.path.join(path, actor_table[seg]+ '_frame'+str(j)+'.png')
+                    seg_path = os.path.join(path, actor_table[seg]+ '_frame'+str(j)+'.jpg')
                     # fig.savefig(path)
                     plt.savefig(seg_path)
                     plt.close()
@@ -162,7 +162,7 @@ def plot_slot(masks, model_name, id, v, raw, actor, pred_actor, logdir, threshol
                     plt.imshow(raw_j)
                     plt.axis('off')
                     plt.show()
-                    img_path = os.path.join(path, actor_table[seg] + '_frame'+str(j)+ '_img' +'.png') 
+                    img_path = os.path.join(path, actor_table[seg] + '_frame'+str(j)+ '_img' +'.jpg') 
                     plt.savefig(img_path)
                     plt.close()
 
@@ -192,7 +192,7 @@ def plot_slot(masks, model_name, id, v, raw, actor, pred_actor, logdir, threshol
                     # plt.imshow()
                     plt.imshow(masks_j[seg], alpha=0.5)
                     # plt.show()
-                    seg_path = os.path.join(path, actor_table[seg]+ '_frame'+str(j)+'.png')
+                    seg_path = os.path.join(path, actor_table[seg]+ '_frame'+str(j)+'.jpg')
                     plt.savefig(seg_path, bbox_inches='tight', pad_inches=0.0)
                     plt.close()
 
@@ -201,7 +201,7 @@ def plot_slot(masks, model_name, id, v, raw, actor, pred_actor, logdir, threshol
                 plt.imshow(raw_j)
                 plt.axis('off')
                 # plt.show()
-                img_path = os.path.join(path,'frame'+str(j)+ '_img' +'.png') 
+                img_path = os.path.join(path,'frame'+str(j)+ '_img' +'.jpg') 
                 plt.savefig(img_path, bbox_inches='tight', pad_inches=0.0)
                 plt.close()
         else:
@@ -232,7 +232,7 @@ def plot_slot(masks, model_name, id, v, raw, actor, pred_actor, logdir, threshol
             # masks_j[-1] = (masks_j[-1] > threshold).astype('uint8')
             # plt.imshow(masks_j[-1], alpha=0.5, cmap='Purples')
 
-            img_path = os.path.join(path,'frame'+str(j)+ '_multi' +'.png') 
+            img_path = os.path.join(path,'frame'+str(j)+ '_multi' +'.jpg') 
             plt.savefig(img_path, bbox_inches='tight', pad_inches=0.0)
             plt.close()
 
@@ -514,10 +514,6 @@ class Engine(object):
                 #   't1_1192', 't1_1223', 'i1_134', 't6_414', 't7_467',
                   # '10_i-1_1_c_f_f_1_rl_6', '10_i-1_1_c_f_f_1_rl_8', 'i1_19', 'i1_151', 'i1_155','i1_901']
 
-                plot_list = ['t5_4']
-                if not idv in plot_list:
-                    continue
-
 
                 if args.seg:
                     seg_front_in = data['seg_front']
@@ -794,8 +790,10 @@ class Engine(object):
                         f1_pred_actor_list.astype('int64'),
                         average='samples',
                         zero_division=0)
-                p = precision_score(f1_pred_actor_list.astype('int64'), label_actor_list.astype('int64'), average='macro')
+                p = precision_score(f1_pred_actor_list.astype('int64'), label_actor_list.astype('int64'), average='samples')
+                r = recall_score(f1_pred_actor_list.astype('int64'), label_actor_list.astype('int64'), average='samples')
                 print(f'(val) precision of the actor: {np.round(p,3)}')
+                print(f'(val) recall of the actor: {np.round(r,3)}')
             f1_class = f1_score(
                     label_actor_list.astype('int64'), 
                     f1_pred_actor_list.astype('int64'),

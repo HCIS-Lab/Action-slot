@@ -8,7 +8,6 @@ from pytorchvideo.models.hub import csn_r101
 from pytorchvideo.models.hub import mvit_base_16x4
 
 import numpy as np
-# from models.ConvGRU import *
 from math import ceil 
 
 class SlotAttention(nn.Module):
@@ -96,22 +95,6 @@ class SlotAttention(nn.Module):
         return slots_out, attns
 
 
-def build_1D_grid(resolution):
-    ranges = [torch.linspace(0.0, 1.0, steps=res) for res in resolution]
-    grid = torch.meshgrid(*ranges)
-    grid = torch.stack(grid, dim=-1)
-    grid = torch.reshape(grid, [resolution[0], -1])
-    grid = grid.unsqueeze(0)
-    return torch.cat([grid, 1.0 - grid], dim=-1)
-
-def build_grid(resolution):
-    ranges = [torch.linspace(0.0, 1.0, steps=res) for res in resolution]
-    grid = torch.meshgrid(*ranges)
-    grid = torch.stack(grid, dim=-1)
-    grid = torch.reshape(grid, [resolution[0], resolution[1], -1])
-    grid = grid.unsqueeze(0)
-    return torch.cat([grid, 1.0 - grid], dim=-1)
-
 def build_3d_grid(resolution):
     ranges = [torch.linspace(0.0, 1.0, steps=res) for res in resolution]
     grid = torch.meshgrid(*ranges)
@@ -119,42 +102,6 @@ def build_3d_grid(resolution):
     grid = torch.reshape(grid, [resolution[0], resolution[1], resolution[2], -1])
     grid = grid.unsqueeze(0)
     return torch.cat([grid, 1.0 - grid], dim=-1)
-
-class SoftPositionEmbed1D(nn.Module):
-    def __init__(self, hidden_size, resolution):
-        """Builds the soft position embedding layer.
-        Args:
-        hidden_size: Size of input feature dimension.
-        resolution: Tuple of integers specifying width and height of grid.
-        """
-        super().__init__()
-        self.embedding = nn.Linear(2, hidden_size, bias=True)
-        self.register_buffer("grid", build_1D_grid(resolution))
-    def forward(self, inputs):
-        grid = self.embedding(self.grid)
-        return inputs + grid
-
-"""Adds soft positional embedding with learnable projection."""
-class SoftPositionEmbed(nn.Module):
-    def __init__(self, hidden_size, resolution):
-        """Builds the soft position embedding layer.
-        Args:
-        hidden_size: Size of input feature dimension.
-        resolution: Tuple of integers specifying width and height of grid.
-        """
-        super().__init__()
-        self.embedding = nn.Linear(4, hidden_size, bias=True)
-        self.register_buffer("grid", build_grid(resolution))
-    def forward(self, inputs):
-        grid = self.embedding(self.grid)
-        return inputs + grid
-
-def get_emb(sin_inp):
-    """
-    Gets a base embedding for one dimension with sin and cos intertwined
-    """
-    emb = torch.stack((sin_inp.sin(), sin_inp.cos()), dim=-1)
-    return torch.flatten(emb, -2, -1)
 
 
 class SoftPositionEmbed3D(nn.Module):

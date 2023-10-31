@@ -9,14 +9,15 @@ from pytorchvideo.models.hub import mvit_base_16x4
 
 import numpy as np
 from math import ceil 
+from ptflops import get_model_complexity_info
 
 class SlotAttention(nn.Module):
-    def __init__(self, num_slots, dim, num_actor_class=20, eps=1e-8, input_dim=64, resolution=[16, 8, 24], fix_slot=True):
+    def __init__(self, num_slots, dim, num_actor_class=64, eps=1e-8, input_dim=64, resolution=[16, 8, 24], allocated_slot=True):
         super().__init__()
         self.dim = dim
         self.num_slots = num_slots
         self.num_actor_class = num_actor_class
-        self.fix_slot = fix_slot
+        self.allocated_slot = allocated_slot
         self.eps = eps
         self.scale = dim ** -0.5
         self.resolution = resolution
@@ -78,7 +79,7 @@ class SlotAttention(nn.Module):
         #     slots_prev.reshape(-1, d)
         # )
         slots = slots.reshape(b, -1, d)
-        if self.fix_slot:
+        if self.allocated_slot:
             slots = slots[:, :self.num_actor_class, :]
         else:
             slots = slots[:, :self.num_slots, :]
@@ -118,9 +119,9 @@ class SoftPositionEmbed3D(nn.Module):
         grid = self.embedding(self.grid)
         return inputs + grid
 
-class SLOT_VIDEO(nn.Module):
+class ACTION_SLOT(nn.Module):
     def __init__(self, args, num_ego_class, num_actor_class, num_slots=21, box=False,videomae=None):
-        super(SLOT_VIDEO, self).__init__()
+        super(ACTION_SLOT, self).__init__()
         self.hidden_dim = args.channel
         self.hidden_dim2 = args.channel
         self.slot_dim, self.temp_dim = args.channel, args.channel
@@ -134,41 +135,25 @@ class SLOT_VIDEO(nn.Module):
             self.resolution = (16, 48)
             self.resolution3d = (4, 16, 48)
             self.in_c = 1024
-        elif args.backbone == 'i3d-1':
-            self.resnet = self.resnet.blocks[:-1]
-            self.in_c = 2048
-            self.resolution = (8, 24)
-            self.resolution3d = (4, 8, 24)
-        elif args.backbone == 'x3d-1':
-            self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
-            # self.projection = nn.Sequential(
-            #     nn.Conv3d(192, 432, kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-            #     nn.BatchNorm3d(432, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            #     nn.ReLU(),
-            #     nn.AvgPool3d(kernel_size=(1, 3, 3), stride=1, padding=0),
-            #     nn.Conv3d(432, 2048, kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-            #     )
-            # self.projection = nn.Sequential(
-            #     nn.Conv3d(192, 192, kernel_size=(3, 3, 3), dilation=(3, 2, 2), stride=(1, 1, 1), padding='same', bias=False),
-            #     nn.BatchNorm3d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            #     nn.ReLU(),
-            #     nn.Conv3d(192, 432, kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-            #     nn.BatchNorm3d(432, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            #     nn.ReLU(),
-            #     nn.Conv3d(432, 512 , kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-            #     )
-            self.projection = nn.Sequential(
-                nn.Conv3d(192, 256, kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-                nn.BatchNorm3d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-                nn.ReLU(),
-                nn.Conv3d(256, 256, kernel_size=(3, 3, 3), dilation=(3, 1, 1), stride=(1, 1, 1), padding='same', bias=False),
-                nn.BatchNorm3d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                )
-            self.resnet.blocks[-1] = self.projection
-            self.resnet = self.resnet.blocks
-            self.in_c = 256
-            self.resolution = (8, 24)
-            self.resolution3d = (16, 8, 24)
+        # elif args.backbone == 'i3d-1':
+        #     self.resnet = self.resnet.blocks[:-1]
+        #     self.in_c = 2048
+        #     self.resolution = (8, 24)
+        #     self.resolution3d = (4, 8, 24)
+        # elif args.backbone == 'x3d-1':
+        #     self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
+        #     self.projection = nn.Sequential(
+        #         nn.Conv3d(192, 256, kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
+        #         nn.BatchNorm3d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+        #         nn.ReLU(),
+        #         nn.Conv3d(256, 256, kernel_size=(3, 3, 3), dilation=(3, 1, 1), stride=(1, 1, 1), padding='same', bias=False),
+        #         nn.BatchNorm3d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        #         )
+        #     self.resnet.blocks[-1] = self.projection
+        #     self.resnet = self.resnet.blocks
+        #     self.in_c = 256
+        #     self.resolution = (8, 24)
+        #     self.resolution3d = (16, 8, 24)
             
         elif args.backbone == 'x3d-2':
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
@@ -191,19 +176,19 @@ class SLOT_VIDEO(nn.Module):
             self.resolution = (7, 7)
             self.resolution3d = (8, 7, 7)
         
-        elif args.backbone == 'x3d-3':
-            self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
-            self.resnet = self.resnet.blocks[:-2]
-            self.in_c = 96
-            self.resolution = (16, 48)
-            self.resolution3d = (16, 16, 48)
+        # elif args.backbone == 'x3d-3':
+        #     self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
+        #     self.resnet = self.resnet.blocks[:-2]
+        #     self.in_c = 96
+        #     self.resolution = (16, 48)
+        #     self.resolution3d = (16, 16, 48)
             
-        elif args.backbone == 'x3d-4':
-            self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
-            self.resnet = self.resnet.blocks[:-3]
-            self.in_c = 48
-            self.resolution = (32, 96)
-            self.resolution3d = (16, 32, 96)
+        # elif args.backbone == 'x3d-4':
+        #     self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
+        #     self.resnet = self.resnet.blocks[:-3]
+        #     self.in_c = 48
+        #     self.resolution = (32, 96)
+        #     self.resolution3d = (16, 32, 96)
 
         elif args.backbone == 'csn':
             self.resnet = csn_r101(True)
@@ -220,7 +205,7 @@ class SLOT_VIDEO(nn.Module):
             self.resolution = (8, 24)
             self.resolution3d = (8, 8, 24)
             
-        if args.fix_slot:
+        if args.allocated_slot:
             self.head = Instance_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)
         else:
             self.head = Head(self.slot_dim, num_ego_class, num_actor_class+1, self.ego_c)
@@ -237,7 +222,7 @@ class SLOT_VIDEO(nn.Module):
                 nn.Conv3d(self.in_c, self.hidden_dim2, (1, 1, 1), stride=1),
                 nn.ReLU(),)
 
-        if args.seg:
+        if args.bg_slot:
             self.slot_attention = SlotAttention(
                 num_slots=num_slots+1,
                 dim=self.slot_dim,
@@ -324,8 +309,36 @@ class SLOT_VIDEO(nn.Module):
         # [bs, n, w, h, c]
         x = torch.reshape(x, (batch_size, new_seq_len, new_h, new_w, -1))
 
+
+        # flops latency
+        
+        # macs, _ = get_model_complexity_info(self.slot_attention, (16, 8, 24, 128), as_strings=True, print_per_layer_stat=False, verbose=True)
+        # print(macs)
+
+        # starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+        # repetitions = 300
+        # timings=np.zeros((repetitions,1))
+        # #GPU-WARM-UP
+        # for _ in range(10):
+        #     _ = self.slot_attention(x)
+        # MEASURE PERFORMANCE
+        # with torch.no_grad():
+        #     for rep in range(repetitions):
+        #         starter.record()
+        #         _, _ = self.slot_attention(x)
+        #         ender.record()
+        #         # WAIT FOR GPU SYNC
+        #         torch.cuda.synchronize()
+        #         curr_time = starter.elapsed_time(ender)
+        #         timings[rep] = curr_time
+
+        # mean_syn = np.sum(timings) / repetitions
+        # std_syn = np.std(timings)
+        # print(mean_syn)
+        
         x, attn_masks = self.slot_attention(x)
 
+        
 
         # no pool, 3d slot
         b, n, thw = attn_masks.shape

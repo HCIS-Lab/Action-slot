@@ -99,7 +99,7 @@ class Engine(object):
 		
 	"""
 
-	def __init__(self, args, cur_epoch=0, cur_iter=0, ego_weight=1):
+	def __init__(self, args, cur_epoch=0, cur_iter=0):
 		self.cur_epoch = cur_epoch
 		self.cur_iter = cur_iter
 		self.bestval_epoch = cur_epoch
@@ -943,7 +943,7 @@ if args.scheduler:
 	scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_lr)
 else:
 	scheduler = None
-trainer = Engine(args, ego_weight=args.ego_weight)
+trainer = Engine(args)
 
 # Create logdir
 if not os.path.isdir(args.logdir):

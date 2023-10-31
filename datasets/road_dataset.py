@@ -275,8 +275,8 @@ class ROAD(Dataset):
         # # CityscapesClass('license plate',        -1, 255, 'vehicle', 7, False, True, (0, 0, 142)),
         condition = ~condition
         condition = condition.type(torch.int)
-        condition[:8, :] = 1
-        condition[-5:, :] = 1
+        condition[:4, :] = 1
+        condition[-2:, :] = 1
         condition = condition.type(torch.float32)
 
         return condition

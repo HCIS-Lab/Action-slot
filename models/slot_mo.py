@@ -7,6 +7,8 @@ from pytorchvideo.models.hub import i3d_r50
 import numpy as np
 # from models.ConvGRU import *
 from math import ceil 
+from ptflops import get_model_complexity_info
+import numpy as np
 
 class SlotAttention(nn.Module):
     def __init__(self, num_slots, dim, num_actor_class=20, eps=1e-8, input_dim=64, resolution=[16, 8, 24], fix_slot=True):
@@ -270,6 +272,30 @@ class SLOT_MO(nn.Module):
         x = F.relu(x)
         x = self.FC2(x)
         x = torch.reshape(x, (batch_size, new_seq_len, new_h, new_w, -1))
+        # macs, _ = get_model_complexity_info(self.slot_attention, (16, 8, 24, 128), as_strings=True, print_per_layer_stat=False, verbose=True)
+        # print(macs)
+
+        starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+        repetitions = 300
+        timings=np.zeros((repetitions,1))
+        #GPU-WARM-UP
+        for _ in range(10):
+            _ = self.slot_attention(x)
+        # MEASURE PERFORMANCE
+        with torch.no_grad():
+            for rep in range(repetitions):
+                starter.record()
+                _, _ = self.slot_attention(x)
+                ender.record()
+                # WAIT FOR GPU SYNC
+                torch.cuda.synchronize()
+                curr_time = starter.elapsed_time(ender)
+                timings[rep] = curr_time
+
+        mean_syn = np.sum(timings) / repetitions
+        std_syn = np.std(timings)
+        print(mean_syn)
+
 
         x, attn_masks = self.slot_attention(x)
 

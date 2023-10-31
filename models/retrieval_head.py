@@ -47,7 +47,7 @@ class Instance_Head(nn.Module):
 	                )
 			
 		self.fc_actor = nn.ModuleList()
-		for i in range(20):
+		for i in range(num_actor_classes):
 			self.fc_actor.append(nn.Sequential(
 	                nn.ReLU(inplace=False),
 	                nn.Linear(in_channel, 1),
@@ -58,7 +58,7 @@ class Instance_Head(nn.Module):
 		y_ego = self.fc_ego(ego_x)
 		b, n, _ = x.shape
 		y_actor = []
-		for i in range(20):
+		for i in range(64):
 			y_actor.append(self.fc_actor[i](x[:, i, :]))
 		y_actor = torch.stack(y_actor, dim=0)
 		y_actor = torch.permute(y_actor, (1, 0, 2))

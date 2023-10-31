@@ -52,7 +52,6 @@ import matplotlib.image
 from scipy.optimize import linear_sum_assignment
 from parser import get_parser
 
-
 actor_table = ['z1-z2', 'z1-z3', 'z1-z4',
                 'z2-z1', 'z2-z3', 'z2-z4',
                 'z3-z1', 'z3-z2', 'z3-z4',
@@ -150,6 +149,7 @@ class Engine(object):
                 #     seg_front = torch.reshape(seg_front, (b, l, ds_size[0], ds_size[1]))
                 if ('slot' in model_name) or args.box or ('mvit' in model_name):
                     pred_ego, pred_actor, attn = model(inputs)
+                    return
                 else:
                     pred_ego, pred_actor = model(inputs)
 

@@ -797,7 +797,7 @@ class Engine(object):
             f1_class = f1_score(
                     label_actor_list.astype('int64'), 
                     f1_pred_actor_list.astype('int64'),
-                    average=None,
+                    average='samples',
                     zero_division=0)
             mAP = average_precision_score(
                     label_actor_list,

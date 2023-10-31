@@ -98,26 +98,43 @@ def get_parser():
             +'ce_pos_weight: ' + str(args.ce_pos_weight) + '\n'
             +'ce_neg_weight: ' + str(args.ce_neg_weight)
             )
-    elif args.model_name in ['i3d', 'x3d', 'csn', 'slowfast', 'mvit', 'videomae']:
+    elif args.model_name in ['i3d', 'x3d', 'csn', 'slowfast']:
         args.logdir = os.path.join(
             args.dataset + '_' +args.logdir, 
             args.model_name + '\n'
+            + 'channel :' + str(args.channel) + '\n'
             +'epoch: ' + str(args.epochs) + '\n'
             +'lr: ' + str(args.lr) + '\n'
             +'wd: '+ str(args.wd) + '\n'
-            +'bce_pos_weight: ' + str(args.bce_pos_weight)
+            +'bce_pos_weight: ' + str(args.bce_pos_weight) + '\n'
+            +'ego_loss_weight: ' + str(args.ego_loss_weight)
             )
-    else:
+    elif args.model_name in ['mvit', 'videomae']:
+        args.logdir = os.path.join(
+            args.dataset + '_' +args.logdir, 
+            args.model_name + '\n'
+            + 'tune_block_idx: ' + str(tune_block_idx) + '\n'
+            + 'channel :' + str(args.channel) + '\n'
+            +'epoch: ' + str(args.epochs) + '\n'
+            +'lr: ' + str(args.lr) + '\n'
+            +'wd: '+ str(args.wd) + '\n'
+            +'bce_pos_weight: ' + str(args.bce_pos_weight) + '\n'
+            +'ego_loss_weight: ' + str(args.ego_loss_weight)
+            )
+    elif args.box:
         # object-based
         args.logdir = os.path.join(args.logdir, 
             args.dataset + '_' +args.logdir, 
             args.model_name + '\n'
             + args.backbone + '\n'
+            +'gt_box: ' + str(args.gt) + '\n'
+            + 'channel :' + str(args.channel) + '\n'
             +'epoch: ' + str(args.epochs) + '\n'
             +'lr: ' + str(args.lr) + '\n'
             +'wd:'+ str(args.wd) + '\n'
             +'ce_pos_weight: ' + str(args.ce_pos_weight) + '\n'
-            +'ce_neg_weight: ' + str(args.ce_neg_weight)
+            +'ce_neg_weight: ' + str(args.ce_neg_weight) + '\n'
+            +'ego_loss_weight: ' + str(args.ego_loss_weight)
             )
 
     # if 'slot' in args.id and not args.fix_slot:

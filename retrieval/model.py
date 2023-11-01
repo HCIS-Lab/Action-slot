@@ -64,7 +64,7 @@ def generate_model(args, num_ego_class, num_actor_class):
             t.requires_grad=True
         for t in model.layer4.parameters():
             t.requires_grad=True
-    # elif model_name =='i3d':
+    # elif model_name =='i3d_inception':
     #     model = i3d.InceptionI3d(num_ego_class, num_actor_class, in_channels=3)
     #     model.load_state_dict(torch.load('/media/hankung/ssd/retrieval/models/rgb_charades.pt'), strict=False)
     #     model.replace_logits()
@@ -92,7 +92,7 @@ def generate_model(args, num_ego_class, num_actor_class):
     #         t.requires_grad=True
     #     for t in model.logits.parameters():
     #         t.requires_grad=True
-    elif model_name == 'i3d_kinetics':
+    elif model_name == 'i3d':
         model = i3d_kinetics.I3D_KINETICS(num_ego_class, num_actor_class)
         for t in model.model.parameters():
             t.requires_grad=False

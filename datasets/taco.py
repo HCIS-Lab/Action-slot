@@ -38,10 +38,12 @@ class TACO(Dataset):
         # root = '/work/u8526971/data_collection'
         # root = '/home/hcis-s19/Desktop/data_collection'
         # root = '/home/hcis-s20/Desktop/data_collection'
-        # root = '/media/hankung/ssd/carla_13/CARLA_0.9.13/PythonAPI/examples/data_collection'
+        root = '/media/hankung/ssd/carla_13/CARLA_0.9.13/PythonAPI/examples/data_collection'
         # root = '/media/hcis-s16/hank/taco'
         # root = '/media/hcis-s20/SRL/taco'
-        root = '/media/user/data/taco'
+        # root = '/media/user/data/taco'
+        # root = '/media/hcis-s19/DATA/taco'
+
         self.training = training
         self.model_name = args.model_name
         self.seq_len = args.seq_len
@@ -400,6 +402,7 @@ class TACO(Dataset):
         print('ego_stat')
         print(label_stat[6])
 
+        self.label_stat = label_stat
         # -----------------
         print('max_num_label_a_video: '+ str(max_num_label_a_video))
         print('total_label: '+ str(total_label))

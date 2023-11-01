@@ -61,10 +61,9 @@ def get_parser():
 
     args = parser.parse_args()
 
-    # if args.bg_attn_weight > 0.:
-    #     args.upsample = 4
-
-    if 'slot' in args.model_name and args.allocated_slot:
+    if not args.bg_mask:
+        args.bg_attn_weight = 0.
+    if args.model_name in ['action-slot', 'savi', 'mo', 'slot-vps']:
         args.logdir = os.path.join(
             args.dataset + '_' +args.logdir, 
             args.model_name + '\n'
@@ -84,7 +83,8 @@ def get_parser():
             +'bg_upsample: ' + str(args.bg_upsample) + '\n'
             +'ego_loss_weight: ' + str(args.ego_loss_weight)
             )
-    elif 'slot' in args.model_name and not args.allocated_slot:
+
+    elif args.model_name in ['action-slot', 'savi', 'mo', 'slot-vps'] and not args.allocated_slot:
         args.logdir = os.path.join(
             args.dataset + '_' +args.logdir, 
             args.model_name + '\n'

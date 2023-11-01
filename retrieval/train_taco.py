@@ -22,9 +22,13 @@ sys.path.append('/work/u8526971/retrieval/datasets')
 sys.path.append('/work/u8526971/retrieval/config')
 sys.path.append('/work/u8526971/retrieval/models')
 
-sys.path.append('/home/hcis-s19/Desktop/retrieval/datasets')
-sys.path.append('/home/hcis-s19/Desktop/retrieval/config')
-sys.path.append('/home/hcis-s19/Desktop/retrieval/models')
+# sys.path.append('/home/hcis-s19/Desktop/retrieval/datasets')
+# sys.path.append('/home/hcis-s19/Desktop/retrieval/config')
+# sys.path.append('/home/hcis-s19/Desktop/retrieval/models')
+
+sys.path.append('/media/hcis-s19/DATA/Action-Slot/retrieval/datasets')
+sys.path.append('/media/hcis-s19/DATA/Action-Slot/retrieval/config')
+sys.path.append('/media/hcis-s19/DATA/Action-Slot/retrieval/models')
 
 # sys.path.append('/home/hcis-s20/Desktop/retrieval/datasets')
 # sys.path.append('/home/hcis-s20/Desktop/retrieval/config')
@@ -589,7 +593,6 @@ class Engine(object):
 				bg_seg = []
 
 				for i in range(seq_len):
-
 					inputs.append(video_in[i].to(args.device, dtype=torch.float32))
      
 				if args.box:
@@ -742,6 +745,7 @@ class Engine(object):
 					loss = actor_loss + args.ego_loss_weight*ego_loss + attn_loss
 				else:
 					loss = actor_loss + args.ego_loss_weight*ego_loss
+				
 				num_batches += 1
 				total_loss += float(loss.item())
 				pred_ego = torch.nn.functional.softmax(pred_ego, dim=1)
@@ -750,30 +754,21 @@ class Engine(object):
 					pred_actor = torch.nn.functional.softmax(pred_actor, dim=-1)
 					_, pred_actor_idx = torch.max(pred_actor.data, -1)
 					pred_actor_idx = pred_actor_idx.detach().cpu().numpy().astype(int)
-					# f1_batch_new_pred_actor = []
 					map_batch_new_pred_actor = []
 					for i, b in enumerate(pred_actor_idx):
-						# f1_new_pred = np.zeros(num_actor_class, dtype=int)
 						map_new_pred = np.zeros(num_actor_class, dtype=np.float32)+1e-5
 
 						for j, pred in enumerate(b):
 							if pred != num_actor_class:
-								# f1_new_pred[pred] = 1
 								if pred_actor[i, j, pred] > map_new_pred[pred]:
 									map_new_pred[pred] = pred_actor[i, j, pred]
-						# f1_batch_new_pred_actor.append(f1_new_pred)
 						map_batch_new_pred_actor.append(map_new_pred)
-					# f1_batch_new_pred_actor = np.array(f1_batch_new_pred_actor)
 					map_batch_new_pred_actor = np.array(map_batch_new_pred_actor)
-					# f1_pred_actor_list.append(f1_batch_new_pred_actor)
 					map_pred_actor_list.append(map_batch_new_pred_actor)
 					label_actor_list.append(data['slot_eval_gt'])
 				else:
 					pred_actor = torch.sigmoid(pred_actor)
-					# f1_pred_actor = pred_actor > 0.5
-					# f1_pred_actor = f1_pred_actor.float()
 					map_pred_actor_list.append(pred_actor.detach().cpu().numpy())
-					# f1_pred_actor_list.append(f1_pred_actor.detach().cpu().numpy())
 					label_actor_list.append(actor.detach().cpu().numpy())
 
 				total_ego += ego.size(0)
@@ -801,45 +796,19 @@ class Engine(object):
 				for i, val in enumerate(iou):
 					print('BG IoU {0}: {1:.2f}'.format(i, val * 100))
 
-			# f1_pred_actor_list = np.stack(f1_pred_actor_list, axis=0)
 			map_pred_actor_list = np.stack(map_pred_actor_list, axis=0)
 			label_actor_list = np.stack(label_actor_list, axis=0)
 			
-			# f1_pred_actor_list = f1_pred_actor_list.reshape((f1_pred_actor_list.shape[0], num_actor_class))
 			map_pred_actor_list = map_pred_actor_list.reshape((map_pred_actor_list.shape[0], num_actor_class))
 			label_actor_list = label_actor_list.reshape((label_actor_list.shape[0], num_actor_class))
-			# f1_pred_actor_list = np.array(f1_pred_actor_list)
 			map_pred_actor_list = np.array(map_pred_actor_list)
 			label_actor_list = np.array(label_actor_list)
 			
-			# if ('slot' in model_name and not args.fix_slot) or args.box:
-			# 	mean_f1 = f1_score(
-			# 			label_actor_list.astype('int64'), 
-			# 			f1_pred_actor_list.astype('int64'),
-			# 			labels=[i for i in range(num_actor_class)],
-			# 			average='samples',
-			# 			zero_division=0)
-			
-			# else:
-			# 	mean_f1 = f1_score(
-			# 			label_actor_list.astype('int64'), 
-			# 			f1_pred_actor_list.astype('int64'),
-			# 			average='samples',
-			# 			zero_division=0)
-			# f1_class = f1_score(
-			# 		label_actor_list.astype('int64'), 
-			# 		f1_pred_actor_list.astype('int64'),
-			# 		average=None,
-			# 		zero_division=0)
 
 			mAP = average_precision_score(
 					label_actor_list,
 					map_pred_actor_list.astype(np.float32),
 					)
-			# vehicle_mAP = average_precision_score(
-			# 		label_actor_list[:, :48],
-			#         map_pred_actor_list[:, :48].astype(np.float32)
-			#         )
 			c_mAP = average_precision_score(
 					label_actor_list[:, :12],
 			        map_pred_actor_list[:, :12].astype(np.float32)
@@ -871,14 +840,12 @@ class Engine(object):
 
 
 			print(f'(val) mAP of the actor: {mAP}')
-			# print(f'(val) mAP of the v: {vehicle_mAP}')
 			print(f'(val) mAP of the c: {c_mAP}')
 			print(f'(val) mAP of the b: {b_mAP}')
 			print(f'(val) mAP of the p: {p_mAP}')
 			print(f'(val) mAP of the c+: {group_c_mAP}')
 			print(f'(val) mAP of the b+: {group_b_mAP}')
 			print(f'(val) mAP of the p+: {group_p_mAP}')
-			# print(f'(val) f1 of the actor: {mean_f1}')
 
 			print(f'acc of the ego: {correct_ego/total_ego}')
 			writer.add_scalar('ego', correct_ego/total_ego, epoch)
@@ -950,6 +917,26 @@ num_actor_class = 64
 # Data
 train_set = taco.TACO(args=args)
 val_set = taco.TACO(args=args, training=False)
+label_stat = []
+for i in range(7):
+	label_stat.append({})
+	for k in train_set.label_stat[i].keys():
+		label_stat[i][k] = train_set.label_stat[i][k] + val_set.label_stat[i][k]
+	
+print('c_stat:')
+print(label_stat[0])
+print('b_stat:')
+print(label_stat[1])
+print('c+_stat:')
+print(label_stat[2])
+print('b+_stat:')
+print(label_stat[3])
+print('p_stat:')
+print(label_stat[4])
+print('p+_stat:')
+print(label_stat[5])
+print('ego_stat')
+print(label_stat[6])
 	
 dataloader_train = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
 dataloader_val = DataLoader(val_set, batch_size=1, shuffle=False, num_workers=args.num_workers, pin_memory=True, drop_last=True)

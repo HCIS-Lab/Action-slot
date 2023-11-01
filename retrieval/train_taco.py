@@ -193,12 +193,12 @@ class Engine(object):
 				else:
 					boxes = box_in.to(args.device, dtype=torch.float32)
 			if args.bg_mask:
-				for i in range(args.seq_len//2):
+				for i in range(args.seq_len//args.mask_every_frame):
 					bg_seg.append(bg_seg_in[i].to(args.device, dtype=torch.float32))
 			if args.obj_mask:
 				for i in range(args.seq_len):
-					if i%2:
-						obj_mask_list.append(obj_mask[i//2].to(args.device, dtype=torch.float32))
+					if i%args.mask_every_frame:
+						obj_mask_list.append(obj_mask[i//args.mask_every_frame].to(args.device, dtype=torch.float32))
 
 			batch_size = inputs[0].shape[0]
 			ego = data['ego'].cuda()
@@ -344,7 +344,7 @@ class Engine(object):
 						attn = attn.reshape(b, l, n, h, w)
 
 					action_attn = attn[:, :, :num_actor_class, :, :]
-					bg_attn = attn[:, ::2, -1, :, :].reshape(b, l//2, h, w)
+					bg_attn = attn[:, ::args.mask_every_frame, -1, :, :].reshape(b, l//args.mask_every_frame, h, w)
 
 					class_idx = actor == 0.0
 					# bg_idx = torch.ones(b, dtype=torch.bool).cuda()
@@ -360,15 +360,15 @@ class Engine(object):
 					bg_attn_loss = attn_bce(bg_attn, bg_seg)
 					attn_loss = args.action_attn_weight*action_attn_loss + args.bg_attn_weight*bg_attn_loss
 
-					action_attn_pred = action_attn[class_idx] > 0.5
-					inter, union = inter_and_union(action_attn_pred.reshape(-1, h, w), attn_gt[class_idx].reshape(-1, h, w), 1, 0)
-					action_inter.update(inter)
-					action_union.update(union)
+					# action_attn_pred = action_attn[class_idx] > 0.5
+					# inter, union = inter_and_union(action_attn_pred.reshape(-1, h, w), attn_gt[class_idx].reshape(-1, h, w), 1, 0)
+					# action_inter.update(inter)
+					# action_union.update(union)
 
-					bg_attn_pred = bg_attn > 0.5
-					inter, union = inter_and_union(bg_attn_pred.reshape(-1, h, w), bg_seg.reshape(-1, h, w), 1, 1)
-					bg_inter.update(inter)
-					bg_union.update(union)
+					# bg_attn_pred = bg_attn > 0.5
+					# inter, union = inter_and_union(bg_attn_pred.reshape(-1, h, w), bg_seg.reshape(-1, h, w), 1, 1)
+					# bg_inter.update(inter)
+					# bg_union.update(union)
 
 					attn_loss_epoch += float(attn_loss.item())
 					action_attn_loss_epoch += float(action_attn_loss.item())
@@ -382,7 +382,7 @@ class Engine(object):
 							_, _, h, w = attn.shape
 							attn = attn.reshape(b, l, n, h, w)
 
-						bg_attn = attn[:, ::2, -1, :, :].reshape(b, l//2, h, w)
+						bg_attn = attn[:, ::args.mask_every_frame, -1, :, :].reshape(b, l//args.mask_every_frame, h, w)
 
 						# bg_idx = torch.ones(b, dtype=torch.bool).cuda()
 						# bg_idx = torch.reshape(bg_idx, (b, 1))
@@ -391,10 +391,10 @@ class Engine(object):
 						bg_attn_loss = bg_bce(bg_attn, bg_seg)
 						attn_loss = args.bg_attn_weight*bg_attn_loss
 
-						bg_attn_pred = bg_attn > 0.5
-						inter, union = inter_and_union(bg_attn_pred.reshape(-1, h, w), bg_seg.reshape(-1, h, w), 1, 1)
-						bg_inter.update(inter)
-						bg_union.update(union)
+						# bg_attn_pred = bg_attn > 0.5
+						# inter, union = inter_and_union(bg_attn_pred.reshape(-1, h, w), bg_seg.reshape(-1, h, w), 1, 1)
+						# bg_inter.update(inter)
+						# bg_union.update(union)
 
 						attn_loss_epoch += float(attn_loss.item())
 						bg_attn_loss_epoch += float(bg_attn_loss.item())
@@ -428,22 +428,15 @@ class Engine(object):
 					map_new_pred = np.zeros(num_actor_class, dtype=np.float32)+1e-5
 					for j, pred in enumerate(b):
 						if pred != num_actor_class:
-							# f1_new_pred[pred] = 1
 							if pred_actor[i, j, pred] > map_new_pred[pred]:
 								map_new_pred[pred] = pred_actor[i, j, pred]
-					# f1_batch_new_pred_actor.append(f1_new_pred)
 					map_batch_new_pred_actor.append(map_new_pred)
-				# f1_batch_new_pred_actor = np.array(f1_batch_new_pred_actor)
 				map_batch_new_pred_actor = np.array(map_batch_new_pred_actor)
-				# f1_pred_actor_list.append(f1_batch_new_pred_actor)
 				map_pred_actor_list.append(map_batch_new_pred_actor)
 				label_actor_list.append(data['slot_eval_gt'])
 			else:
 				pred_actor = torch.sigmoid(pred_actor)
-				# f1_pred_actor = pred_actor > 0.5
-				# f1_pred_actor = f1_pred_actor.float()
 				map_pred_actor_list.append(pred_actor.detach().cpu().numpy())
-				# f1_pred_actor_list.append(f1_pred_actor.detach().cpu().numpy())
 				label_actor_list.append(actor.detach().cpu().numpy())
 			actor_loss, ego_loss = actor_loss.mean(), ego_loss.mean()
 			actor_loss_epoch += float(actor_loss.item())
@@ -457,29 +450,12 @@ class Engine(object):
 		if scheduler is not None:
 			scheduler.step()
 
-		# f1_pred_actor_list = np.stack(f1_pred_actor_list, axis=0)
 		map_pred_actor_list = np.stack(map_pred_actor_list, axis=0)
 		label_actor_list = np.stack(label_actor_list, axis=0)
 
-		# f1_pred_actor_list = f1_pred_actor_list.reshape((f1_pred_actor_list.shape[0]*args.batch_size, num_actor_class))
 		map_pred_actor_list = map_pred_actor_list.reshape((map_pred_actor_list.shape[0]*args.batch_size, num_actor_class))
 		label_actor_list = label_actor_list.reshape((label_actor_list.shape[0]*args.batch_size, num_actor_class))
 
-
-
-		# if ('slot' in model_name and not args.allocated_slot) or args.box:
-		# 	mean_f1 = f1_score(
-		# 			label_actor_list.astype('int64'), 
-		# 			f1_pred_actor_list.astype('int64'),
-		# 			average='samples',
-		# 			labels=[i for i in range(num_actor_class)],
-		# 			zero_division=0)
-		# else:
-		# 	mean_f1 = f1_score(
-		# 			label_actor_list.astype('int64'), 
-		# 			f1_pred_actor_list.astype('int64'),
-		# 			average='samples',
-		# 			zero_division=0)
 		mAP = average_precision_score(
 					label_actor_list,
 					map_pred_actor_list.astype(np.float32))
@@ -570,9 +546,7 @@ class Engine(object):
 
 			correct_ego = 0
 			correct_actor = 0
-			# mean_f1 = 0
 			label_actor_list = []
-			# f1_pred_actor_list = []
 			map_pred_actor_list = []
 
 			action_inter = AverageMeter()
@@ -601,7 +575,7 @@ class Engine(object):
 					else:
 						boxes = box_in.to(args.device, dtype=torch.float32)
 				if args.bg_mask:
-					for i in range(args.seq_len//2):
+					for i in range(args.seq_len//args.mask_every_frame):
 						bg_seg.append(bg_seg_in[i].to(args.device, dtype=torch.float32))
 
 				batch_size = inputs[0].shape[0]
@@ -686,7 +660,7 @@ class Engine(object):
 							attn = attn.reshape(b, l, n, h, w)
 
 						action_attn = attn[:, :, :num_actor_class, :, :]
-						bg_attn = attn[:, ::2, -1, :, :].reshape(b, l//2, h, w)
+						bg_attn = attn[:, ::args.mask_every_frame, -1, :, :].reshape(b, l//args.mask_every_frame, h, w)
 
 						class_idx = actor == 0.0
 						# bg_idx = torch.ones(b, dtype=torch.bool).cuda()
@@ -722,7 +696,7 @@ class Engine(object):
 							_, _, h, w = attn.shape
 							attn = attn.reshape(b, l, n, h, w)
 
-						bg_attn = attn[:, ::2, -1, :, :].reshape(b, l//2, h, w)
+						bg_attn = attn[:, ::args.mask_every_frame, -1, :, :].reshape(b, l//args.mask_every_frame, h, w)
 
 						# bg_idx = torch.ones(b, dtype=torch.bool).cuda()
 						# bg_idx = torch.reshape(bg_idx, (b, 1))

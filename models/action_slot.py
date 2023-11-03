@@ -133,55 +133,46 @@ class ACTION_SLOT(nn.Module):
         # self.resnet = self.resnet.blocks[:2]
         if args.backbone == 'i3d-2':
             self.resnet = self.resnet.blocks[:-2]
-            self.resolution = (16, 48)
-            self.resolution3d = (4, 16, 48)
             self.in_c = 1024
+            if args.dataset == 'taco':
+                self.resolution = (16, 48)
+                self.resolution3d = (4, 16, 48)
         # elif args.backbone == 'i3d-1':
         #     self.resnet = self.resnet.blocks[:-1]
         #     self.in_c = 2048
         #     self.resolution = (8, 24)
         #     self.resolution3d = (4, 8, 24)
-        # elif args.backbone == 'x3d-1':
-        #     self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
-        #     self.projection = nn.Sequential(
-        #         nn.Conv3d(192, 256, kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-        #         nn.BatchNorm3d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-        #         nn.ReLU(),
-        #         nn.Conv3d(256, 256, kernel_size=(3, 3, 3), dilation=(3, 1, 1), stride=(1, 1, 1), padding='same', bias=False),
-        #         nn.BatchNorm3d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-        #         )
-        #     self.resnet.blocks[-1] = self.projection
-        #     self.resnet = self.resnet.blocks
-        #     self.in_c = 256
-        #     self.resolution = (8, 24)
-        #     self.resolution3d = (16, 8, 24)
-            
+
         elif args.backbone == 'i3d_inception_4f':
             self.resnet = i3d(final_endpoint='Mixed_4f')
             self.resnet.load_state_dict(torch.load('/media/hankung/ssd/retrieval/models/rgb_charades.pt'), strict=False)
             self.in_c = 832
-            self.resolution = (14, 14)
-            self.resolution3d = (8, 14, 14)
+            if args.dataset == 'oats':
+                self.resolution = (14, 14)
+                self.resolution3d = (8, 14, 14)
 
         elif args.backbone == 'i3d_inception_5c':
             self.resnet = i3d(final_endpoint='Mixed_5c')
             self.resnet.load_state_dict(torch.load('/media/hankung/ssd/retrieval/models/rgb_charades.pt'), strict=False)
             self.in_c = 1024
-            self.resolution = (7, 7)
-            self.resolution3d = (4, 7, 7)
+            if args.dataset == 'oats':
+                self.resolution = (7, 7)
+                self.resolution3d = (4, 7, 7)
 
         elif args.backbone == 'x3d-2':
-            self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
+            self.resnet = torch.hub.load('facebookresearch/pytorchvideo:main', 'x3d_m', pretrained=True)
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 192
-            self.resolution = (8, 24)
-            self.resolution3d = (16, 8, 24)
+            if args.dataset == 'taco':
+                self.resolution = (8, 24)
+                self.resolution3d = (16, 8, 24)
             
         elif args.backbone == 'videomae':
             self.model = videomae
             self.in_c = 768
-            self.resolution = (14, 14)
-            self.resolution3d = (8, 14, 14)
+            if args.dataset == 'taco':
+                self.resolution = (14, 14)
+                self.resolution3d = (8, 14, 14)
             
         # elif args.backbone == 'mvit':
         #     self.model = mvit_base_16x4(True)
@@ -193,16 +184,18 @@ class ACTION_SLOT(nn.Module):
             self.resnet = csn_r101(True)
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 2048
-            self.resolution = (8, 24)
-            self.resolution3d = (4, 8, 24)
+            if args.dataset == 'taco':
+                self.resolution = (8, 24)
+                self.resolution3d = (4, 8, 24)
 
         elif args.backbone == 'slowfast':
-            self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'slowfast_r50', pretrained=True)
+            self.resnet = torch.hub.load('facebookresearch/pytorchvideo:main', 'slowfast_r50', pretrained=True)
             self.resnet = self.resnet.blocks[:-2]
             self.path_pool = nn.AdaptiveAvgPool3d((8, 8, 24))
             self.in_c = 2304
-            self.resolution = (8, 24)
-            self.resolution3d = (8, 8, 24)
+            if args.dataset == 'taco':
+                self.resolution = (8, 24)
+                self.resolution3d = (8, 8, 24)
             
         if args.allocated_slot:
             self.head = Instance_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)

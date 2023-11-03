@@ -6,7 +6,7 @@ def get_parser():
 
     #dataset
     parser.add_argument('--dataset', type=str, default='taco', choices=['taco', 'oats', 'road'])
-    parser.add_argument('--dataset', type=str, choices=['s1', 's2', 's3'])
+    parser.add_argument('--oats_test_split', type=str, default='s1', choices=['s1', 's2', 's3'])
 
     # model
     parser.add_argument('--model_name', type=str, help='Unique experiment identifier.')
@@ -57,7 +57,6 @@ def get_parser():
     parser.add_argument('--val_confusion', help="", action="store_true")
     parser.add_argument('--ego_motion', type=int, default=-1)
     # others
-    parser.add_argument('--logdir', type=str, default='log', help='Directory to log data to.')
     parser.add_argument('--test', help="", action="store_true")
     parser.add_argument('--gt', help="", action="store_true")
 
@@ -65,12 +64,19 @@ def get_parser():
 
     if not args.bg_mask:
         args.bg_attn_weight = 0.
-    if args.model_name in ['action-slot', 'savi', 'mo', 'slot-vps']:
-        args.logdir = os.path.join(
-            args.dataset + '_' +args.logdir, 
-            args.model_name + '\n'
-            + 'num_slots: ' + str(args.num_slots) + '\n'
-            + 'allocated_slot :' + str(args.allocated_slot) + '\n'
+
+    based_log = args.dataset + '_log'
+    if not os.path.isdir(based_log):
+        os.makedirs(based_log)
+    based_log = os.path.join(based_log, args.model_name)
+    if not os.path.isdir(based_log):
+        os.makedirs(based_log)
+
+    if args.model_name in ['action_slot', 'slot_savi', 'slot_mo', 'slot_vps']:
+        logdir = os.path.join(
+            based_log,
+            'num_slots: ' + str(args.num_slots) + '\n'
+            + 'allocated :' + str(args.allocated_slot) + '\n'
             + args.backbone + '\n'
             + 'channel :' + str(args.channel) + '\n'
             +'bg_slot: ' + str(args.bg_slot) + '\n'
@@ -82,16 +88,14 @@ def get_parser():
             +'lr: ' + str(args.lr) + '\n'
             +'wd: '+ str(args.wd) + '\n'
             +'bce_pos_weight: ' + str(args.bce_pos_weight) + '\n'
-            +'mask_every_frame: ' + str(args.mask_every_frame) + '\n'
             +'bg_upsample: ' + str(args.bg_upsample) + '\n'
             +'ego_loss_weight: ' + str(args.ego_loss_weight)
             )
 
-    elif args.model_name in ['action-slot', 'savi', 'mo', 'slot-vps'] and not args.allocated_slot:
-        args.logdir = os.path.join(
-            args.dataset + '_' +args.logdir, 
-            args.model_name + '\n'
-            + 'num_slots: ' + str(args.num_slots) + '\n'
+    elif args.model_name in ['action-slot', 'slot_savi', 'slot_mo', 'slot_vps'] and not args.allocated_slot:
+        logdir = os.path.join(
+            based_log,
+            'num_slots: ' + str(args.num_slots) + '\n'
             + 'allocated_slot: ' + str(args.allocated_slot) + '\n'
             + args.backbone + '\n'
             +'obj_mask: ' + str(args.obj_mask) + '\n'
@@ -102,10 +106,9 @@ def get_parser():
             +'ce_neg_weight: ' + str(args.ce_neg_weight)
             )
     elif args.model_name in ['i3d', 'x3d', 'csn', 'slowfast']:
-        args.logdir = os.path.join(
-            args.dataset + '_' +args.logdir, 
-            args.model_name + '\n'
-            + 'channel :' + str(args.channel) + '\n'
+        logdir = os.path.join(
+            based_log,
+            'channel :' + str(args.channel) + '\n'
             +'epoch: ' + str(args.epochs) + '\n'
             +'lr: ' + str(args.lr) + '\n'
             +'wd: '+ str(args.wd) + '\n'
@@ -113,10 +116,9 @@ def get_parser():
             +'ego_loss_weight: ' + str(args.ego_loss_weight)
             )
     elif args.model_name in ['mvit', 'videomae']:
-        args.logdir = os.path.join(
-            args.dataset + '_' +args.logdir, 
-            args.model_name + '\n'
-            + 'tune_block_idx: ' + str(tune_block_idx) + '\n'
+        logdir = os.path.join(
+            based_log,
+            'tune_block_idx: ' + str(tune_block_idx) + '\n'
             + 'channel :' + str(args.channel) + '\n'
             +'epoch: ' + str(args.epochs) + '\n'
             +'lr: ' + str(args.lr) + '\n'
@@ -126,10 +128,9 @@ def get_parser():
             )
     elif args.box:
         # object-based
-        args.logdir = os.path.join(args.logdir, 
-            args.dataset + '_' +args.logdir, 
-            args.model_name + '\n'
-            + args.backbone + '\n'
+        logdir = os.path.join( 
+            based_log,
+            args.backbone + '\n'
             +'gt_box: ' + str(args.gt) + '\n'
             + 'channel :' + str(args.channel) + '\n'
             +'epoch: ' + str(args.epochs) + '\n'
@@ -148,7 +149,7 @@ def get_parser():
     # if args.gt:
     #     args.logdir = args.logdir + '_gt'
 
-    if args.model_index != -1:
-        args.logdir = args.logdir + '_'+str(args.model_index)
-    print(f'Checkpoint path: {args.logdir}')
-    return args
+    # if args.model_index != -1:
+    #     args.logdir = args.logdir + '_'+str(args.model_index)
+    # print(f'Checkpoint path: {logdir}')
+    return args, logdir

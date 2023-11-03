@@ -3,11 +3,12 @@ from torch import nn
 import numpy as np
 
 import sys
-sys.path.append('/media/hankung/ssd/retrieval/models')
+# sys.path.append('/media/hankung/ssd/retrieval/models')
 sys.path.append('/work/u8526971/retrieval/models')
 sys.path.append('/home/hcis-s19/Desktop/retrieval/models')
 sys.path.append('/media/hcis-s16/hank/Action-Slot/models')
 sys.path.append('/media/hcis-s20/SRL/action-slot/models')
+sys.path.append('/media/hankung/ssd/Action-Slot/models')
 
 
 import vivit
@@ -183,35 +184,16 @@ def generate_model(args, num_ego_class, num_actor_class):
         for t in model.parameters():
             t.requires_grad=True
 
-
-    elif model_name == 'slot_seg':	
-        model = slot_seg.SLOT_SEG(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
-        for t in model.parameters():
-            t.requires_grad=True
-        for t in model.resnet.parameters():
-            t.requires_grad=False
-        for t in model.resnet[-1].parameters():
-            t.requires_grad=True
-        for t in model.resnet[-2].parameters():
-            t.requires_grad=True
-
-    elif model_name == 'slot_video_fc':
-        model = slot_video_fc.SLOT_VIDEO_FC(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
-        for t in model.parameters():
-            t.requires_grad=True
-        for t in model.resnet.parameters():
-            t.requires_grad=False
-        for t in model.resnet[-1].parameters():
-            t.requires_grad=True
-
-    elif model_name == 'slot_3d':
-        model = slot_3d.SLOT_3D(args, num_ego_class, num_actor_class, args.num_slots)
-        for t in model.parameters():
-            t.requires_grad=True
-        for t in model.resnet.parameters():
-            t.requires_grad=False
-        for t in model.resnet[-1].parameters():
-            t.requires_grad=True
+    # elif model_name == 'slot_seg':	
+    #     model = slot_seg.SLOT_SEG(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
+    #     for t in model.parameters():
+    #         t.requires_grad=True
+    #     for t in model.resnet.parameters():
+    #         t.requires_grad=False
+    #     for t in model.resnet[-1].parameters():
+    #         t.requires_grad=True
+    #     for t in model.resnet[-2].parameters():
+    #         t.requires_grad=True
 
     elif model_name == 'slot_vps':
         model = slot_vps.SLOT_VPS(args, num_ego_class, num_actor_class, args.num_slots)

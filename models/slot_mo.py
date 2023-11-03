@@ -11,12 +11,12 @@ from ptflops import get_model_complexity_info
 import numpy as np
 
 class SlotAttention(nn.Module):
-    def __init__(self, num_slots, dim, num_actor_class=20, eps=1e-8, input_dim=64, resolution=[16, 8, 24], fix_slot=True):
+    def __init__(self, num_slots, dim, num_actor_class=20, eps=1e-8, input_dim=64, resolution=[16, 8, 24], allocated_slot=True):
         super().__init__()
         self.dim = dim
         self.num_slots = num_slots
         self.num_actor_class = num_actor_class
-        self.fix_slot = fix_slot
+        self.allocated_slot = allocated_slot
         self.eps = eps
         self.scale = dim ** -0.5
         self.resolution = resolution
@@ -82,7 +82,7 @@ class SlotAttention(nn.Module):
         slots_out = torch.stack([slot for slot in slots_out])
         slots_out = slots_out.permute(1,0,2,3)
 
-        if self.fix_slot:
+        if self.allocated_slot:
             slots_out = slots_out[:, -1, :self.num_actor_class, :]
         else:
             slots_out = slots_out[:, -1, :self.num_slots, :]
@@ -155,22 +155,6 @@ class SLOT_MO(nn.Module):
             self.resolution3d = (4, 8, 24)
         elif args.backbone == 'x3d-1':
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
-            # self.projection = nn.Sequential(
-            #     nn.Conv3d(192, 432, kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-            #     nn.BatchNorm3d(432, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            #     nn.ReLU(),
-            #     nn.AvgPool3d(kernel_size=(1, 3, 3), stride=1, padding=0),
-            #     nn.Conv3d(432, 2048, kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-            #     )
-            # self.projection = nn.Sequential(
-            #     nn.Conv3d(192, 192, kernel_size=(3, 3, 3), dilation=(3, 2, 2), stride=(1, 1, 1), padding='same', bias=False),
-            #     nn.BatchNorm3d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            #     nn.ReLU(),
-            #     nn.Conv3d(192, 432, kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-            #     nn.BatchNorm3d(432, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            #     nn.ReLU(),
-            #     nn.Conv3d(432, 512 , kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-            #     )
             self.projection = nn.Sequential(
                 nn.Conv3d(192, 256, kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
                 nn.BatchNorm3d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
@@ -190,7 +174,7 @@ class SLOT_MO(nn.Module):
             self.resolution = (8, 24)
             self.resolution3d = (16, 8, 24)
 
-        if args.fix_slot:
+        if args.allocated_slot:
             self.head = Instance_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)
         else:
             self.head = Head(self.slot_dim, num_ego_class, num_actor_class+1, self.ego_c)
@@ -207,7 +191,7 @@ class SLOT_MO(nn.Module):
                 nn.Conv3d(self.in_c, self.hidden_dim2, (1, 1, 1), stride=1),
                 nn.ReLU(),)
 
-        if args.seg:
+        if args.bg_slot:
             self.slot_attention = SlotAttention(
                 num_slots=num_slots+1,
                 dim=self.slot_dim,
@@ -215,7 +199,7 @@ class SLOT_MO(nn.Module):
                 input_dim=self.hidden_dim2,
                 resolution=self.resolution3d,
                 num_actor_class = num_actor_class,
-                fix_slot=args.fix_slot
+                allocated_slot=args.allocated_slot
                 ) 
         else:
             self.slot_attention = SlotAttention(
@@ -225,7 +209,7 @@ class SLOT_MO(nn.Module):
                 input_dim=self.hidden_dim2,
                 resolution=self.resolution3d,
                 num_actor_class = num_actor_class,
-                fix_slot=args.fix_slot
+                allocated_slot=args.allocated_slot
                 ) 
 
         self.FC1 = nn.Linear(self.hidden_dim2, self.hidden_dim2)
@@ -275,26 +259,26 @@ class SLOT_MO(nn.Module):
         # macs, _ = get_model_complexity_info(self.slot_attention, (16, 8, 24, 128), as_strings=True, print_per_layer_stat=False, verbose=True)
         # print(macs)
 
-        starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
-        repetitions = 300
-        timings=np.zeros((repetitions,1))
-        #GPU-WARM-UP
-        for _ in range(10):
-            _ = self.slot_attention(x)
-        # MEASURE PERFORMANCE
-        with torch.no_grad():
-            for rep in range(repetitions):
-                starter.record()
-                _, _ = self.slot_attention(x)
-                ender.record()
-                # WAIT FOR GPU SYNC
-                torch.cuda.synchronize()
-                curr_time = starter.elapsed_time(ender)
-                timings[rep] = curr_time
+        # starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+        # repetitions = 300
+        # timings=np.zeros((repetitions,1))
+        # #GPU-WARM-UP
+        # for _ in range(10):
+        #     _ = self.slot_attention(x)
+        # # MEASURE PERFORMANCE
+        # with torch.no_grad():
+        #     for rep in range(repetitions):
+        #         starter.record()
+        #         _, _ = self.slot_attention(x)
+        #         ender.record()
+        #         # WAIT FOR GPU SYNC
+        #         torch.cuda.synchronize()
+        #         curr_time = starter.elapsed_time(ender)
+        #         timings[rep] = curr_time
 
-        mean_syn = np.sum(timings) / repetitions
-        std_syn = np.std(timings)
-        print(mean_syn)
+        # mean_syn = np.sum(timings) / repetitions
+        # std_syn = np.std(timings)
+        # print(mean_syn)
 
 
         x, attn_masks = self.slot_attention(x)

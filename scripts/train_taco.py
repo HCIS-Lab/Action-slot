@@ -14,21 +14,22 @@ import torch.nn as nn
 torch.backends.cudnn.benchmark = True
 
 import sys
-sys.path.append('/media/hankung/ssd/retrieval/datasets')
-sys.path.append('/media/hankung/ssd/retrieval/config')
-sys.path.append('/media/hankung/ssd/retrieval/models')
+# sys.path.append('/media/hankung/ssd/retrieval/datasets')
+# sys.path.append('/media/hankung/ssd/retrieval/config')
+# sys.path.append('/media/hankung/ssd/retrieval/models')
+
+sys.path.append('/media/hankung/ssd/Action-Slot/datasets')
+sys.path.append('/media/hankung/ssd/Action-Slot/config')
+sys.path.append('/media/hankung/ssd/Action-Slot/models')
 
 sys.path.append('/work/u8526971/retrieval/datasets')
 sys.path.append('/work/u8526971/retrieval/config')
 sys.path.append('/work/u8526971/retrieval/models')
 
-# sys.path.append('/home/hcis-s19/Desktop/retrieval/datasets')
-# sys.path.append('/home/hcis-s19/Desktop/retrieval/config')
-# sys.path.append('/home/hcis-s19/Desktop/retrieval/models')
 
-sys.path.append('/media/hcis-s19/DATA/Action-Slot/retrieval/datasets')
-sys.path.append('/media/hcis-s19/DATA/Action-Slot/retrieval/config')
-sys.path.append('/media/hcis-s19/DATA/Action-Slot/retrieval/models')
+sys.path.append('/media/hcis-s19/DATA/Action-Slot/datasets')
+sys.path.append('/media/hcis-s19/DATA/Action-Slot/config')
+sys.path.append('/media/hcis-s19/DATA/Action-Slot/models')
 
 # sys.path.append('/home/hcis-s20/Desktop/retrieval/datasets')
 # sys.path.append('/home/hcis-s20/Desktop/retrieval/config')
@@ -60,7 +61,7 @@ from utils import *
 from torchvision import models
 import matplotlib.image
 import matplotlib.pyplot as plt
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 from scipy.optimize import linear_sum_assignment
 from parser import get_parser
 import math
@@ -82,9 +83,9 @@ def plot_result(result):
     plt.show()	
 
 torch.cuda.empty_cache()
-args = get_parser()
+args, logdir = get_parser()
 print(args)
-writer = SummaryWriter(log_dir=args.logdir)
+writer = SummaryWriter(log_dir=logdir)
 
 def lambda_lr(epoch):
     if epoch<11:
@@ -831,32 +832,47 @@ class Engine(object):
 			# print('mAP ped:')
 			# print(mAP_per_class[12:])
 
-			with open(os.path.join(args.logdir, 'mAP.txt'), 'a') as f:
-				f.write('epoch: ' + epoch + '\n')
-				f.write('mAP: ' + str(mAP) '\n')
-				f.write('mAP of c: ' + str(c_mAP) '\n')
-				f.write('mAP of b: ' + str(b_mAP) '\n')
-				f.write('mAP of p: ' + str(p_mAP) '\n')
-				f.write('mAP of c+: ' + str(group_c_mAP) '\n')
-				f.write('mAP of b+: ' + str(group_b_mAP) '\n')
-				f.write('mAP of p+: ' + str(group_p_mAP) '\n')
-				f.write('c per class: \n')
-				f.write(mAP_per_class[:12])
+			with open(os.path.join(logdir, 'mAP.txt'), 'a') as f:
+				f.write('epoch: ' + str(self.cur_epoch))
+				f.write('\n')
+				f.write('mAP: %.4f' % mAP)
+				f.write('\n')
+				f.write('mAP of c: %.4f' % c_mAP)
+				f.write('\n')
+				f.write('mAP of b: %.4f' % b_mAP)
+				f.write('\n')
+				f.write('mAP of p: %.4f' % p_mAP)
+				f.write('\n')
+				f.write('mAP of c+: %.4f' % group_c_mAP)
+				f.write('\n')
+				f.write('mAP of b+: %.4f' % group_b_mAP)
+				f.write('\n')
+				f.write('mAP of p+: %.4f' % group_p_mAP)
+				f.write('\n')
+
+				f.write('c per class: + \n')
+				for ap in mAP_per_class[:12].tolist():
+					f.write("%.4f " % ap)
 				f.write('\n')
 				f.write('b per class: \n')
-				f.write(mAP_per_class[12:24])
+				for ap in mAP_per_class[12:24].tolist():
+					f.write("%.4f " % ap)
 				f.write('\n')
 				f.write('c+ per class: \n')
-				f.write(mAP_per_class[24:36])
+				for ap in mAP_per_class[24:36].tolist():
+					f.write("%.4f " % ap)
 				f.write('\n')
 				f.write('b+ per class: \n')
-				f.write(mAP_per_class[36:48])
+				for ap in mAP_per_class[36:48].tolist():
+					f.write("%.4f " % ap)
 				f.write('\n')
 				f.write('p per class: \n')
-				f.write(mAP_per_class[48:56])
+				for ap in mAP_per_class[48:56].tolist():
+					f.write("%.4f " % ap)
 				f.write('\n')
 				f.write('p+ per class: \n')
-				f.write(mAP_per_class[56:64])
+				for ap in mAP_per_class[56:64].tolist():
+					f.write("%.4f " % ap)
 				f.write('\n')
 				f.write('*'*15 + '\n')
 
@@ -890,11 +906,11 @@ class Engine(object):
 		# }
 
 		# Save ckpt for every epoch
-		torch.save(model.state_dict(), os.path.join(args.logdir, 'model_%d.pth'%self.cur_epoch))
+		torch.save(model.state_dict(), os.path.join(logdir, 'model_%d.pth'%self.cur_epoch))
 
 		# Save the recent model/optimizer states
-		torch.save(model.state_dict(), os.path.join(args.logdir, 'model.pth'))
-		torch.save(optimizer.state_dict(), os.path.join(args.logdir, 'recent_optim.pth'))
+		torch.save(model.state_dict(), os.path.join(logdir, 'model.pth'))
+		torch.save(optimizer.state_dict(), os.path.join(logdir, 'recent_optim.pth'))
 
 		# Log other data corresponding to the recent model
 		# with open(os.path.join(args.logdir, 'recent.log'), 'w') as f:
@@ -903,8 +919,8 @@ class Engine(object):
 		tqdm.write('====== Saved recent model ======>')
 		
 		if save_best:
-			torch.save(model.state_dict(), os.path.join(args.logdir, 'best_model.pth'))
-			torch.save(optimizer.state_dict(), os.path.join(args.logdir, 'best_optim.pth'))
+			torch.save(model.state_dict(), os.path.join(logdir, 'best_model.pth'))
+			torch.save(optimizer.state_dict(), os.path.join(logdir, 'best_optim.pth'))
 			tqdm.write('====== Overwrote best model ======>')
 
 torch.cuda.empty_cache() 
@@ -961,16 +977,17 @@ trainer = Engine(args)
 # Create logdir
 model_index = 1
 while(1):
-	if not os.path.isdir(args.logdir):
-		os.makedirs(args.logdir)
+	if not os.path.isdir(logdir):
+		os.makedirs(logdir)
 		break
 	else:
-		if not os.path.isdir(args.logdir + '\n' + 'idx: ' + str(model_index)):
-			args.logdir = args.logdir + '\n' + 'idx: ' + str(model_index)
-			os.makedirs(args.logdir)
+		if not os.path.isdir(logdir + '\n' + 'idx: ' + str(model_index)):
+			logdir = logdir + '\n' + 'idx: ' + str(model_index)
+			os.makedirs(logdir)
 			break
 		else:
 			model_index += 1
+print(f'Checkpoint path: {logdir}')
 
 result_list = []
 if not args.test:

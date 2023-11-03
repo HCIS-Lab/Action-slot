@@ -38,11 +38,11 @@ class TACO(Dataset):
         # root = '/work/u8526971/data_collection'
         # root = '/home/hcis-s19/Desktop/data_collection'
         # root = '/home/hcis-s20/Desktop/data_collection'
-        root = '/media/hankung/ssd/carla_13/CARLA_0.9.13/PythonAPI/examples/data_collection'
+        # root = '/media/hankung/ssd/carla_13/CARLA_0.9.13/PythonAPI/examples/data_collection'
         # root = '/media/hcis-s16/hank/taco'
         # root = '/media/hcis-s20/SRL/taco'
         # root = '/media/user/data/taco'
-        # root = '/media/hcis-s19/DATA/taco'
+        root = '/media/hcis-s19/DATA/taco'
 
         self.training = training
         self.model_name = args.model_name
@@ -196,8 +196,8 @@ class TACO(Dataset):
                                     continue
                                 else:
                                     gt.remove('x')
-                                if c_p and c_pp and c_c and c_cp:
-                                    print(v)
+                                # if c_p and c_pp and c_c and c_cp:
+                                #     print(v)
 
                         else:
                             continue

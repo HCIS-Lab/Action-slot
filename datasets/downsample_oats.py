@@ -19,10 +19,10 @@ def thread(img_path):
 
     # folder = 'downsampled'
     folder = 'downsampled_224'
-    new_img_path = img_path.replace("front", folder)
+    new_img_path = img_path.replace("images", folder)
     
-    if not os.path.isdir(new_img_path[:-12]):
-        os.makedirs(new_img_path[:-12])
+    if not os.path.isdir(new_img_path[:-7]):
+        os.makedirs(new_img_path[:-7])
 
 
     if not os.path.isfile(new_img_path):
@@ -32,22 +32,20 @@ def thread(img_path):
     # print(img_path)
 
 def main():
-    maps = ['interactive', 'non-interactive', 'ap_Town01', 'ap_Town02', 'ap_Town03', 
-    'ap_Town04', 'ap_Town05', 'ap_Town06', 'ap_Town07', 'ap_Town10HD', 
-    'runner_Town03', 'runner_Town04', 'runner_Town05', 'runner_Town10HD']
-    for m in maps:
-        shpfiles = []
-        for dirpath, subdirs, files in os.walk("./" + m):
-            for x in files:
-                if x.endswith(".jpg"):
-                    shpfiles.append(os.path.join(dirpath, x))
-        pool = mp.Pool(processes = 12)
-        for img_path in shpfiles:
-            if "rgb" in img_path and "front" in img_path:
-                # print(img_path)
-                pool.apply_async(thread, (img_path,))
-        pool.close()
-        pool.join()
+    shpfiles = []
+    if not os.path.isdir("./downsampled_224"):
+        os.makedirs("./downsampled_224")
+    for dirpath, subdirs, files in os.walk("./images"):
+        for x in files:
+            if x.endswith(".jpg"):
+                shpfiles.append(os.path.join(dirpath, x))
+    pool = mp.Pool(processes = 12)
+    for img_path in shpfiles:
+        if "images" in img_path:
+            # print(img_path)
+            pool.apply_async(thread, (img_path,))
+    pool.close()
+    pool.join()
     print("finish")
 
 

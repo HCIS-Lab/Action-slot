@@ -58,7 +58,7 @@ class Instance_Head(nn.Module):
 				)
 
 	def forward(self, x, ego_x=None):
-		y_ego = self.fc_ego(ego_x)
+
 		b, n, _ = x.shape
 		y_actor = []
 		for i in range(64):
@@ -67,5 +67,9 @@ class Instance_Head(nn.Module):
 		y_actor = torch.permute(y_actor, (1, 0, 2))
 		y_actor = torch.reshape(y_actor, (b, n))
 		# x = torch.reshape(x, (b, n))
-		return y_ego, y_actor
+		if self.num_ego_classes != 0:
+			y_ego = self.fc_ego(ego_x)
+			return y_ego, y_actor
+		else:
+			return y_actor
 

@@ -297,13 +297,13 @@ class InceptionI3d(nn.Module):
         self.avg_pool = nn.AvgPool3d(kernel_size=[2, 7, 7],
                                      stride=(1, 1, 1))
         self.dropout = nn.Dropout(dropout_keep_prob)
-        self.logits = Unit3D(in_channels=384+384+128+128, output_channels=self._num_classes,
-                             kernel_shape=[1, 1, 1],
-                             padding=0,
-                             activation_fn=None,
-                             use_batch_norm=False,
-                             use_bias=True,
-                             name='logits')
+        # self.logits = Unit3D(in_channels=384+384+128+128, output_channels=self._num_classes,
+        #                      kernel_shape=[1, 1, 1],
+        #                      padding=0,
+        #                      activation_fn=None,
+        #                      use_batch_norm=False,
+        #                      use_bias=True,
+        #                      name='logits')
         self.gap = nn.AdaptiveAvgPool3d((1,1,1))
         self.build()
 
@@ -322,28 +322,28 @@ class InceptionI3d(nn.Module):
         for k in self.end_points.keys():
             self.add_module(k, self.end_points[k])
         
-    def forward(self, x):
-        seq_len = len(x)
-        batch_size = x[0].shape[0]
-        height, width = x[0].shape[2], x[0].shape[3]
-        if isinstance(x, list):
-            x = torch.stack(x, dim=0) #[v, b, 2048, h, w]
-            # l, b, c, h, w
-            x = torch.permute(x, (1,2,0,3,4)) #[b, v, 2048, h, w]
+    # def forward(self, x):
+    #     seq_len = len(x)
+    #     batch_size = x[0].shape[0]
+    #     height, width = x[0].shape[2], x[0].shape[3]
+    #     if isinstance(x, list):
+    #         x = torch.stack(x, dim=0) #[v, b, 2048, h, w]
+    #         # l, b, c, h, w
+    #         x = torch.permute(x, (1,2,0,3,4)) #[b, v, 2048, h, w]
 
-        for end_point in self.VALID_ENDPOINTS:
-            if end_point in self.end_points:
-                x = self._modules[end_point](x) # use _modules to work with dataparallel
+    #     for end_point in self.VALID_ENDPOINTS:
+    #         if end_point in self.end_points:
+    #             x = self._modules[end_point](x) # use _modules to work with dataparallel
 
-        x = self.logits(self.dropout(self.avg_pool(x)))
-        x = self.gap(x)
-        x = torch.reshape(x, (batch_size, self.num_actor_class))
-        # if self._spatial_squeeze:
-        #     print(x.shape)
-        #     logits = x.squeeze(3).squeeze(3)
-        #     print(logits.shape)
-        # logits is batch X time X classes, which is what we want to work with
-        return 1, x
+    #     x = self.logits(self.dropout(self.avg_pool(x)))
+    #     x = self.gap(x)
+    #     x = torch.reshape(x, (batch_size, self.num_actor_class))
+    #     # if self._spatial_squeeze:
+    #     #     print(x.shape)
+    #     #     logits = x.squeeze(3).squeeze(3)
+    #     #     print(logits.shape)
+    #     # logits is batch X time X classes, which is what we want to work with
+    #     return 1, x
         
 
     def extract_features(self, x):
@@ -351,3 +351,18 @@ class InceptionI3d(nn.Module):
             if end_point in self.end_points:
                 x = self._modules[end_point](x)
         return self.avg_pool(x)
+
+    def forward(self, x):
+        for end_point in self.VALID_ENDPOINTS:
+            if end_point in self.end_points:
+                x = self._modules[end_point](x)
+        print(x.shape)
+        # x = self.avg_pool(x)
+        # return self.avg_pool(x)
+        return x
+
+
+
+
+
+

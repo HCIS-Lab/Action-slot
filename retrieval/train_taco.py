@@ -831,7 +831,7 @@ class Engine(object):
 			# print('mAP ped:')
 			# print(mAP_per_class[12:])
 
-			with open(os.path.join(args.logdir, 'mAP.txt'), 'w') as f:
+			with open(os.path.join(args.logdir, 'mAP.txt'), 'a') as f:
 				f.write('epoch: ' + epoch + '\n')
 				f.write('mAP: ' + str(mAP) '\n')
 				f.write('mAP of c: ' + str(c_mAP) '\n')
@@ -840,6 +840,24 @@ class Engine(object):
 				f.write('mAP of c+: ' + str(group_c_mAP) '\n')
 				f.write('mAP of b+: ' + str(group_b_mAP) '\n')
 				f.write('mAP of p+: ' + str(group_p_mAP) '\n')
+				f.write('c per class: \n')
+				f.write(mAP_per_class[:12])
+				f.write('\n')
+				f.write('b per class: \n')
+				f.write(mAP_per_class[12:24])
+				f.write('\n')
+				f.write('c+ per class: \n')
+				f.write(mAP_per_class[24:36])
+				f.write('\n')
+				f.write('b+ per class: \n')
+				f.write(mAP_per_class[36:48])
+				f.write('\n')
+				f.write('p per class: \n')
+				f.write(mAP_per_class[48:56])
+				f.write('\n')
+				f.write('p+ per class: \n')
+				f.write(mAP_per_class[56:64])
+				f.write('\n')
 				f.write('*'*15 + '\n')
 
 			total_loss = total_loss / float(num_batches)
@@ -904,7 +922,8 @@ for i in range(7):
 	label_stat.append({})
 	for k in train_set.label_stat[i].keys():
 		label_stat[i][k] = train_set.label_stat[i][k] + val_set.label_stat[i][k]
-	
+print('*'*20)
+print('TACO Dataset')
 print('c_stat:')
 print(label_stat[0])
 print('b_stat:')

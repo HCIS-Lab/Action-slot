@@ -24,7 +24,7 @@ def get_argparser():
     parser = argparse.ArgumentParser()
 
     # Datset Options
-    parser.add_argument("--input", type=str, default='/media/hankung/ssd/road/rgb-images',
+    parser.add_argument("--input", type=str, default='/media/hankung/ssd/oats/oats_data/images',
                         help="path to a single image or image directory")
     parser.add_argument("--dataset", type=str, default='cityscapes',
                         choices=['voc', 'cityscapes'], help='Name of training set')
@@ -42,7 +42,7 @@ def get_argparser():
     parser.add_argument("--output_stride", type=int, default=16, choices=[8, 16])
 
     # Train Options
-    parser.add_argument("--save_val_results_to", default='/media/hankung/ssd/road/rgb-images',
+    parser.add_argument("--save_val_results_to", default='/media/hankung/ssd/oats/oats_data/images',
                         help="save segmentation results to the specified dir")
 
     parser.add_argument("--crop_val", action='store_true', default=False,
@@ -71,13 +71,13 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print("Device: %s" % device)
 
-
-    video_list = ['2','3','4', '5', '6','8','10','11','12','14','15','16', '17', '18']
+    if os.path.isdir(opts.input):
+        video_list = [os.path.join(opts, scenario) for scenario in os.listdir(opts.input)]
     for v in video_list:
         print('--------------------------------------')
         print(v)
-        folder_path = os.path.join(opts.input, v)
-        save_path = os.path.join(opts.save_val_results_to, v+'_segmentation')
+        folder_path = os.path.join(opts.input, scenario)
+        save_path = os.path.join(opts.save_val_results_to, scenario+'_segmentation')
         # Setup dataloader
         image_files = []
         if os.path.isdir(folder_path):

@@ -48,9 +48,9 @@ sys.path.append('/media/user/data/Action-Slot/configs')
 sys.path.append('/media/user/data/Action-Slot/models')
 
 
-import taco
+import oats
 
-from sklearn.metrics import average_precision_score, precision_score, f1_score, recall_score, accuracy_score, hamming_loss
+from sklearn.metrics import average_precision_score, precision_score, recall_score, accuracy_score, hamming_loss
 
 
 from PIL import Image
@@ -826,10 +826,6 @@ class Engine(object):
 				self.best_mAP = mAP
 				save_cp = True
 			print(f'best mAP : {self.best_mAP}')
-			# print('mAP vehicle:')
-			# print(mAP_per_class[:12])
-			# print('mAP ped:')
-			# print(mAP_per_class[12:])
 
 
 
@@ -850,17 +846,6 @@ class Engine(object):
 			self.bestval = self.val_loss[-1]
 			self.bestval_epoch = self.cur_epoch
 			save_best = True
-		
-		# Create a dictionary of all data to save
-
-		# log_table = {
-		# 	'epoch': self.cur_epoch,
-		# 	'iter': self.cur_iter,
-		# 	'bestval': float(self.bestval.data),
-		# 	'bestval_epoch': self.bestval_epoch,
-		# 	'train_loss': self.train_loss,
-		# 	'val_loss': self.val_loss,
-		# }
 
 		# Save ckpt for every epoch
 		torch.save(model.state_dict(), os.path.join(args.logdir, 'model_%d.pth'%self.cur_epoch))
@@ -883,8 +868,8 @@ class Engine(object):
 torch.cuda.empty_cache() 
 seq_len = args.seq_len
 
-num_ego_class = 4
-num_actor_class = 64
+num_ego_class = 0
+num_actor_class = 35
 
 
 # Data
@@ -908,13 +893,11 @@ print('p_stat:')
 print(label_stat[4])
 print('p+_stat:')
 print(label_stat[5])
-print('ego_stat')
-print(label_stat[6])
 	
 dataloader_train = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
 dataloader_val = DataLoader(val_set, batch_size=1, shuffle=False, num_workers=args.num_workers, pin_memory=True, drop_last=True)
 # Model
-model = generate_model(args, num_ego_class, num_actor_class).cuda()
+model = generate_model(args, num_actor_class).cuda()
 
 if 'mvit' == args.model_name:
 	params = set_lr(model)#

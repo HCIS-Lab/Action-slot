@@ -120,11 +120,12 @@ class SoftPositionEmbed3D(nn.Module):
         return inputs + grid
 
 class ACTION_SLOT(nn.Module):
-    def __init__(self, args, num_ego_class, num_actor_class, num_slots=21, box=False,videomae=None):
+    def __init__(self, args, num_ego_class, num_actor_class, num_slots=21, box=False, videomae=None):
         super(ACTION_SLOT, self).__init__()
         self.hidden_dim = args.channel
         self.hidden_dim2 = args.channel
         self.slot_dim, self.temp_dim = args.channel, args.channel
+        self.num_ego_class = num_ego_class
         self.ego_c = 128
         self.num_slots = num_slots
         self.resnet = i3d_r50(True)
@@ -155,6 +156,7 @@ class ACTION_SLOT(nn.Module):
         #     self.resolution = (8, 24)
         #     self.resolution3d = (16, 8, 24)
             
+        elif args.backbone
         elif args.backbone == 'x3d-2':
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
             self.resnet = self.resnet.blocks[:-1]
@@ -163,32 +165,16 @@ class ACTION_SLOT(nn.Module):
             self.resolution3d = (16, 8, 24)
             
         elif args.backbone == 'videomae':
-            # self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
-            # self.resnet = self.resnet.blocks[:-1]
             self.model = videomae
             self.in_c = 768
             self.resolution = (14, 14)
             self.resolution3d = (8, 14, 14)
             
-        elif args.backbone == 'mvit':
-            self.model = mvit_base_16x4(True)
-            self.in_c = 768
-            self.resolution = (7, 7)
-            self.resolution3d = (8, 7, 7)
-        
-        # elif args.backbone == 'x3d-3':
-        #     self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
-        #     self.resnet = self.resnet.blocks[:-2]
-        #     self.in_c = 96
-        #     self.resolution = (16, 48)
-        #     self.resolution3d = (16, 16, 48)
-            
-        # elif args.backbone == 'x3d-4':
-        #     self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
-        #     self.resnet = self.resnet.blocks[:-3]
-        #     self.in_c = 48
-        #     self.resolution = (32, 96)
-        #     self.resolution3d = (16, 32, 96)
+        # elif args.backbone == 'mvit':
+        #     self.model = mvit_base_16x4(True)
+        #     self.in_c = 768
+        #     self.resolution = (7, 7)
+        #     self.resolution3d = (8, 7, 7)
 
         elif args.backbone == 'csn':
             self.resnet = csn_r101(True)
@@ -210,11 +196,12 @@ class ACTION_SLOT(nn.Module):
         else:
             self.head = Head(self.slot_dim, num_ego_class, num_actor_class+1, self.ego_c)
 
-        self.conv3d_ego = nn.Sequential(
-                nn.ReLU(),
-                nn.BatchNorm3d(self.in_c),
-                nn.Conv3d(self.in_c, self.ego_c, (1, 1, 1), stride=1),
-                )
+        if self.num_ego_class != 0:
+            self.conv3d_ego = nn.Sequential(
+                    nn.ReLU(),
+                    nn.BatchNorm3d(self.in_c),
+                    nn.Conv3d(self.in_c, self.ego_c, (1, 1, 1), stride=1),
+                    )
 
         self.conv3d = nn.Sequential(
                 nn.ReLU(),
@@ -295,14 +282,18 @@ class ACTION_SLOT(nn.Module):
                 x = self.resnet[i](x)
         # b,c,t,h,w
         x = self.drop(x)
-        ego_x = self.conv3d_ego(x)
+        if self.num_ego_class != 0:
+            ego_x = self.conv3d_ego(x)
+            ego_x = self.pool(ego_x)
+            ego_x = torch.reshape(ego_x, (batch_size, self.ego_c))
+
         new_seq_len = x.shape[2]
         new_h, new_w = x.shape[3], x.shape[4]
 
         # # [b, c, n , w, h]
         x = self.conv3d(x)
-        ego_x = self.pool(ego_x)
-        ego_x = torch.reshape(ego_x, (batch_size, self.ego_c))
+
+        
 
 
         x = torch.permute(x, (0, 2, 3, 4, 1))
@@ -311,7 +302,7 @@ class ACTION_SLOT(nn.Module):
 
 
         # flops latency
-        
+
         # macs, _ = get_model_complexity_info(self.slot_attention, (16, 8, 24, 128), as_strings=True, print_per_layer_stat=False, verbose=True)
         # print(macs)
 
@@ -364,6 +355,10 @@ class ACTION_SLOT(nn.Module):
 
         # x = torch.sum(x, 1)
         x = self.drop(x)
-        ego_x = self.drop(ego_x)
-        ego_x, x = self.head(x, ego_x)
-        return ego_x, x, attn_masks
+        if self.num_ego_class != 1:
+            ego_x = self.drop(ego_x)
+            ego_x, x = self.head(x, ego_x)
+            return ego_x, x, attn_masks
+        else:
+            x = self.head(x)
+            return x, attn_masks

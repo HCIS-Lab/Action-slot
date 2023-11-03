@@ -173,11 +173,11 @@ class OATS(Dataset):
 
 
             if self.args.box:
-                proposal_train_label, gt_ego, gt_actor = get_labels(args, annotation_path, num_slots=self.Max_N)
+                proposal_train_label, gt_actor = get_labels(args, annotation_path, num_slots=self.Max_N)
             elif 'slot' in args.model_name and not args.allocated_slot:
-                proposal_train_label, gt_ego, gt_actor = get_labels(args, annotation_path, num_slots=args.num_slots)
+                proposal_train_label, gt_actor = get_labels(args, annotation_path, num_slots=args.num_slots)
             else:
-                gt_ego, gt_actor = get_labels(args, annotation_path, num_slots=args.num_slots)
+                gt_actor = get_labels(args, annotation_path, num_slots=args.num_slots)
                         
 
             # ------------statistics-------------
@@ -512,96 +512,27 @@ def to_np_no_norm(v, model_name):
     return v
 
 def get_labels(args, annotation_path, num_slots=64):   
+    num_class = 35
     model_name = args.model_name
     allocated_slot = args.allocated_slot
 
-    ego_table = {'e:z1-z1': 0, 'e:z1-z2': 1, 'e:z1-z3':2, 'e:z1-z4': 3}
-
-    actor_table = { 'c:z1-z2': 0, 'c:z1-z3':1, 'c:z1-z4':2,
-                    'c:z2-z1': 3, 'c:z2-z3': 4, 'c:z2-z4': 5,
-                    'c:z3-z1': 6, 'c:z3-z2': 7, 'c:z3-z4': 8,
-                    'c:z4-z1': 9, 'c:z4-z2': 10, 'c:z4-z3': 11,
-
-                    'c+:z1-z2': 12, 'c+:z1-z3':13, 'c+:z1-z4':14,
-                    'c+:z2-z1': 15, 'c+:z2-z3': 16, 'c+:z2-z4': 17,
-                    'c+:z3-z1': 18, 'c+:z3-z2': 19, 'c+:z3-z4': 20,
-                    'c+:z4-z1': 21, 'c+:z4-z2': 22, 'c+:z4-z3': 23,
-
-                    'b:z1-z2': 24, 'b:z1-z3':25, 'b:z1-z4':26,
-                    'b:z2-z1': 27, 'b:z2-z3': 28, 'b:z2-z4': 29,
-                    'b:z3-z1': 30, 'b:z3-z2': 31, 'b:z3-z4': 32,
-                    'b:z4-z1': 33, 'b:z4-z2': 34, 'b:z4-z3': 35,
-
-                    'b+:z1-z2': 36, 'b+:z1-z3':37, 'b+:z1-z4':38,
-                    'b+:z2-z1': 39, 'b+:z2-z3': 40, 'b+:z2-z4': 41,
-                    'b+:z3-z1': 42, 'b+:z3-z2': 43, 'b+:z3-z4': 44,
-                    'b+:z4-z1': 45, 'b+:z4-z2': 46, 'b+:z4-z3': 47,
-
-
-                    'p:c1-c2': 48, 'p:c1-c4': 49, 
-                    'p:c2-c1': 50, 'p:c2-c3': 51, 
-                    'p:c3-c2': 52, 'p:c3-c4': 53, 
-                    'p:c4-c1': 54, 'p:c4-c3': 55,
-
-                    'p+:c1-c2': 56, 'p+:c1-c4': 57, 
-                    'p+:c2-c1': 58, 'p+:c2-c3': 59, 
-                    'p+:c3-c2': 60, 'p+:c3-c4': 61, 
-                    'p+:c4-c1': 62, 'p+:c4-c3': 63 
-                    }
-
-
-    ego_class = 'e:z1-z1'
-
-    actor_class = [0]*64
-
+    actor_class = [0]*35
     proposal_train_label = []
-    for gt in gt_list:
-        gt = gt.lower()
-        if gt[0] != 'e':
-            # if gt[:2] == 'c:':
-            #     label_stat[0][gt]+=1
-            # elif gt[:2] == 'b:':
-            #     label_stat[1][gt]+=1
-            # elif gt[:2] == 'c+':
-            #     label_stat[2][gt]+=1
-            # elif gt[:2] == 'b+':
-            #     label_stat[3][gt]+=1
-            # elif gt[:2] == 'p:':
-            #     label_stat[4][gt]+=1
-            # elif gt[:2] == 'p+':
-            #     label_stat[5][gt]+=1
 
-            if ('slot' in model_name and not allocated_slot) or 'ARG'in model_name or 'ORN'in model_name:
-                if not actor_table[gt] in proposal_train_label:
-                    proposal_train_label.append(actor_table[gt])
-            actor_class[actor_table[gt]] = 1
-
-        elif gt[0] == 'e':
-            ego_class = ego_table[gt]
-            # label_stat[6][gt]+=1
-
-        else:
-            gt = gt[2:]
-            if gt != 'ne':
-                if not gt in actor_table.keys():
-                    print(gt)
-                    return
-    if ego_class == 'e:z1-z1':
-        # label_stat[6][ego_class] +=1
-        ego_class = 0
-
-        
-
-    ego_label = torch.tensor(ego_class)
-
+    annotation = np.load(annotation_path)
+    for label in annotation:
+        if ('slot' in model_name and not allocated_slot) or 'ARG'in model_name or 'ORN'in model_name:
+            if not (label-1) in proposal_train_label:
+                proposal_train_label.append(label-1)
+        actor_class[label-1] = 1
+    
     if ('slot' in model_name and not allocated_slot) or 'ARG'in model_name or 'ORN'in model_name :
         while (len(proposal_train_label)!= num_slots):
             proposal_train_label.append(num_class)
         proposal_train_label = torch.LongTensor(proposal_train_label)
-        # actor_class = actor_class[:-1]
         actor_class = torch.FloatTensor(actor_class)
-        return ego_label, proposal_train_label, actor_class
+        return proposal_train_label, actor_class
     else:
         actor_class = torch.FloatTensor(actor_class)
-        return ego_label, actor_class
+        return actor_class
     

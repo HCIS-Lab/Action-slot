@@ -167,7 +167,7 @@ def generate_model(args, num_ego_class, num_actor_class):
         for t in model.resnet[-1].parameters():
             t.requires_grad=True
 
-    elif model_name == 'action_slot':
+    elif model_name == 'action_slot' and args.backbone != 'i3d_inception': 
         model = action_slot.ACTION_SLOT(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
         for t in model.parameters():
             t.requires_grad=True
@@ -177,6 +177,12 @@ def generate_model(args, num_ego_class, num_actor_class):
             t.requires_grad=True
         for t in model.resnet[-2].parameters():
             t.requires_grad=True
+
+    elif model_name == 'action_slot' and args.backbone == 'i3d_inception': 
+        model = action_slot.ACTION_SLOT(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
+        for t in model.parameters():
+            t.requires_grad=True
+
 
     elif model_name == 'slot_seg':	
         model = slot_seg.SLOT_SEG(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)

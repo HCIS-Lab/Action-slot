@@ -2,7 +2,7 @@ from pytorchvideo.models.hub import mvit_base_16x4
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from retrieval_head import Head
+from classifier import Head
 
 class pos_encode_custom(nn.Module):
     """

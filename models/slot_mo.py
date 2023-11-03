@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 import torch.nn.functional as F
-from retrieval_head import Head, Instance_Head
+from classifier import Head, Instance_Head
 from pytorchvideo.models.hub import i3d_r50
 import numpy as np
 # from models.ConvGRU import *

@@ -4,7 +4,7 @@ from functools import partial
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from retrieval_head import Head
+from classifier import Head
 
 
 def get_inplanes():

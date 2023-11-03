@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 from utils import *
 from base_model import Object_based
-from retrieval_head import Head
+from classifier import Head
 
 def calc_pairwise_distance_3d(X, Y):
     """

@@ -12,7 +12,7 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 import torch.nn.functional as F
-from retrieval_head import Head
+from classifier import Head
 
 class SlowFast(nn.Module):
     def __init__(self, num_ego_class, num_actor_class):

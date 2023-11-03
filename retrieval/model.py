@@ -29,7 +29,7 @@ import ARG
 import ORN
 
 import segment
-from retrieval_head import Head, Instance_Head
+from classifier import Head, Instance_Head
 
 from timm.models import create_model
 from collections import OrderedDict

@@ -5,7 +5,7 @@ from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
 from att_module import Attention, PreNorm, FeedForward
 import numpy as np
-from retrieval_head import Head
+from classifier import Head
 
 class Transformer(nn.Module):
     def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout = 0.):

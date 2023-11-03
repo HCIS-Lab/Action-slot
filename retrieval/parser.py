@@ -6,6 +6,7 @@ def get_parser():
 
     #dataset
     parser.add_argument('--dataset', type=str, default='taco', choices=['taco', 'oats', 'road'])
+    parser.add_argument('--dataset', type=str, choices=['s1', 's2', 's3'])
 
     # model
     parser.add_argument('--model_name', type=str, help='Unique experiment identifier.')
@@ -23,6 +24,7 @@ def get_parser():
     parser.add_argument('--action_attn_weight', type=float, default=0., help='')
     parser.add_argument('--bg_attn_weight', type=float, default=0., help='')
     parser.add_argument('--bg_mask', help="", action="store_true")
+    parser.add_argument('--mask_every_frame', type=int, default=2, help='')
     parser.add_argument('--bg_upsample', type=int, default=1, help='')
     parser.add_argument('--obj_mask', help="", action="store_true")
 
@@ -80,6 +82,7 @@ def get_parser():
             +'lr: ' + str(args.lr) + '\n'
             +'wd: '+ str(args.wd) + '\n'
             +'bce_pos_weight: ' + str(args.bce_pos_weight) + '\n'
+            +'mask_every_frame: ' + str(args.mask_every_frame) + '\n'
             +'bg_upsample: ' + str(args.bg_upsample) + '\n'
             +'ego_loss_weight: ' + str(args.ego_loss_weight)
             )

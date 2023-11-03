@@ -812,7 +812,7 @@ class Engine(object):
 					average=None)
 
 
-			print(f'(val) mAP: {mAP}')
+			print(f'(val) mAP of the actor: {mAP}')
 			print(f'(val) mAP of the c: {c_mAP}')
 			print(f'(val) mAP of the b: {b_mAP}')
 			print(f'(val) mAP of the p: {p_mAP}')
@@ -831,16 +831,7 @@ class Engine(object):
 			# print('mAP ped:')
 			# print(mAP_per_class[12:])
 
-			with open(os.path.join(args.logdir, 'mAP.txt'), 'w') as f:
-				f.write('epoch: ' + epoch + '\n')
-				f.write('mAP: ' + str(mAP) '\n')
-				f.write('mAP of c: ' + str(c_mAP) '\n')
-				f.write('mAP of b: ' + str(b_mAP) '\n')
-				f.write('mAP of p: ' + str(p_mAP) '\n')
-				f.write('mAP of c+: ' + str(group_c_mAP) '\n')
-				f.write('mAP of b+: ' + str(group_b_mAP) '\n')
-				f.write('mAP of p+: ' + str(group_p_mAP) '\n')
-				f.write('*'*15 + '\n')
+
 
 			total_loss = total_loss / float(num_batches)
 			tqdm.write(f'Epoch {self.cur_epoch:03d}, Batch {batch_num:03d}:' + f' Loss: {total_loss:3.3f}')

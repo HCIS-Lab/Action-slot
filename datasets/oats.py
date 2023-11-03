@@ -13,13 +13,7 @@ import json
 import random
 from tool import get_rot
 import torchvision.transforms as transforms
-# from torchvideotransforms import video_transforms, volume_transforms
 
-# from pytorchvideo.transforms import (
-#     Normalize,
-#     NormalizeVideo,
-#     ToTensorVideo
-# )
 
 def parse_file_name(file_name):
     name = file_name.split('/')
@@ -28,7 +22,7 @@ def parse_file_name(file_name):
     name = '/'+os.path.join(*name)
     return name
 
-class TACO(Dataset):
+class OATS(Dataset):
 
     def __init__(self, 
                 args,
@@ -38,7 +32,7 @@ class TACO(Dataset):
         # root = '/work/u8526971/data_collection'
         # root = '/home/hcis-s19/Desktop/data_collection'
         # root = '/home/hcis-s20/Desktop/data_collection'
-        root = '/media/hankung/ssd/carla_13/CARLA_0.9.13/PythonAPI/examples/data_collection'
+        root = '/media/hankung/ssd/oats/oats_data/'
         # root = '/media/hcis-s16/hank/taco'
         # root = '/media/hcis-s20/SRL/taco'
         # root = '/media/user/data/taco'
@@ -78,9 +72,9 @@ class TACO(Dataset):
         total_frame = 0
         total_videos = 0
 
-        type_list = ['interactive', 'non-interactive', 'ap_Town01', 
-        'ap_Town02','ap_Town03', 'ap_Town04', 'ap_Town05', 'ap_Town06', 'ap_Town07', 'ap_Town10HD', 
-        'runner_Town05', 'runner_Town10HD']
+        # type_list = ['interactive', 'non-interactive', 'ap_Town01', 
+        # 'ap_Town02','ap_Town03', 'ap_Town04', 'ap_Town05', 'ap_Town06', 'ap_Town07', 'ap_Town10HD', 
+        # 'runner_Town05', 'runner_Town10HD']
         n=0
 
         # statistic
@@ -119,237 +113,81 @@ class TACO(Dataset):
 
         label_stat = [c_stat, b_stat, c_plus_stat, b_plus_stat, p_stat, p_plus_stat, ego_stat]
 
-        # ----------------------
-        for t, type in enumerate(type_list):
-            basic_scenarios = [os.path.join(root, type, s) for s in os.listdir(os.path.join(root, type))]
-
-            # iterate scenarios
-            print('searching data')
-            for s in tqdm(basic_scenarios, file=sys.stdout):
-                # a basic scenario
-                scenario_id = s.split('/')[-1]
-                if training:
-                    if type == 'interactive' or type == 'non-interactive':
-                        if scenario_id.split('_')[0] == '10':
-                            continue
-                    else:
-
-                        if type == 'ap_Town10HD' or type == 'runner_Town10HD':
-                            continue
-                else:
-                    if type == 'interactive' or type == 'non-interactive':
-                        if scenario_id.split('_')[0] != '10':
-                            continue
-
-                    else:
-                        testing_set = ['ap_Town10HD', 'runner_Town10HD']
-                        if not type in testing_set:
-                            continue
 
 
-                variants_path = os.path.join(s, 'variant_scenario')
-                if os.path.isdir(variants_path):
-                    variants = [os.path.join(variants_path, v) for v in os.listdir(variants_path)]
-                    
-                    for v in variants:
-                        # print(v)
-                        v_id = v.split('/')[-1]
-                        if 'DS' in v_id:
-                            continue
+        all_splits = ['s1', 's2', 's3']
+        if training:
+            splits = all_splits.remove(args.split)
+        else:
+            splits = [args.split]
 
-                        # c_label = False
-                        # other_label = False
-                        if os.path.isfile(v+'/retrieve_gt.txt'):
-                            with open(v+'/retrieve_gt.txt') as f:
-                                gt = []
+        scenarios = []
+        for split in splits:
+            if os.path.isfile(os.path.join(root, 'splits', split + '.txt')):
+                with open(os.path.join(root, 'splits', split + '.txt')) as f:
+                    for line in f:
+                        line = line.replace('\n', '')
+                        scenarios.append(line)
 
-                                c_p = False
-                                c_pp = False
-                                c_c = False
-                                c_cp = False
-                                c_b = False
-                                c_bp = False
+        for scenario in tqdm(scenarios, file=sys.stdout):
+            scenario_path = os.path.join(root, 'images', 'scenario_' + scenario)
+            annotation_path = os.path.join(root, 'annotations', 'scenario_' + scenario + '.npy')
 
-                                for line in f:
-                                    line = line.replace('\n', '')
-                                    if line != '\n':
-                                        gt.append(line)
-                                        if 'p:' in line:
-                                            c_p=True
-                                        if 'p+:' in line:
-                                            c_pp=True
-                                        if 'c:' in line:
-                                            c_c=True
-                                        if 'c+:' in line:
-                                            c_cp=True
-                                        if 'b:' in line:
-                                            c_b=True
-                                        if 'b+:' in line:
-                                            c_bp=True
-                                gt = list(set(gt))
-                                if 'None' in gt:
-                                    gt.remove('None')
-                                if not 'x' in gt:
-                                    if not 'n' in gt:
-                                        print('no x')
-                                        print(v)
-                                    continue
-                                else:
-                                    gt.remove('x')
-                                if c_p and c_pp and c_c and c_cp:
-                                    print(v)
+            check_data = [os.path.join(scenario_path, img) for img in os.listdir(scenario_path) if os.path.isfile(scenario_path)]
+            check_data.sort()
+            # if len(check_data) < 50:
+            #     continue
 
-                        else:
-                            continue
-                        if self.args.box:
-                            proposal_train_label, gt_ego, gt_actor = get_labels(args, gt, scenario_id, v_id, num_slots=self.Max_N)
-                        elif 'slot' in args.model_name and not args.allocated_slot:
-                            proposal_train_label, gt_ego, gt_actor = get_labels(args, gt, scenario_id, v_id, num_slots=args.num_slots)
-                        else:
-                            gt_ego, gt_actor = get_labels(args, gt, scenario_id, v_id, num_slots=args.num_slots)
+            videos = []
+            segs = []
+            obj_f = []
+            idx = []
+
+            start_frame = int(check_data[0].split('/')[-1].split('.')[0])
+            end_frame = int(check_data[-1].split('/')[-1].split('.')[0])
+            num_frame = end_frame - start_frame + 1
+            step = num_frame // self.seq_len
+            # ----------------------
+            max_num = 50
+            for m in range(max_num):
+                start = start_frame + m
+                # step = ((end_frame-start + 1) // (seq_len+1)) -1
+                if start_frame + (self.seq_len-1)*step > end_frame:
+                    break
+                videos_temp = []
+                for i in range(start, end_frame+1, step):
+                    imgname = check_data[i]
+                    if os.path.isfile(imgname):
+                        videos_temp.append(imgname)
+                        idx_temp.append(i-start)
+
+                    if len(videos_temp) == self.seq_len:
+                        break
+
+                if len(videos_temp) == self.seq_len:
+                    videos.append(videos_temp)
+                    idx.append(idx_temp)
+
+            if len(videos) == 0
+                continue
+
+
+            if self.args.box:
+                proposal_train_label, gt_ego, gt_actor = get_labels(args, annotation_path, num_slots=self.Max_N)
+            elif 'slot' in args.model_name and not args.allocated_slot:
+                proposal_train_label, gt_ego, gt_actor = get_labels(args, annotation_path, num_slots=args.num_slots)
+            else:
+                gt_ego, gt_actor = get_labels(args, annotation_path, num_slots=args.num_slots)
                         
 
-                        # ------------statistics-------------
-                        if torch.count_nonzero(gt_actor) > max_num_label_a_video:
-                            max_num_label_a_video = torch.count_nonzero(gt_actor)
-                        total_label += torch.count_nonzero(gt_actor)
+            # ------------statistics-------------
+            if torch.count_nonzero(gt_actor) > max_num_label_a_video:
+                max_num_label_a_video = torch.count_nonzero(gt_actor)
+            total_label += torch.count_nonzero(gt_actor)
 
-                        # remove those data with no traffic pattern
-                        if not torch.count_nonzero(gt_actor):
-                            print(111)
-                            continue
+
                         
-                        if args.ego_motion != -1:
-                            if args.ego_motion != gt_ego.data and args.ego_motion !=4:
-                                continue
-                            if args.ego_motion==4 and gt_ego.data == 0:
-                                continue
-                        if args.val_confusion:
-                            if not torch.count_nonzero(gt_actor[-8:]):
-                                continue
-                            confusion_label = {'c1-c2': '', 'c2-c3': '', 'c3-c4': '', 'c4-c1': ''}
-
-
-                            # actor_table = { 'z1-z2': 0, 'z1-z3':1, 'z1-z4':2,
-                            #     'z2-z1': 3, 'z2-z3': 4, 'z2-z4': 5,
-                            #     'z3-z1': 6, 'z3-z2': 7, 'z3-z4': 8,
-                            #     'z4-z1': 9, 'z4-z2': 10, 'z4-z3': 11,
-
-                            #     'c1-c2': 12, 'c1-c4': 13, 
-                            #     'c2-c1': 14, 'c2-c3': 15, 
-                            #     'c3-c2': 16, 'c3-c4': 17, 
-                            #     'c4-c1': 18, 'c4-c3': 19 
-                            #     }
-                            if gt_actor[12] or gt_actor[14]:
-                                if gt_actor[12] and not gt_actor[14]:
-                                    confusion_label['c1-c2'] = 0
-                                elif not gt_actor[12] and gt_actor[14]:
-                                    confusion_label['c1-c2'] = 1
-                                else:
-                                    confusion_label['c1-c2'] = 2
-
-                            if gt_actor[15] or gt_actor[16]:
-                                if gt_actor[15] and not gt_actor[16]:
-                                    confusion_label['c2-c3'] = 0
-                                elif not gt_actor[15] and gt_actor[16]:
-                                    confusion_label['c2-c3'] = 1
-                                else:
-                                    confusion_label['c2-c3'] = 2
-
-                            if gt_actor[17] or gt_actor[19]:
-                                if gt_actor[17] and not gt_actor[19]:
-                                    confusion_label['c3-c4'] = 0
-                                elif not gt_actor[17] and gt_actor[19]:
-                                    confusion_label['c3-c4'] = 1
-                                else:
-                                    confusion_label['c3-c4'] = 2
-
-                            if gt_actor[18] or gt_actor[13]:
-                                if gt_actor[18] and not gt_actor[13]:
-                                    confusion_label['c4-c1'] = 0
-                                elif not gt_actor[18] and gt_actor[13]:
-                                    confusion_label['c4-c1'] = 1
-                                else:
-                                    confusion_label['c4-c1'] = 2
-
-
-                        video_folder = ['downsampled/', 'downsampled_224/']
-                        if args.model_name == 'mvit' or args.model_name == 'videomae':
-                            video_folder = video_folder[1]
-                        else:
-                            video_folder = video_folder[0]
-                        # if os.path.isdir(v+"/rgb/front/"):
-                        #     check_data = [v+"/rgb/front/"+ img for img in os.listdir(v+"/rgb/front/") if os.path.isfile(v+"/rgb/front/"+ img)]
-                        if os.path.isdir(v+"/rgb/" + video_folder):
-                            check_data = [v+"/rgb/"+video_folder+img for img in os.listdir(v+"/rgb/"+video_folder) if os.path.isfile(v+"/rgb/"+video_folder+ img)]
-                            check_data.sort()
-                        else:
-                            continue
-                        if len(check_data) < 50:
-                            continue
-
-                        videos = []
-                        segs = []
-                        obj_f = []
-                        idx = []
-
-                        start_frame = int(check_data[0].split('/')[-1].split('.')[0])
-                        end_frame = int(check_data[-1].split('/')[-1].split('.')[0])
-                        num_frame = end_frame - start_frame + 1
-                        step = num_frame // self.seq_len
-
-                        max_num = 50
-                        # step = ((end_frame-start + 1) // (seq_len+1)) -1
-                        for m in range(max_num):
-                            start = start_frame + m
-                            # step = ((end_frame-start + 1) // (seq_len+1)) -1
-                            if start_frame + (self.seq_len-1)*step > end_frame:
-                                break
-                            videos_temp = []
-                            seg_temp = []
-                            idx_temp = []
-                            obj_temp = []
-                            for i in range(start, end_frame+1, step):
-                                imgname = f"{str(i).zfill(8)}.jpg"
-                                segname = f"{str(i).zfill(8)}.png"
-                                boxname = f"{str(i).zfill(8)}.json"
-                                objname = f"{str(i).zfill(8)}.npz"
-                                if os.path.isfile(v+"/rgb/"+video_folder+imgname):
-                                    videos_temp.append(v+"/rgb/"+video_folder +imgname)
-                                    idx_temp.append(i-start)
-                                if os.path.isfile(v+"/instance_segmentation/ins_front/"+segname):
-                                    seg_temp.append(v+"/instance_segmentation/ins_front/"+segname)
-                                if os.path.isfile(v+"/seg_mask/"+objname):
-                                    obj_temp.append(v+"/seg_mask/"+objname)
-                                # if self.box:
-                                #     if os.path.isfile(v+"/bbox/front/"+boxname):
-                                #         box_temp.append(v+"/bbox/front/"+boxname)
-                                if len(videos_temp) == self.seq_len and len(seg_temp) == self.seq_len:
-                                    break
-                                # elif self.box:
-                                #     if len(front_temp) == seq_len and len(box_temp) == seq_len:
-                                #         break
-                                # else:
-                                #     if len(front_temp) == seq_len:
-                                #         break
-
-                            if len(videos_temp) == self.seq_len:
-                                videos.append(videos_temp)
-                                idx.append(idx_temp)
-                                if len(seg_temp) == self.seq_len:
-                                    segs.append(seg_temp)
-                                    obj_f.append(obj_temp)
-                                # if len(box_temp) == seq_len:
-                                #     boxes.append(box_temp)
-
-
-                        # if len(videos) == 0 or len(segs) ==0 or len(obj_f) ==0:
-                        if len(videos) == 0 or len(segs) ==0:
-                            continue
-
-                        if len(segs)!=len(videos):
-                            continue
-
+                        
 
 
 
@@ -673,12 +511,9 @@ def to_np_no_norm(v, model_name):
         v[i] = transform(v[i])
     return v
 
-def get_labels(args, gt_list, s_id, v_id, num_slots=64):   
-    num_class = 64
+def get_labels(args, annotation_path, num_slots=64):   
     model_name = args.model_name
     allocated_slot = args.allocated_slot
-
-    road_type = {'i-': 0, 't1': 1, "t2": 2, "t3": 3, 's-': 4, 'r-': 5, 'i': 0, 't': 0}
 
     ego_table = {'e:z1-z1': 0, 'e:z1-z2': 1, 'e:z1-z3':2, 'e:z1-z4': 3}
 
@@ -716,9 +551,7 @@ def get_labels(args, gt_list, s_id, v_id, num_slots=64):
 
 
     ego_class = 'e:z1-z1'
-    # if ('slot' in model_name and not fix_slot) or 'ARG'in model_name or 'ORN'in model_name:
-    #     actor_class = [0]*(num_class+1)
-    # else:
+
     actor_class = [0]*64
 
     proposal_train_label = []

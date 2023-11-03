@@ -188,8 +188,8 @@ class InceptionI3d(nn.Module):
         'Predictions',
     )
 
-    def __init__(self, num_ego_class, num_actor_class, spatial_squeeze=True,
-                 final_endpoint='Logits', name='inception_i3d', in_channels=3, dropout_keep_prob=0.5):
+    def __init__(self, spatial_squeeze=True,
+                 final_endpoint='Mixed_5c', name='inception_i3d', in_channels=3, dropout_keep_prob=0.5):
         """Initializes I3D model instance.
         Args:
           num_classes: The number of outputs in the logit layer (default 400, which
@@ -212,8 +212,8 @@ class InceptionI3d(nn.Module):
 
         super(InceptionI3d, self).__init__()
         self._num_classes = 157
-        self.num_ego_class = num_ego_class
-        self.num_actor_class = num_actor_class
+        # self.num_ego_class = num_ego_class
+        # self.num_actor_class = num_actor_class
         self._spatial_squeeze = spatial_squeeze
         self._final_endpoint = final_endpoint
         self.logits = None
@@ -294,9 +294,9 @@ class InceptionI3d(nn.Module):
         if self._final_endpoint == end_point: return
 
         end_point = 'Logits'
-        self.avg_pool = nn.AvgPool3d(kernel_size=[2, 7, 7],
-                                     stride=(1, 1, 1))
-        self.dropout = nn.Dropout(dropout_keep_prob)
+        # self.avg_pool = nn.AvgPool3d(kernel_size=[2, 7, 7],
+        #                              stride=(1, 1, 1))
+        # self.dropout = nn.Dropout(dropout_keep_prob)
         # self.logits = Unit3D(in_channels=384+384+128+128, output_channels=self._num_classes,
         #                      kernel_shape=[1, 1, 1],
         #                      padding=0,
@@ -304,18 +304,18 @@ class InceptionI3d(nn.Module):
         #                      use_batch_norm=False,
         #                      use_bias=True,
         #                      name='logits')
-        self.gap = nn.AdaptiveAvgPool3d((1,1,1))
+        # self.gap = nn.AdaptiveAvgPool3d((1,1,1))
         self.build()
 
 
-    def replace_logits(self):
-        self.logits = Unit3D(in_channels=384+384+128+128, output_channels=self.num_actor_class,
-                             kernel_shape=[1, 1, 1],
-                             padding=0,
-                             activation_fn=None,
-                             use_batch_norm=False,
-                             use_bias=True,
-                             name='logits')
+    # def replace_logits(self):
+    #     self.logits = Unit3D(in_channels=384+384+128+128, output_channels=self.num_actor_class,
+    #                          kernel_shape=[1, 1, 1],
+    #                          padding=0,
+    #                          activation_fn=None,
+    #                          use_batch_norm=False,
+    #                          use_bias=True,
+    #                          name='logits')
         
     
     def build(self):
@@ -356,7 +356,8 @@ class InceptionI3d(nn.Module):
         for end_point in self.VALID_ENDPOINTS:
             if end_point in self.end_points:
                 x = self._modules[end_point](x)
-        print(x.shape)
+                print(end_point)
+                print(x.shape)
         # x = self.avg_pool(x)
         # return self.avg_pool(x)
         return x

@@ -35,19 +35,17 @@ sys.path.append('/media/hcis-s19/DATA/Action-Slot/models')
 # sys.path.append('/home/hcis-s20/Desktop/retrieval/config')
 # sys.path.append('/home/hcis-s20/Desktop/retrieval/models')
 
+sys.path.append('/media/hcis-s20/SRL/Action-Slot/datasets')
+sys.path.append('/media/hcis-s20/SRL/Action-Slot/configs')
+sys.path.append('/media/hcis-s20/SRL/Action-Slot/models')
 
 sys.path.append('/media/hcis-s16/hank/Action-Slot/datasets')
 sys.path.append('/media/hcis-s16/hank/Action-Slot/configs')
 sys.path.append('/media/hcis-s16/hank/Action-Slot/models')
 
-sys.path.append('/media/hcis-s20/SRL/action-slot/datasets')
-sys.path.append('/media/hcis-s20/SRL/action-slot/configs')
-sys.path.append('/media/hcis-s20/SRL/action-slot/models')
-
 sys.path.append('/media/user/data/Action-Slot/datasets')
 sys.path.append('/media/user/data/Action-Slot/configs')
 sys.path.append('/media/user/data/Action-Slot/models')
-
 
 import taco
 

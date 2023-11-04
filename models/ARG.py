@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F 
 
 import numpy as np
+import sys
+sys.path.append('/media/hcis-s19/DATA/Action-Slot/scripts')
 from utils import *
 from base_model import Object_based
 from classifier import Head

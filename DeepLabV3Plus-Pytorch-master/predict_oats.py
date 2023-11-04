@@ -42,7 +42,7 @@ def get_argparser():
     parser.add_argument("--output_stride", type=int, default=16, choices=[8, 16])
 
     # Train Options
-    parser.add_argument("--save_val_results_to", default='/media/hankung/ssd/oats/oats_data/images',
+    parser.add_argument("--save_val_results_to", default='/media/hankung/ssd/oats/oats_data/',
                         help="save segmentation results to the specified dir")
 
     parser.add_argument("--crop_val", action='store_true', default=False,
@@ -72,12 +72,12 @@ def main():
     print("Device: %s" % device)
 
     if os.path.isdir(opts.input):
-        video_list = [os.path.join(opts, scenario) for scenario in os.listdir(opts.input)]
-    for v in video_list:
+        video_list = [os.path.join(opts.input, scenario) for scenario in os.listdir(opts.input)]
+    for scenario in video_list:
         print('--------------------------------------')
-        print(v)
+        print(scenario)
         folder_path = os.path.join(opts.input, scenario)
-        save_path = os.path.join(opts.save_val_results_to, scenario+'_segmentation')
+        save_path = os.path.join(opts.save_val_results_to, scenario+'_segmentation_28x28')
         # Setup dataloader
         image_files = []
         if os.path.isdir(folder_path):
@@ -127,7 +127,7 @@ def main():
                 pred = model(img).max(1)[1].cpu().numpy()[0] # HW
                 colorized_preds = decode_fn(pred).astype('uint8')
                 colorized_preds = Image.fromarray(colorized_preds)
-                colorized_preds = colorized_preds.resize((96, 32), Image.NEAREST)
+                colorized_preds = colorized_preds.resize((28, 28), Image.NEAREST)
                 if opts.save_val_results_to:
                     colorized_preds.save(os.path.join(save_path, img_name+'.png'))
 

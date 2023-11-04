@@ -40,9 +40,9 @@ class TACO(Dataset):
         # root = '/home/hcis-s20/Desktop/data_collection'
         # root = '/media/hankung/ssd/carla_13/CARLA_0.9.13/PythonAPI/examples/data_collection'
         # root = '/media/hcis-s16/hank/taco'
-        # root = '/media/hcis-s20/SRL/taco'
+        root = '/media/hcis-s20/SRL/taco'
         # root = '/media/user/data/taco'
-        root = '/media/hcis-s19/DATA/taco'
+        # root = '/media/hcis-s19/DATA/taco'
 
         self.training = training
         self.model_name = args.model_name
@@ -410,7 +410,7 @@ class TACO(Dataset):
                         total_videos += 1
         if False:
             self.parse_tracklets_detection() 
-        print('num_variant: ' + str(len(self.variants)))
+        print('num_videos: ' + str(len(self.variants)))
         print('c_stat:')
         print(label_stat[0])
         print('b_stat:')

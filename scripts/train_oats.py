@@ -128,34 +128,25 @@ class Engine(object):
 			print(f"Current epoch: {epoch}")
 
 		loss_epoch = 0.
-		ego_loss_epoch = 0.
 		seg_loss_epoch = 0.
 		attn_loss_epoch= 0.
 		action_attn_loss_epoch = 0.
 		bg_attn_loss_epoch = 0.
 		actor_loss_epoch = 0.
 		num_batches = 0
-		correct_ego = 0
-		total_ego = 0
-		action_inter = AverageMeter()
-		action_union = AverageMeter()
-		bg_inter = AverageMeter()
-		bg_union = AverageMeter()
+
 
 
 		label_actor_list = []
 		map_pred_actor_list = []
 		# f1_pred_actor_list = []
   
-		ego_ce = nn.CrossEntropyLoss(reduction='mean')
 		# seg_ce = nn.CrossEntropyLoss(reduction='mean')
 
 		model.train()
 
 		if args.parallel:
 			model = nn.DataParallel(model)
-			ego_ce = nn.DataParallel(ego_ce)
-		ego_ce = ego_ce.cuda()
 
 		# ce loss for object-based models
 		ce_weights = torch.ones(num_actor_class+1)*args.ce_pos_weight
@@ -201,7 +192,6 @@ class Engine(object):
 						obj_mask_list.append(obj_mask[i//args.mask_every_frame].to(args.device, dtype=torch.float32))
 
 			batch_size = inputs[0].shape[0]
-			ego = data['ego'].cuda()
 			if ('slot' in args.model_name and not args.allocated_slot) or args.box:
 				actor = data['actor'].to(args.device)
 			else:
@@ -224,15 +214,14 @@ class Engine(object):
 
 			# object-based models
 			if args.box:
-				pred_ego, pred_actor = model(inputs, boxes)
+				pred_actor = model(inputs, boxes)
 
 			else:
 				if 'slot' in args.model_name or 'mvit' in args.model_name:
-					pred_ego, pred_actor, attn = model(inputs)
+					pred_actor, attn = model(inputs)
 				else:
-					pred_ego, pred_actor = model(inputs)
+					pred_actor = model(inputs)
 
-			ego_loss = ego_ce(pred_ego, ego)
 
 			# hungarian matching
 			if ('slot' in args.model_name and not args.allocated_slot) or args.box:
@@ -360,15 +349,6 @@ class Engine(object):
 					bg_attn_loss = attn_bce(bg_attn, bg_seg)
 					attn_loss = args.action_attn_weight*action_attn_loss + args.bg_attn_weight*bg_attn_loss
 
-					# action_attn_pred = action_attn[class_idx] > 0.5
-					# inter, union = inter_and_union(action_attn_pred.reshape(-1, h, w), attn_gt[class_idx].reshape(-1, h, w), 1, 0)
-					# action_inter.update(inter)
-					# action_union.update(union)
-
-					# bg_attn_pred = bg_attn > 0.5
-					# inter, union = inter_and_union(bg_attn_pred.reshape(-1, h, w), bg_seg.reshape(-1, h, w), 1, 1)
-					# bg_inter.update(inter)
-					# bg_union.update(union)
 
 					attn_loss_epoch += float(attn_loss.item())
 					action_attn_loss_epoch += float(action_attn_loss.item())
@@ -384,17 +364,9 @@ class Engine(object):
 
 						bg_attn = attn[:, ::args.mask_every_frame, -1, :, :].reshape(b, l//args.mask_every_frame, h, w)
 
-						# bg_idx = torch.ones(b, dtype=torch.bool).cuda()
-						# bg_idx = torch.reshape(bg_idx, (b, 1))
-
 						bg_bce = nn.BCELoss()
 						bg_attn_loss = bg_bce(bg_attn, bg_seg)
 						attn_loss = args.bg_attn_weight*bg_attn_loss
-
-						# bg_attn_pred = bg_attn > 0.5
-						# inter, union = inter_and_union(bg_attn_pred.reshape(-1, h, w), bg_seg.reshape(-1, h, w), 1, 1)
-						# bg_inter.update(inter)
-						# bg_union.update(union)
 
 						attn_loss_epoch += float(attn_loss.item())
 						bg_attn_loss_epoch += float(bg_attn_loss.item())
@@ -404,19 +376,15 @@ class Engine(object):
 				actor_loss = bce(pred_actor, actor)
 
 			if (args.bg_slot and args.action_attn_weight>0.) or (args.bg_mask and args.bg_attn_weight>0.) or args.obj_mask:
-				loss = actor_loss + args.ego_loss_weight*ego_loss + attn_loss
+				loss = actor_loss + attn_loss
 			else:
-				loss = actor_loss + args.ego_loss_weight*ego_loss
+				loss = actor_loss
 			if args.parallel:
 				loss = loss.mean()
 			loss.backward()
 			loss_epoch += float(loss.item())
 
 # ------------------------------------------------------------------------------------
-			_, pred_ego = torch.max(pred_ego.data, 1)
-			total_ego += ego.size(0)
-			correct_ego += (pred_ego == ego).sum().item()
-
 			if ('slot' in args.model_name and not args.allocated_slot) or args.box:
 				pred_actor = torch.nn.functional.softmax(pred_actor, dim=-1)
 				_, pred_actor_idx = torch.max(pred_actor.data, -1)
@@ -438,13 +406,11 @@ class Engine(object):
 				pred_actor = torch.sigmoid(pred_actor)
 				map_pred_actor_list.append(pred_actor.detach().cpu().numpy())
 				label_actor_list.append(actor.detach().cpu().numpy())
-			actor_loss, ego_loss = actor_loss.mean(), ego_loss.mean()
+			actor_loss = actor_loss.mean()
 			actor_loss_epoch += float(actor_loss.item())
-			ego_loss_epoch += float(ego_loss.item())
 
 			num_batches += 1
 			optimizer.step()
-			# writer.add_scalar('train_loss', loss.item(), self.cur_iter)
 
 			self.cur_iter += 1
 		if scheduler is not None:
@@ -462,9 +428,7 @@ class Engine(object):
 
 		loss_epoch = loss_epoch / num_batches	
 		actor_loss_epoch = actor_loss_epoch / num_batches
-		ego_loss_epoch = ego_loss_epoch / num_batches
 
-		print(f'acc of the ego: {correct_ego/total_ego}')
 
 		print('total loss')
 		print(loss_epoch)
@@ -481,22 +445,12 @@ class Engine(object):
 			print('bg_attn_loss_epoch')
 			print(bg_attn_loss_epoch)
 
-		# 	iou = action_inter.sum / (action_union.sum + 1e-10)
-		# 	for i, val in enumerate(iou):
-		# 		print('Action IoU {0}: {1:.2f}'.format(i, val * 100))
-
-		# 	iou = bg_inter.sum / (bg_union.sum + 1e-10)
-		# 	for i, val in enumerate(iou):
-		# 		print('BG IoU {0}: {1:.2f}'.format(i, val * 100))
 
 		print('-'*20)
 		print('actor loss:')
 		print(actor_loss_epoch)
-		print('ego loss:')
-		print(ego_loss_epoch)
-		# print(f'(train) f1 of the actor: {mean_f1}')
+
 		print(f'(train) mAP of the actor: {mAP}')
-		# writer.add_scalar('train_f1', mean_f1, epoch)
 		self.train_loss.append(loss_epoch)
 		self.cur_epoch += 1
 		
@@ -504,10 +458,7 @@ class Engine(object):
 	def validate(self, model, dataloader, epoch, cam=False):
 		model.eval()
 		save_cp = False
-		ego_ce = nn.CrossEntropyLoss(reduction='mean')
-		if args.parallel:
-			ego_ce = nn.DataParallel(ego_ce)
-		ego_ce = ego_ce.cuda()
+
 
 		mask_bce = nn.BCELoss()
 		if args.parallel:
@@ -540,10 +491,8 @@ class Engine(object):
 			attn_loss_epoch= 0.
 			action_attn_loss_epoch = 0.
 			bg_attn_loss_epoch = 0.
-			total_ego = 0
 			total_actor = 0
 
-			correct_ego = 0
 			correct_actor = 0
 			label_actor_list = []
 			map_pred_actor_list = []
@@ -578,7 +527,6 @@ class Engine(object):
 						bg_seg.append(bg_seg_in[i].to(args.device, dtype=torch.float32))
 
 				batch_size = inputs[0].shape[0]
-				ego = data['ego'].to(args.device)
 				if ('slot' in args.model_name and not args.allocated_slot) or args.box:
 					actor = data['actor'].to(args.device)
 				else:
@@ -595,13 +543,12 @@ class Engine(object):
 					bg_seg = torch.reshape(bg_seg, (b, l, ds_size[0], ds_size[1]))
 				if ('slot' in args.model_name) or args.box or 'mvit' in args.model_name:
 					if args.box:
-						pred_ego, pred_actor = model(inputs, boxes)
+						pred_actor = model(inputs, boxes)
 					else:
-						pred_ego, pred_actor, attn = model(inputs)
+						pred_actor, attn = model(inputs)
 				else:
-					pred_ego, pred_actor = model(inputs)
+					pred_actor = model(inputs)
 
-				ego_loss = ego_ce(pred_ego, ego)
 
 				if ('slot' in args.model_name and not args.allocated_slot) or args.box:
 					bs, num_queries = pred_actor.shape[:2]
@@ -715,14 +662,12 @@ class Engine(object):
 					actor_loss = bce(pred_actor, actor)
 				
 				if (args.bg_slot and args.action_attn_weight>0.) or (args.bg_mask and args.bg_attn_weight>0.):
-					loss = actor_loss + args.ego_loss_weight*ego_loss + attn_loss
+					loss = actor_loss + attn_loss
 				else:
-					loss = actor_loss + args.ego_loss_weight*ego_loss
+					loss = actor_loss
 				
 				num_batches += 1
 				total_loss += float(loss.item())
-				pred_ego = torch.nn.functional.softmax(pred_ego, dim=1)
-				_, pred_ego = torch.max(pred_ego.data, 1)
 				if ('slot' in args.model_name and not args.allocated_slot) or args.box:
 					pred_actor = torch.nn.functional.softmax(pred_actor, dim=-1)
 					_, pred_actor_idx = torch.max(pred_actor.data, -1)
@@ -743,9 +688,6 @@ class Engine(object):
 					pred_actor = torch.sigmoid(pred_actor)
 					map_pred_actor_list.append(pred_actor.detach().cpu().numpy())
 					label_actor_list.append(actor.detach().cpu().numpy())
-
-				total_ego += ego.size(0)
-				correct_ego += (pred_ego == ego).sum().item()
 
 			if (args.bg_slot and args.action_attn_weight>0.) or (args.bg_mask and args.bg_attn_weight>0.):
 				attn_loss_epoch = attn_loss_epoch / num_batches
@@ -820,8 +762,6 @@ class Engine(object):
 			print(f'(val) mAP of the b+: {group_b_mAP}')
 			print(f'(val) mAP of the p+: {group_p_mAP}')
 
-			print(f'acc of the ego: {correct_ego/total_ego}')
-			writer.add_scalar('ego', correct_ego/total_ego, epoch)
 			if mAP > self.best_mAP:
 				self.best_mAP = mAP
 				save_cp = True
@@ -873,10 +813,10 @@ num_actor_class = 35
 
 
 # Data
-train_set = taco.TACO(args=args)
-val_set = taco.TACO(args=args, training=False)
+train_set = oats.OATS(args=args)
+val_set = oats.OATS(args=args, training=False)
 label_stat = []
-for i in range(7):
+for i in range(6):
 	label_stat.append({})
 	for k in train_set.label_stat[i].keys():
 		label_stat[i][k] = train_set.label_stat[i][k] + val_set.label_stat[i][k]

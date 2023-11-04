@@ -22,13 +22,52 @@ def parse_file_name(file_name):
     name = '/'+os.path.join(*name)
     return name
 
+
+class_map={
+        1:'C+:Z1-Z3',
+        2:'P+:C1-C2',
+        3: 'P:C2-C1',
+        4: 'C:Z3-Z1',
+        5: 'C:Z2-Z1',
+        6: 'P:C4-C3',
+        7: 'C:Z1-Z3',
+        8: 'C:Z1-Z2',
+        9: 'C:Z2-Z4',
+        10: 'C:Z4-Z2',
+        11: 'C:Z3-Z4',
+        12: 'P:C2-C3',
+        13: 'C:Z4-Z1',
+        14: 'P:C3-C4',
+        15: 'C:Z1-Z4',
+        16: 'C:Z2-Z3',
+        17: 'P:C1-C2',
+        18: 'P+:C2-C3',
+        19: 'P:C3-C2',
+        20: 'P+:C3-C4',
+        21: 'P+:C4-C3',
+        22: 'P:C1-C4',
+        23: 'P+:C3-C2',
+        24: 'C:Z3-Z2',
+        25: 'K:Z3-Z1',
+        26: 'C:Z4-Z3',
+        27: 'P+:C1-C4',
+        28: 'C+:Z4-Z2',
+        29: 'P+:C4-C1',
+        30: 'P+:C2-C1',
+        31: 'C+:Z3-Z1',
+        32: 'P:C4-C1',
+        33: 'K:Z2-Z4',
+        34: 'C+:Z2-Z4',
+        35: 'K:Z1-Z3'
+        }
+
 class OATS(Dataset):
 
     def __init__(self, 
                 args,
                 training=True,
                 root='/data/carla_dataset/data_collection',
-                Max_N=63):
+                Max_N=20):
         # root = '/work/u8526971/data_collection'
         # root = '/home/hcis-s19/Desktop/data_collection'
         # root = '/home/hcis-s20/Desktop/data_collection'
@@ -42,8 +81,7 @@ class OATS(Dataset):
         self.model_name = args.model_name
         self.seq_len = args.seq_len
 
-        self.id = []
-        self.variants = []
+        self.scenarios = []
         self.args =args
 
         self.videos_list = []
@@ -109,9 +147,7 @@ class OATS(Dataset):
                         'p+:c4-c1': 0, 'p+:c4-c3': 0 
                         }
 
-        ego_stat = {'e:z1-z1': 0,'e:z1-z2': 0, 'e:z1-z3':0, 'e:z1-z4': 0}
-
-        label_stat = [c_stat, b_stat, c_plus_stat, b_plus_stat, p_stat, p_plus_stat, ego_stat]
+        label_stat = [c_stat, b_stat, c_plus_stat, b_plus_stat, p_stat, p_plus_stat]
 
 
 
@@ -131,12 +167,11 @@ class OATS(Dataset):
 
         for scenario in tqdm(scenarios, file=sys.stdout):
             scenario_path = os.path.join(root, 'images', 'scenario_' + scenario)
+            seg_video_path = os.path.join(root, 'images', 'scenario_' + scenario + '_segmentation_28x28')
             annotation_path = os.path.join(root, 'annotations', 'scenario_' + scenario + '.npy')
 
             check_data = [os.path.join(scenario_path, img) for img in os.listdir(scenario_path) if os.path.isfile(scenario_path)]
             check_data.sort()
-            # if len(check_data) < 50:
-            #     continue
 
             videos = []
             segs = []
@@ -155,29 +190,35 @@ class OATS(Dataset):
                 if start_frame + (self.seq_len-1)*step > end_frame:
                     break
                 videos_temp = []
+                seg_temp = []
+                obj_temp = []
                 for i in range(start, end_frame+1, step):
-                    imgname = check_data[i]
-                    if os.path.isfile(imgname):
-                        videos_temp.append(imgname)
+                    imgname = f"{str(i).zfill(4)}.jpg"
+                    segname = f"{str(i).zfill(4)}.png"
+                    if os.path.isfile(os.path.join(scenario_path, imgname)):
+                        videos_temp.append(os.path.join(scenario_path, imgname))
                         idx_temp.append(i-start)
-
+                    if os.path.isfile(os.path.join(seg_video_path, segname)):
+                        seg_temp.append(os.path.join(seg_video_path, segname))
+                    if os.path.isfile(v+"/seg_mask/"+objname):
+                        obj_temp.append(v+"/seg_mask/"+objname)
                     if len(videos_temp) == self.seq_len:
                         break
 
-                if len(videos_temp) == self.seq_len:
+                if len(videos_temp) == self.seq_len and len(seg_temp) == self.seq_len:
                     videos.append(videos_temp)
                     idx.append(idx_temp)
-
+                    segs.append(seg_temp)
             if len(videos) == 0
                 continue
 
 
             if self.args.box:
-                proposal_train_label, gt_actor = get_labels(args, annotation_path, num_slots=self.Max_N)
+                proposal_train_label, gt_actor, label_stat = get_labels(args, annotation_path, label_stat, num_slots=self.Max_N)
             elif 'slot' in args.model_name and not args.allocated_slot:
-                proposal_train_label, gt_actor = get_labels(args, annotation_path, num_slots=args.num_slots)
+                proposal_train_label, gt_actor, label_stat = get_labels(args, annotation_path, abel_stat, num_slots=args.num_slots)
             else:
-                gt_actor = get_labels(args, annotation_path, num_slots=args.num_slots)
+                gt_actor, label_stat = get_labels(args, annotation_path, label_stat, num_slots=args.num_slots)
                         
 
             # ------------statistics-------------
@@ -186,69 +227,29 @@ class OATS(Dataset):
             total_label += torch.count_nonzero(gt_actor)
 
 
-                        
-                        
+
+            self.scenarios.append(scenario)
+            self.videos_list.append(videos)
+            self.idx.append(idx)
+            self.seg_list.append(segs)
+            self.obj_seg_list.append(obj_f)
+            
+            if ('slot' in args.model_name and not args.allocated_slot) or args.box:
+                self.gt_actor.append(proposal_train_label)
+                self.slot_eval_gt.append(gt_actor)
+            else:
+                self.gt_actor.append(gt_actor)
 
 
-
-                        # -----
-                        ego_class = 'e:z1-z1'
-                        for g in gt:
-                            g = g.lower()
-                            if g[0] != 'e':
-                                if g[:2] == 'c:':
-                                    label_stat[0][g]+=1
-                                elif g[:2] == 'b:':
-                                    label_stat[1][g]+=1
-                                elif g[:2] == 'c+':
-                                    label_stat[2][g]+=1
-                                elif g[:2] == 'b+':
-                                    label_stat[3][g]+=1
-                                elif g[:2] == 'p:':
-                                    label_stat[4][g]+=1
-                                elif g[:2] == 'p+':
-                                    label_stat[5][g]+=1
-
-                            elif g[0] == 'e':
-                                ego_class = g
-                            else:
-                                g = g[2:]
-                                if g != 'ne':
-                                    if not gt in actor_table.keys():
-                                        print(g)
-                                        return
-
-                        label_stat[6][ego_class] +=1
-
-
-                        self.id.append(s.split('/')[-1])
-                        self.variants.append(v.split('/')[-1])
-
-                        self.videos_list.append(videos)
-                        self.idx.append(idx)
-                        self.seg_list.append(segs)
-                        self.obj_seg_list.append(obj_f)
-
-                        self.gt_ego.append(gt_ego)
-                        
-                        if ('slot' in args.model_name and not args.allocated_slot) or args.box:
-                            self.gt_actor.append(proposal_train_label)
-                            self.slot_eval_gt.append(gt_actor)
-                        else:
-                            self.gt_actor.append(gt_actor)
-                        if self.args.val_confusion:
-                            self.confusion_label_list.append(confusion_label)
-
-                        # -----------statstics--------------
-                        if num_frame > max_frame_a_video:
-                            max_frame_a_video = num_frame
-                        if num_frame < min_frame_a_video:
-                            min_frame_a_video = num_frame
-                        total_frame += num_frame
-                        total_videos += 1
+            # -----------statstics--------------
+            if num_frame > max_frame_a_video:
+                max_frame_a_video = num_frame
+            if num_frame < min_frame_a_video:
+                min_frame_a_video = num_frame
+            total_frame += num_frame
+            total_videos += 1
         if False:
             self.parse_tracklets_detection() 
-        print('num_variant: ' + str(len(self.variants)))
         print('c_stat:')
         print(label_stat[0])
         print('b_stat:')
@@ -261,8 +262,6 @@ class OATS(Dataset):
         print(label_stat[4])
         print('p+_stat:')
         print(label_stat[5])
-        print('ego_stat')
-        print(label_stat[6])
 
         self.label_stat = label_stat
         # -----------------
@@ -383,10 +382,7 @@ class OATS(Dataset):
         data['obj_masks'] = []
         # data['box'] = []
         data['raw'] = []
-        data['ego'] = self.gt_ego[index]
         data['actor'] = self.gt_actor[index]
-        data['id'] = self.id[index]
-        data['variants'] = self.variants[index]
 
 
         if ('slot' in self.args.model_name and not self.args.allocated_slot) or self.args.box:
@@ -418,7 +414,6 @@ class OATS(Dataset):
 
         for i in range(self.seq_len):
             x = Image.open(seq_videos[i]).convert('RGB')
-            # x = scale(x, 2, self.args.model_name)
             data['videos'].append(x)
             if self.args.plot:
                 data['raw'].append(x)
@@ -430,25 +425,35 @@ class OATS(Dataset):
             data['raw'] = to_np_no_norm(data['raw'], self.args.model_name)
         data['videos'] = to_np(data['videos'], self.args.model_name)
 
-        if self.args.val_confusion:
-            data['confusion_label'] = self.confusion_label_list[index]
         return data
 
-def get_stuff_mask(seg_path):
-    img = cv2.imread(os.path.join(seg_path), cv2.IMREAD_COLOR)
-    img = torch.flip(torch.from_numpy(img).type(torch.int).permute(2,0,1),[0])
+    def get_stuff_mask(self, seg_path):
+        img = cv2.imread(os.path.join(seg_path), cv2.IMREAD_COLOR)
+        img = torch.from_numpy(img).type(torch.int).permute(2,0,1)
+        #c, h, w
+        img = torch.sum(img, dim=0)
+        # target = Image.open(os.path.join(seg_path))
+        # target = self.encode_target(target)
+        condition = img == 320
+        condition += img == 511
+        condition += img == 300
+        condition += img == 255
+        condition += img == 142
+        condition += img == 70
+        condition += img == 100
+        condition += img == 90
+        condition += img == 110
+        condition += img == 230
+        condition += img == 162
+        condition += img == 142
 
-    condition = img[0] == 4 
-    condition += img[0] == 6
-    condition += img[0] == 7
-    condition += img[0] == 8
-    condition += img[0] == 10
-    condition += img[0] == 14
-    condition = ~condition
-    condition = condition.type(torch.int)
-    condition = condition.type(torch.float32)
+        condition = ~condition
+        condition = condition.type(torch.int)
+        condition[:4, :] = 1
+        condition[-2:, :] = 1
+        condition = condition.type(torch.float32)
 
-    return condition
+        return condition
 
 def get_obj_mask(obj_path):
     seg_dict = np.load(obj_path)
@@ -482,17 +487,6 @@ def read_box(box_path):
     return box_list
 
 
-def scale(image, scale=2.0, model_name=None):
-
-    if scale == -1.0:
-        (width, height) = (224, 224)
-    else:
-        (width, height) = (int(image.width // scale), int(image.height // scale))
-    # (width, height) = (int(image.width // scale), int(image.height // scale))
-    im_resized = image.resize((width, height), Image.ANTIALIAS)
-
-    return im_resized
-
 
 
 def to_np(v, model_name):
@@ -511,10 +505,17 @@ def to_np_no_norm(v, model_name):
         v[i] = transform(v[i])
     return v
 
-def get_labels(args, annotation_path, num_slots=64):   
+def get_labels(args, annotation_path, label_stat, num_slots=64):   
     num_class = 35
     model_name = args.model_name
     allocated_slot = args.allocated_slot
+
+    c_label = [4, 5, 7, 8, 9, 10, 11, 13, 15, 16, 24, 26]
+    k_label = [25, 33, 35]
+    c_group_label = [1, 28, 31, 34]
+    k_group_label = []
+    p_label = [3, 6, 12, 14, 17, 19, 22, 32]
+    p_group_label = [2, 18, 20, 21, 23, 27, 29, 30]
 
     actor_class = [0]*35
     proposal_train_label = []
@@ -525,14 +526,25 @@ def get_labels(args, annotation_path, num_slots=64):
             if not (label-1) in proposal_train_label:
                 proposal_train_label.append(label-1)
         actor_class[label-1] = 1
-    
+
+        if label in c_label:
+            label_stat[0][class_map[label].lower()] += 1
+        elif label in k_label:
+            label_stat[1][class_map[label].lower()] += 1
+        elif label in c_group_label:
+            label_stat[2][class_map[label].lower()] += 1
+        elif label in p_label:
+            label_stat[4][class_map[label].lower()] += 1
+        elif label in p_group_label:
+            label_stat[5][class_map[label].lower()] += 1
+
     if ('slot' in model_name and not allocated_slot) or 'ARG'in model_name or 'ORN'in model_name :
         while (len(proposal_train_label)!= num_slots):
             proposal_train_label.append(num_class)
         proposal_train_label = torch.LongTensor(proposal_train_label)
         actor_class = torch.FloatTensor(actor_class)
-        return proposal_train_label, actor_class
+        return proposal_train_label, actor_class, label_stat
     else:
         actor_class = torch.FloatTensor(actor_class)
-        return actor_class
+        return actor_class, label_stat
     

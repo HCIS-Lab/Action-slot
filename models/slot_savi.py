@@ -162,7 +162,7 @@ class SLOT_SAVI(nn.Module):
             self.resolution = (8, 24)
             self.resolution3d = (16, 8, 24)
 
-        if args.fix_slot:
+        if args.allocated_slot:
             self.head = Instance_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)
         else:
             self.head = Head(self.slot_dim, num_ego_class, num_actor_class+1, self.ego_c)
@@ -179,7 +179,7 @@ class SLOT_SAVI(nn.Module):
                 nn.Conv3d(self.in_c, self.hidden_dim2, (1, 1, 1), stride=1),
                 nn.ReLU(),)
 
-        if args.seg:
+        if args.bg_slot:
             self.slot_attention = SlotAttention(
                 num_slots=num_slots+1,
                 dim=self.slot_dim,

@@ -199,7 +199,7 @@ class SLOT_VPS(nn.Module):
             self.resolution3d = (16, 8, 24)
         
 
-        if args.fix_slot:
+        if args.allocated_slot:
             self.head = Instance_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)
         else:
             self.head = Head(self.slot_dim, num_ego_class, num_actor_class+1, self.ego_c)

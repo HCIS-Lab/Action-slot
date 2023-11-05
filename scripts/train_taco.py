@@ -757,7 +757,7 @@ class Engine(object):
 					print('bg_attn_loss_epoch')
 					print(bg_attn_loss_epoch)
 				
-			if args.bg_mask and args.bg_slot:
+			if args.bg_mask and args.bg_slot and args.action_attn_weight >0 and args.bg_attn_weight>0:
 				iou = action_inter.sum / (action_union.sum + 1e-10)
 				for i, val in enumerate(iou):
 					print('Action IoU {0}: {1:.2f}'.format(i, val * 100))

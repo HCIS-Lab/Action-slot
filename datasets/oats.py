@@ -71,10 +71,10 @@ class OATS(Dataset):
         # root = '/work/u8526971/data_collection'
         # root = '/home/hcis-s19/Desktop/data_collection'
         # root = '/home/hcis-s20/Desktop/data_collection'
-        root = '/media/hankung/ssd/oats/oats_data/'
+        # root = '/media/hankung/ssd/oats/oats_data/'
         # root = '/media/hcis-s16/hank/taco'
         # root = '/media/hcis-s20/SRL/taco'
-        # root = '/media/user/data/taco'
+        root = '/media/user/data/oats/oats_data'
         # root = '/media/hcis-s19/DATA/taco'
 
         self.training = training
@@ -217,7 +217,7 @@ class OATS(Dataset):
             if self.args.box:
                 proposal_train_label, gt_actor, label_stat = get_labels(args, annotation_path, label_stat, num_slots=self.Max_N)
             elif 'slot' in args.model_name and not args.allocated_slot:
-                proposal_train_label, gt_actor, label_stat = get_labels(args, annotation_path, abel_stat, num_slots=args.num_slots)
+                proposal_train_label, gt_actor, label_stat = get_labels(args, annotation_path, label_stat, num_slots=args.num_slots)
             else:
                 gt_actor, label_stat = get_labels(args, annotation_path, label_stat, num_slots=args.num_slots)
                         

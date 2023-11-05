@@ -7,6 +7,7 @@ from classifier import Head
 class X3D(nn.Module):
     def __init__(self, num_ego_class, num_actor_class):
         super(X3D, self).__init__()
+        self.num_ego_class = num_ego_class
         self.model = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
         # for i, b in enumerate(self.model.blocks):
         #     print(i)
@@ -47,6 +48,10 @@ class X3D(nn.Module):
             x = self.model.blocks[i](x)
         x = self.pool(x)
         x = torch.reshape(x, (batch_size, 2048))
-        ego, x = self.model.blocks[-1](x)
-        
-        return ego, x
+
+        if self.num_ego_class != 0:
+            ego, x = self.model.blocks[-1](x)
+            return ego, x
+        else:
+            x = self.model.blocks[-1](x)
+            return x

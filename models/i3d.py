@@ -356,8 +356,8 @@ class InceptionI3d(nn.Module):
         for end_point in self.VALID_ENDPOINTS:
             if end_point in self.end_points:
                 x = self._modules[end_point](x)
-                print(end_point)
-                print(x.shape)
+                # print(end_point)
+                # print(x.shape)
         # x = self.avg_pool(x)
         # return self.avg_pool(x)
         return x

@@ -6,7 +6,7 @@ def get_parser():
 
     #dataset
     parser.add_argument('--dataset', type=str, default='taco', choices=['taco', 'oats', 'road'])
-    parser.add_argument('--oats_test_split', type=str, default='s1', choices=['s1', 's2', 's3'])
+    parser.add_argument('--oats_test_split', type=str, default='0', choices=['s1', 's2', 's3'])
 
     # model
     parser.add_argument('--model_name', type=str, help='Unique experiment identifier.')
@@ -65,7 +65,10 @@ def get_parser():
     if not args.bg_mask:
         args.bg_attn_weight = 0.
 
-    based_log = args.dataset + '_log'
+    if args.dataset == 'oats' and args.oats_test_split != '0':
+        based_log = args.dataset + '_' + args.oats_test_split + '_log'
+    else:
+        based_log = args.dataset + '_log'
     if not os.path.isdir(based_log):
         os.makedirs(based_log)
     based_log = os.path.join(based_log, args.model_name)

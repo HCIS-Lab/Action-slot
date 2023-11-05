@@ -204,11 +204,12 @@ class SLOT_VPS(nn.Module):
         else:
             self.head = Head(self.slot_dim, num_ego_class, num_actor_class+1, self.ego_c)
 
-        self.conv3d_ego = nn.Sequential(
-                nn.ReLU(),
-                nn.BatchNorm3d(self.in_c),
-                nn.Conv3d(self.in_c, self.ego_c, (1, 1, 1), stride=1),
-                )
+        if self.num_ego_class != 0:
+            self.conv3d_ego = nn.Sequential(
+                    nn.ReLU(),
+                    nn.BatchNorm3d(self.in_c),
+                    nn.Conv3d(self.in_c, self.ego_c, (1, 1, 1), stride=1),
+                    )
 
         self.conv3d = nn.Sequential(
                 nn.ReLU(),
@@ -258,14 +259,17 @@ class SLOT_VPS(nn.Module):
         for i in range(len(self.resnet)):
             x = self.resnet[i](x)
 
-        ego_x = self.conv3d_ego(x)
+        if self.num_ego_class != 0:
+            ego_x = self.conv3d_ego(x)
+            ego_x = self.pool(ego_x)
+            ego_x = torch.reshape(ego_x, (batch_size, self.ego_c))
+
         new_seq_len = x.shape[2]
         new_h, new_w = x.shape[3], x.shape[4]
 
         # # [b, c, n , w, h]
         x = self.conv3d(x)
-        ego_x = self.pool(ego_x)
-        ego_x = torch.reshape(ego_x, (batch_size, self.ego_c))
+        
 
         x = torch.permute(x, (0, 2, 3, 4, 1))
         # [bs, n, w, h, c]

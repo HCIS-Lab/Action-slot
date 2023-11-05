@@ -33,7 +33,6 @@ class ViViT(nn.Module):
         
         assert pool in {'cls', 'mean'}, 'pool type must be either cls (cls token) or mean (mean pooling)'
 
-
         # assert image_size % patch_size == 0, 'Image dimensions must be divisible by the patch size.'
         num_patches = (image_size[0] // patch_size) * (image_size[1] // patch_size)
         patch_dim = in_channels * patch_size ** 2

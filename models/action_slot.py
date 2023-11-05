@@ -166,6 +166,9 @@ class ACTION_SLOT(nn.Module):
             if args.dataset == 'taco':
                 self.resolution = (8, 24)
                 self.resolution3d = (16, 8, 24)
+            elif args.dataset == 'oats':
+                self.resolution = (7, 7)
+                self.resolution3d = (16, 7, 7)
             
         elif args.backbone == 'videomae':
             self.model = videomae
@@ -187,6 +190,9 @@ class ACTION_SLOT(nn.Module):
             if args.dataset == 'taco':
                 self.resolution = (8, 24)
                 self.resolution3d = (4, 8, 24)
+            elif args.dataset == 'oats':
+                self.resolution = (7, 7)
+                self.resolution3d = (4, 7, 7)
 
         elif args.backbone == 'slowfast':
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo:main', 'slowfast_r50', pretrained=True)
@@ -196,6 +202,9 @@ class ACTION_SLOT(nn.Module):
             if args.dataset == 'taco':
                 self.resolution = (8, 24)
                 self.resolution3d = (8, 8, 24)
+            elif args.dataset == 'oats':
+                self.resolution = (7, 7)
+                self.resolution3d = (8, 7, 7)
             
         if args.allocated_slot:
             self.head = Instance_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)
@@ -300,12 +309,9 @@ class ACTION_SLOT(nn.Module):
         x = self.conv3d(x)
 
         
-
-
         x = torch.permute(x, (0, 2, 3, 4, 1))
         # [bs, n, w, h, c]
         x = torch.reshape(x, (batch_size, new_seq_len, new_h, new_w, -1))
-
 
         # flops latency
 
@@ -361,7 +367,7 @@ class ACTION_SLOT(nn.Module):
 
         # x = torch.sum(x, 1)
         x = self.drop(x)
-        if self.num_ego_class != 1:
+        if self.num_ego_class != 0:
             ego_x = self.drop(ego_x)
             ego_x, x = self.head(x, ego_x)
             return ego_x, x, attn_masks

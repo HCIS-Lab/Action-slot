@@ -14,43 +14,40 @@ import torch.nn as nn
 torch.backends.cudnn.benchmark = True
 
 import sys
-sys.path.append('/media/hankung/ssd/retrieval/datasets')
-sys.path.append('/media/hankung/ssd/retrieval/config')
-sys.path.append('/media/hankung/ssd/retrieval/models')
+sys.path.append('/media/hankung/ssd/Action-Slot/datasets')
+sys.path.append('/media/hankung/ssd/Action-Slot/config')
+sys.path.append('/media/hankung/ssd/Action-Slot/models')
 
 sys.path.append('/work/u8526971/retrieval/datasets')
 sys.path.append('/work/u8526971/retrieval/config')
 sys.path.append('/work/u8526971/retrieval/models')
 
-# sys.path.append('/home/hcis-s19/Desktop/retrieval/datasets')
-# sys.path.append('/home/hcis-s19/Desktop/retrieval/config')
-# sys.path.append('/home/hcis-s19/Desktop/retrieval/models')
 
-sys.path.append('/media/hcis-s19/DATA/Action-Slot/retrieval/datasets')
-sys.path.append('/media/hcis-s19/DATA/Action-Slot/retrieval/config')
-sys.path.append('/media/hcis-s19/DATA/Action-Slot/retrieval/models')
+sys.path.append('/media/hcis-s19/DATA/Action-Slot/datasets')
+sys.path.append('/media/hcis-s19/DATA/Action-Slot/config')
+sys.path.append('/media/hcis-s19/DATA/Action-Slot/models')
 
 # sys.path.append('/home/hcis-s20/Desktop/retrieval/datasets')
 # sys.path.append('/home/hcis-s20/Desktop/retrieval/config')
 # sys.path.append('/home/hcis-s20/Desktop/retrieval/models')
 
+sys.path.append('/media/hcis-s20/SRL/Action-Slot/datasets')
+sys.path.append('/media/hcis-s20/SRL/Action-Slot/configs')
+sys.path.append('/media/hcis-s20/SRL/Action-Slot/models')
 
 sys.path.append('/media/hcis-s16/hank/Action-Slot/datasets')
 sys.path.append('/media/hcis-s16/hank/Action-Slot/configs')
 sys.path.append('/media/hcis-s16/hank/Action-Slot/models')
-
-sys.path.append('/media/hcis-s20/SRL/action-slot/datasets')
-sys.path.append('/media/hcis-s20/SRL/action-slot/configs')
-sys.path.append('/media/hcis-s20/SRL/action-slot/models')
 
 sys.path.append('/media/user/data/Action-Slot/datasets')
 sys.path.append('/media/user/data/Action-Slot/configs')
 sys.path.append('/media/user/data/Action-Slot/models')
 
 
+
 import oats
 
-from sklearn.metrics import average_precision_score, precision_score, recall_score, accuracy_score, hamming_loss
+from sklearn.metrics import average_precision_score, precision_score, recall_score, accuracy_score
 
 
 from PIL import Image
@@ -60,7 +57,7 @@ from utils import *
 from torchvision import models
 import matplotlib.image
 import matplotlib.pyplot as plt
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 from scipy.optimize import linear_sum_assignment
 from parser import get_parser
 import math
@@ -82,9 +79,9 @@ def plot_result(result):
     plt.show()	
 
 torch.cuda.empty_cache()
-args = get_parser()
+args, logdir = get_parser()
 print(args)
-writer = SummaryWriter(log_dir=args.logdir)
+writer = SummaryWriter(log_dir=logdir)
 
 def lambda_lr(epoch):
     if epoch<11:
@@ -139,7 +136,6 @@ class Engine(object):
 
 		label_actor_list = []
 		map_pred_actor_list = []
-		# f1_pred_actor_list = []
   
 		# seg_ce = nn.CrossEntropyLoss(reduction='mean')
 
@@ -503,8 +499,6 @@ class Engine(object):
 			bg_union = AverageMeter()
 
 			for batch_num, data in enumerate(tqdm(dataloader)):
-				id = data['id'][0]
-				v = data['variants'][0]
 				video_in = data['videos']
 
 				if args.bg_mask:
@@ -719,34 +713,41 @@ class Engine(object):
 			map_pred_actor_list = np.array(map_pred_actor_list)
 			label_actor_list = np.array(label_actor_list)
 			
+			# index
+			c_label = [3, 4, 6, 7, 8, 9, 10, 12, 14, 15, 23, 25]
+			k_label = [24, 32, 34]
+			c_group_label = [0, 27, 30, 33]
+			k_group_label = []
+			p_label = [2, 5, 11, 13, 16, 18, 21, 31]
+			p_group_label = [1, 17, 19, 20, 22, 26, 28, 29]
 
 			mAP = average_precision_score(
 					label_actor_list,
 					map_pred_actor_list.astype(np.float32),
 					)
 			c_mAP = average_precision_score(
-					label_actor_list[:, :12],
-			        map_pred_actor_list[:, :12].astype(np.float32)
+					label_actor_list[:, c_label],
+			        map_pred_actor_list[:, c_label].astype(np.float32)
 			        )
 			b_mAP = average_precision_score(
-					label_actor_list[:, 12:24],
-			        map_pred_actor_list[:, 12:24].astype(np.float32)
+					label_actor_list[:, k_label],
+			        map_pred_actor_list[:, k_label].astype(np.float32)
 			        )
 			p_mAP = average_precision_score(
-					label_actor_list[:, 48:56],
-			        map_pred_actor_list[:, 48:56].astype(np.float32),
+					label_actor_list[:, p_label],
+			        map_pred_actor_list[:, p_label].astype(np.float32),
 			        )
 			group_c_mAP = average_precision_score(
-					label_actor_list[:, 24:36],
-			        map_pred_actor_list[:, 24:36].astype(np.float32)
+					label_actor_list[:, c_group_label],
+			        map_pred_actor_list[:, c_group_label].astype(np.float32)
 			        )
-			group_b_mAP = average_precision_score(
-					label_actor_list[:, 36:48],
-			        map_pred_actor_list[:, 36:48].astype(np.float32)
-			        )
+			# group_b_mAP = average_precision_score(
+			# 		label_actor_list[:, 36:48],
+			#         map_pred_actor_list[:, 36:48].astype(np.float32)
+			#         )
 			group_p_mAP = average_precision_score(
-					label_actor_list[:, 56:64],
-			        map_pred_actor_list[:, 56:64].astype(np.float32),
+					label_actor_list[:,p_group_label],
+			        map_pred_actor_list[:, p_group_label].astype(np.float32),
 			        )
 			mAP_per_class = average_precision_score(
 					label_actor_list,
@@ -759,7 +760,7 @@ class Engine(object):
 			print(f'(val) mAP of the b: {b_mAP}')
 			print(f'(val) mAP of the p: {p_mAP}')
 			print(f'(val) mAP of the c+: {group_c_mAP}')
-			print(f'(val) mAP of the b+: {group_b_mAP}')
+			# print(f'(val) mAP of the b+: {group_b_mAP}')
 			print(f'(val) mAP of the p+: {group_p_mAP}')
 
 			if mAP > self.best_mAP:
@@ -767,7 +768,31 @@ class Engine(object):
 				save_cp = True
 			print(f'best mAP : {self.best_mAP}')
 
-
+			with open(os.path.join(logdir, 'mAP.txt'), 'a') as f:
+				f.write('epoch: ' + str(self.cur_epoch))
+				f.write('\n')
+				f.write('best mAP: %.4f' % self.best_mAP)
+				f.write('\n')
+				f.write('mAP: %.4f' % mAP)
+				f.write('\n')
+				f.write('mAP of c: %.4f' % c_mAP)
+				f.write('\n')
+				f.write('mAP of b: %.4f' % b_mAP)
+				f.write('\n')
+				f.write('mAP of p: %.4f' % p_mAP)
+				f.write('\n')
+				f.write('mAP of c+: %.4f' % group_c_mAP)
+				f.write('\n')
+				# f.write('mAP of b+: %.4f' % group_b_mAP)
+				# f.write('\n')
+				f.write('mAP of p+: %.4f' % group_p_mAP)
+				f.write('\n')
+				f.write('*'*5 + '\n')
+				f.write('per class: + \n')
+				for ap in mAP_per_class.tolist():
+					f.write("%.4f " % ap)
+				f.write('\n')
+				f.write('*'*15 + '\n')
 
 			total_loss = total_loss / float(num_batches)
 			tqdm.write(f'Epoch {self.cur_epoch:03d}, Batch {batch_num:03d}:' + f' Loss: {total_loss:3.3f}')
@@ -788,11 +813,11 @@ class Engine(object):
 			save_best = True
 
 		# Save ckpt for every epoch
-		torch.save(model.state_dict(), os.path.join(args.logdir, 'model_%d.pth'%self.cur_epoch))
+		torch.save(model.state_dict(), os.path.join(logdir, 'model_%d.pth'%self.cur_epoch))
 
 		# Save the recent model/optimizer states
-		torch.save(model.state_dict(), os.path.join(args.logdir, 'model.pth'))
-		torch.save(optimizer.state_dict(), os.path.join(args.logdir, 'recent_optim.pth'))
+		torch.save(model.state_dict(), os.path.join(logdir, 'model.pth'))
+		torch.save(optimizer.state_dict(), os.path.join(logdir, 'recent_optim.pth'))
 
 		# Log other data corresponding to the recent model
 		# with open(os.path.join(args.logdir, 'recent.log'), 'w') as f:
@@ -801,8 +826,8 @@ class Engine(object):
 		tqdm.write('====== Saved recent model ======>')
 		
 		if save_best:
-			torch.save(model.state_dict(), os.path.join(args.logdir, 'best_model.pth'))
-			torch.save(optimizer.state_dict(), os.path.join(args.logdir, 'best_optim.pth'))
+			torch.save(model.state_dict(), os.path.join(logdir, 'best_model.pth'))
+			torch.save(optimizer.state_dict(), os.path.join(logdir, 'best_optim.pth'))
 			tqdm.write('====== Overwrote best model ======>')
 
 torch.cuda.empty_cache() 
@@ -837,7 +862,7 @@ print(label_stat[5])
 dataloader_train = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
 dataloader_val = DataLoader(val_set, batch_size=1, shuffle=False, num_workers=args.num_workers, pin_memory=True, drop_last=True)
 # Model
-model = generate_model(args, num_actor_class).cuda()
+model = generate_model(args, num_ego_class, num_actor_class).cuda()
 
 if 'mvit' == args.model_name:
 	params = set_lr(model)#
@@ -856,13 +881,13 @@ trainer = Engine(args)
 # Create logdir
 model_index = 1
 while(1):
-	if not os.path.isdir(args.logdir):
-		os.makedirs(args.logdir)
+	if not os.path.isdir(logdir):
+		os.makedirs(logdir)
 		break
 	else:
-		if not os.path.isdir(args.logdir + '\n' + 'idx: ' + str(model_index)):
-			args.logdir = args.logdir + '\n' + 'idx: ' + str(model_index)
-			os.makedirs(args.logdir)
+		if not os.path.isdir(logdir + '\n' + 'idx: ' + str(model_index)):
+			logdir = logdir + '\n' + 'idx: ' + str(model_index)
+			os.makedirs(logdir)
 			break
 		else:
 			model_index += 1

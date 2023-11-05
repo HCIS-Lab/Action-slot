@@ -493,9 +493,7 @@ class Engine(object):
 		print(actor_loss_epoch)
 		print('ego loss:')
 		print(ego_loss_epoch)
-		# print(f'(train) f1 of the actor: {mean_f1}')
 		print(f'(train) mAP of the actor: {mAP}')
-		# writer.add_scalar('train_f1', mean_f1, epoch)
 		self.train_loss.append(loss_epoch)
 		self.cur_epoch += 1
 		
@@ -514,7 +512,7 @@ class Engine(object):
 		mask_bce.cuda()
 
 		if ('slot' in args.model_name and not args.allocated_slot) or args.box:
-			ce_weights = torch.ones(num_actor_class+1)*args.ce_pos.weight
+			ce_weights = torch.ones(num_actor_class+1)*args.ce_pos_weight
 			ce_weights[-1] = self.args.ce_neg_weight
 			instance_ce = nn.CrossEntropyLoss(reduction='mean', weight=ce_weights)
 			if args.parallel:
@@ -832,6 +830,8 @@ class Engine(object):
 
 			with open(os.path.join(logdir, 'mAP.txt'), 'a') as f:
 				f.write('epoch: ' + str(self.cur_epoch))
+				f.write('\n')
+				f.write('best mAP: %.4f' % self.best_mAP)
 				f.write('\n')
 				f.write('mAP: %.4f' % mAP)
 				f.write('\n')

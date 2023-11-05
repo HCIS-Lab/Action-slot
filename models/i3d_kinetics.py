@@ -9,6 +9,7 @@ from pytorchvideo.models.hub import i3d_r50
 class I3D_KINETICS(nn.Module):
     def __init__(self, num_ego_class, num_actor_class):
         super(I3D_KINETICS, self).__init__()
+        self.num_ego_class = num_ego_class
         self.model = i3d_r50(True)
         self.head = Head(2048, num_ego_class, num_actor_class)
         self.model.blocks[-1] = nn.Sequential(
@@ -33,6 +34,9 @@ class I3D_KINETICS(nn.Module):
         # b, 2048, 4, 8, 24        
         x = self.pool(x)
         x = torch.reshape(x, (batch_size, 2048))
-        ego, x = self.model.blocks[-1](x)
-        
-        return ego, x
+        if self.num_ego_class != 0:
+            ego, x = self.model.blocks[-1](x)
+            return ego, x
+        else:
+            x = self.model.blocks[-1](x)
+            return x

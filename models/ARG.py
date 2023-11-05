@@ -122,7 +122,7 @@ class ARG(Object_based):
         NFR=256,
         ):
         super().__init__(args,ego_c,K,NFB,max_N)
-        
+        self.num_ego_class = num_ego_class
         self.NFR = NFR
         
         self.head = Head(NFB, num_ego_class, num_actor_class+1, self.ego_c)
@@ -165,7 +165,12 @@ class ARG(Object_based):
     
         boxes_states = self.dropout_global(boxes_states) # b,t,N+1,NFB
         
-        y_ego, y_actor = self.head(boxes_states[:,:,1:],ego_x) # b,t,N, num_actor_class+1
-        y_actor = y_actor.mean(dim=1) # b,N,class+1
+        if self.num_ego_class != 0:
+            y_ego, y_actor = self.head(boxes_states[:,:,1:],ego_x) # b,t,N, num_actor_class+1
+            y_actor = y_actor.mean(dim=1) # b,N,class+1
+            return y_ego, y_actor
+        else:
+            y_actor = self.head(boxes_states[:,:,1:])
+            y_actor = y_actor.mean(dim=1) # b,N,class+1
+            return y_actor
         
-        return y_ego, y_actor

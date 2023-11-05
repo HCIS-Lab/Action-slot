@@ -154,7 +154,7 @@ class ORN(Object_based):
         list_hidden_layers_size=[512,512,512],
         ):
         super().__init__(args,ego_c,K,NFB,max_N)
-        
+        self.num_ego_class = num_ego_class
         self.add = False
         self.orn = ObjectRelationNetwork(NFB,list_hidden_layers_size)
         self.head = Head(NFB, num_ego_class, num_actor_class+1, self.ego_c)
@@ -203,7 +203,11 @@ class ORN(Object_based):
             all_e = all_e.reshape(B,T-1,self.max_N+1,self.max_N+1,-1)
             all_e = all_e.sum(dim=3)[:,:,1:] # b,t-1,N,NFB
         
-        y_ego, y_actor = self.head(all_e,ego_x) # b,t,N, num_actor_class+1
-        y_actor = y_actor.mean(dim=1) # b,N,class+1
-        
-        return y_ego, y_actor
+        if self.num_ego_class != 0:
+            y_ego, y_actor = self.head(all_e,ego_x) # b,t,N, num_actor_class+1
+            y_actor = y_actor.mean(dim=1) # b,N,class+1
+            return y_ego, y_actor
+        else:
+            y_actor = self.head(all_e)
+            y_actor = y_actor.mean(dim=1) # b,N,class+1
+            return y_actor

@@ -37,6 +37,7 @@ class Instance_Head(nn.Module):
 	def __init__(self, in_channel, num_ego_classes, num_actor_classes, ego_channel=0):
 		super(Instance_Head, self).__init__()
 		self.num_ego_classes = num_ego_classes
+		self.num_actor_classes = num_actor_classes
 		if self.num_ego_classes != 0:
 			if ego_channel == 0:
 				self.fc_ego = nn.Sequential(
@@ -61,7 +62,7 @@ class Instance_Head(nn.Module):
 
 		b, n, _ = x.shape
 		y_actor = []
-		for i in range(64):
+		for i in range(self.num_actor_classes):
 			y_actor.append(self.fc_actor[i](x[:, i, :]))
 		y_actor = torch.stack(y_actor, dim=0)
 		y_actor = torch.permute(y_actor, (1, 0, 2))

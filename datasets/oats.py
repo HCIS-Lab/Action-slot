@@ -120,20 +120,20 @@ class OATS(Dataset):
                     'c:z2-z1': 0, 'c:z2-z3': 0, 'c:z2-z4': 0,
                     'c:z3-z1': 0, 'c:z3-z2': 0, 'c:z3-z4': 0,
                     'c:z4-z1': 0, 'c:z4-z2': 0, 'c:z4-z3': 0}
-        b_stat = {'b:z1-z2': 0, 'b:z1-z3':0, 'b:z1-z4':0,
-                    'b:z2-z1': 0, 'b:z2-z3': 0, 'b:z2-z4': 0,
-                    'b:z3-z1': 0, 'b:z3-z2': 0, 'b:z3-z4': 0,
-                    'b:z4-z1': 0, 'b:z4-z2': 0, 'b:z4-z3': 0}
+        b_stat = {'k:z1-z2': 0, 'k:z1-z3':0, 'k:z1-z4':0,
+                    'k:z2-z1': 0, 'k:z2-z3': 0, 'k:z2-z4': 0,
+                    'k:z3-z1': 0, 'k:z3-z2': 0, 'k_label:z3-z4': 0,
+                    'k:z4-z1': 0, 'k:z4-z2': 0, 'k:z4-z3': 0}
 
 
         c_plus_stat = {'c+:z1-z2': 0, 'c+:z1-z3':0, 'c+:z1-z4':0,
                     'c+:z2-z1': 0, 'c+:z2-z3': 0, 'c+:z2-z4': 0,
                     'c+:z3-z1': 0, 'c+:z3-z2': 0, 'c+:z3-z4': 0,
                     'c+:z4-z1': 0, 'c+:z4-z2': 0, 'c+:z4-z3': 0}
-        b_plus_stat = {'b+:z1-z2': 0, 'b+:z1-z3':0, 'b+:z1-z4':0,
-                    'b+:z2-z1': 0, 'b+:z2-z3': 0, 'b+:z2-z4': 0,
-                    'b+:z3-z1': 0, 'b+:z3-z2': 0, 'b+:z3-z4': 0,
-                    'b+:z4-z1': 0, 'b+:z4-z2': 0, 'b+:z4-z3': 0}
+        b_plus_stat = {'k+:z1-z2': 0, 'k+:z1-z3':0, 'k+:z1-z4':0,
+                    'k+:z2-z1': 0, 'k+:z2-z3': 0, 'k+:z2-z4': 0,
+                    'k+:z3-z1': 0, 'k+:z3-z2': 0, 'k+:z3-z4': 0,
+                    'k+:z4-z1': 0, 'k+:z4-z2': 0, 'k+:z4-z3': 0}
 
 
         p_stat = {'p:c1-c2': 0, 'p:c1-c4': 0, 
@@ -151,11 +151,12 @@ class OATS(Dataset):
 
 
 
-        all_splits = ['s1', 's2', 's3']
-        if training:
-            splits = all_splits.remove(args.split)
-        else:
-            splits = [args.split]
+        splits = ['s1', 's2', 's3']
+        if args.oats_test_split != '0':
+            if training:
+                splits.remove(args.oats_test_split)
+            else:
+                splits = [args.oats_test_split]
 
         scenarios = []
         for split in splits:
@@ -166,13 +167,12 @@ class OATS(Dataset):
                         scenarios.append(line)
 
         for scenario in tqdm(scenarios, file=sys.stdout):
-            scenario_path = os.path.join(root, 'images', 'scenario_' + scenario)
+            scenario_path = os.path.join(root, 'downsampled_224', 'scenario_' + scenario)
             seg_video_path = os.path.join(root, 'images', 'scenario_' + scenario + '_segmentation_28x28')
             annotation_path = os.path.join(root, 'annotations', 'scenario_' + scenario + '.npy')
 
-            check_data = [os.path.join(scenario_path, img) for img in os.listdir(scenario_path) if os.path.isfile(scenario_path)]
+            check_data = [os.path.join(scenario_path, img) for img in os.listdir(scenario_path) if os.path.isfile(os.path.join(scenario_path, img))]
             check_data.sort()
-
             videos = []
             segs = []
             obj_f = []
@@ -190,18 +190,19 @@ class OATS(Dataset):
                 if start_frame + (self.seq_len-1)*step > end_frame:
                     break
                 videos_temp = []
+                idx_temp = []
                 seg_temp = []
                 obj_temp = []
                 for i in range(start, end_frame+1, step):
-                    imgname = f"{str(i).zfill(4)}.jpg"
-                    segname = f"{str(i).zfill(4)}.png"
+                    imgname = f"{str(i).zfill(3)}.jpg"
+                    segname = f"{str(i).zfill(3)}.png"
                     if os.path.isfile(os.path.join(scenario_path, imgname)):
                         videos_temp.append(os.path.join(scenario_path, imgname))
                         idx_temp.append(i-start)
                     if os.path.isfile(os.path.join(seg_video_path, segname)):
                         seg_temp.append(os.path.join(seg_video_path, segname))
-                    if os.path.isfile(v+"/seg_mask/"+objname):
-                        obj_temp.append(v+"/seg_mask/"+objname)
+                    # if os.path.isfile(v+"/seg_mask/"+objname):
+                    #     obj_temp.append(v+"/seg_mask/"+objname)
                     if len(videos_temp) == self.seq_len:
                         break
 
@@ -209,7 +210,7 @@ class OATS(Dataset):
                     videos.append(videos_temp)
                     idx.append(idx_temp)
                     segs.append(seg_temp)
-            if len(videos) == 0
+            if len(videos) == 0:
                 continue
 
 
@@ -418,7 +419,7 @@ class OATS(Dataset):
             if self.args.plot:
                 data['raw'].append(x)
             if self.args.bg_mask and i %self.args.mask_every_frame == 0:
-                data['bg_seg'].append(get_stuff_mask(seq_seg[i]))
+                data['bg_seg'].append(self.get_stuff_mask(seq_seg[i]))
             if self.args.obj_mask and i % self.mask_every_frame:
                 data['obj_masks'].append(get_obj_mask(obj_masks_list[i]))
         if self.args.plot:

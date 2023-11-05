@@ -17,6 +17,7 @@ from classifier import Head
 class SlowFast(nn.Module):
     def __init__(self, num_ego_class, num_actor_class):
         super(SlowFast, self).__init__()
+        self.num_ego_class = num_ego_class
         self.model = torch.hub.load('facebookresearch/pytorchvideo', 'slowfast_r50', pretrained=True)
         # for i, b in enumerate(self.model.blocks):
         #     print(i)
@@ -57,5 +58,10 @@ class SlowFast(nn.Module):
 
         x = self.pool(x)
         x = torch.reshape(x, (batch_size, -1))
-        ego, x = self.model.blocks[-1](x)
-        return ego, x
+
+        if self.num_ego_class != 0:
+            ego, x = self.model.blocks[-1](x)
+            return ego, x
+        else:
+            x = self.model.blocks[-1](x)
+            return x

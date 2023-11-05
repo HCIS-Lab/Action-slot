@@ -40,8 +40,8 @@ class TACO(Dataset):
         # root = '/home/hcis-s20/Desktop/data_collection'
         # root = '/media/hankung/ssd/carla_13/CARLA_0.9.13/PythonAPI/examples/data_collection'
         # root = '/media/hcis-s16/hank/taco'
-        root = '/media/hcis-s20/SRL/taco'
-        # root = '/media/user/data/taco'
+        # root = '/media/hcis-s20/SRL/taco'
+        root = '/media/user/data/taco'
         # root = '/media/hcis-s19/DATA/taco'
 
         self.training = training
@@ -767,7 +767,7 @@ def get_labels(args, gt_list, s_id, v_id, num_slots=64):
         proposal_train_label = torch.LongTensor(proposal_train_label)
         # actor_class = actor_class[:-1]
         actor_class = torch.FloatTensor(actor_class)
-        return ego_label, proposal_train_label, actor_class
+        return proposal_train_label, ego_label, actor_class
     else:
         actor_class = torch.FloatTensor(actor_class)
         return ego_label, actor_class

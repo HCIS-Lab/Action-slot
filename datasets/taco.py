@@ -229,17 +229,6 @@ class TACO(Dataset):
                                 continue
                             confusion_label = {'c1-c2': '', 'c2-c3': '', 'c3-c4': '', 'c4-c1': ''}
 
-
-                            # actor_table = { 'z1-z2': 0, 'z1-z3':1, 'z1-z4':2,
-                            #     'z2-z1': 3, 'z2-z3': 4, 'z2-z4': 5,
-                            #     'z3-z1': 6, 'z3-z2': 7, 'z3-z4': 8,
-                            #     'z4-z1': 9, 'z4-z2': 10, 'z4-z3': 11,
-
-                            #     'c1-c2': 12, 'c1-c4': 13, 
-                            #     'c2-c1': 14, 'c2-c3': 15, 
-                            #     'c3-c2': 16, 'c3-c4': 17, 
-                            #     'c4-c1': 18, 'c4-c3': 19 
-                            #     }
                             if gt_actor[12] or gt_actor[14]:
                                 if gt_actor[12] and not gt_actor[14]:
                                     confusion_label['c1-c2'] = 0
@@ -278,8 +267,6 @@ class TACO(Dataset):
                             video_folder = video_folder[1]
                         else:
                             video_folder = video_folder[0]
-                        # if os.path.isdir(v+"/rgb/front/"):
-                        #     check_data = [v+"/rgb/front/"+ img for img in os.listdir(v+"/rgb/front/") if os.path.isfile(v+"/rgb/front/"+ img)]
                         if os.path.isdir(v+"/rgb/" + video_folder):
                             check_data = [v+"/rgb/"+video_folder+img for img in os.listdir(v+"/rgb/"+video_folder) if os.path.isfile(v+"/rgb/"+video_folder+ img)]
                             check_data.sort()
@@ -590,7 +577,7 @@ class TACO(Dataset):
                 data['obj_masks'].append(get_obj_mask(obj_masks_list[i]))
         if self.args.plot:
             data['raw'] = to_np_no_norm(data['raw'], self.args.model_name)
-        data['videos'] = to_np(data['videos'], self.args.model_name)
+        data['videos'] = to_np(data['videos'], self.args.model_name, args.backbone)
 
         if self.args.val_confusion:
             data['confusion_label'] = self.confusion_label_list[index]
@@ -657,11 +644,16 @@ def scale(image, scale=2.0, model_name=None):
 
 
 
-def to_np(v, model_name):
-    for i, _ in enumerate(v):
+def to_np(v, model_name, backbone):
+    if backbone == 'inception':
         transform = transforms.Compose([
-                                transforms.ToTensor(),
-                                transforms.Normalize(mean=[0.45, 0.45, 0.45], std=[0.225, 0.225, 0.225])])
+                        transforms.ToTensor(),
+                        transforms.Normalize(mean=[0.45, 0.45, 0.45], std=[0.225, 0.225, 0.225])])
+    else:
+        transform = transforms.Compose([
+                        transforms.ToTensor(),
+                        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    for i, _ in enumerate(v):
         v[i] = transform(v[i])
     return v
 

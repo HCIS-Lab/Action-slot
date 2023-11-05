@@ -172,8 +172,12 @@ class SLOT_MO(nn.Module):
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 192
-            self.resolution = (8, 24)
-            self.resolution3d = (16, 8, 24)
+            if args.dataset == 'oats':
+                self.resolution = (7, 7)
+                self.resolution3d = (16, 7, 7)
+            else:
+                self.resolution = (8, 24)
+                self.resolution3d = (16, 8, 24)
 
         if args.allocated_slot:
             self.head = Instance_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)
@@ -305,3 +309,4 @@ class SLOT_MO(nn.Module):
             return ego_x, x, attn_masks.view(b, seq_len, n, self.resolution[0], self.resolution[1])
         else:
             x = self.head(x)
+            return x, attn_masks.view(b, seq_len, n, self.resolution[0], self.resolution[1])

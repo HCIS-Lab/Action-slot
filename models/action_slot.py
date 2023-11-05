@@ -137,11 +137,18 @@ class ACTION_SLOT(nn.Module):
             if args.dataset == 'taco':
                 self.resolution = (16, 48)
                 self.resolution3d = (4, 16, 48)
-        # elif args.backbone == 'i3d-1':
-        #     self.resnet = self.resnet.blocks[:-1]
-        #     self.in_c = 2048
-        #     self.resolution = (8, 24)
-        #     self.resolution3d = (4, 8, 24)
+            elif args.dataset == 'oats':
+                self.resolution = (14, 14)
+                self.resolution3d = (4, 14, 14)
+        elif args.backbone == 'i3d-1':
+            self.resnet = self.resnet.blocks[:-1]
+            self.in_c = 2048
+            if args.dataset == 'taco':
+                self.resolution = (8, 24)
+                self.resolution3d = (4, 8, 24)
+            elif args.dataset == 'oats':
+                self.resolution = (7, 7)
+                self.resolution3d = (4, 7, 7)
 
         elif args.backbone == 'i3d_inception_4f':
             self.resnet = i3d(final_endpoint='Mixed_4f')
@@ -161,6 +168,17 @@ class ACTION_SLOT(nn.Module):
 
         elif args.backbone == 'x3d-2':
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo:main', 'x3d_m', pretrained=True)
+            self.resnet = self.resnet.blocks[:-1]
+            self.in_c = 192
+            if args.dataset == 'taco':
+                self.resolution = (8, 24)
+                self.resolution3d = (16, 8, 24)
+            elif args.dataset == 'oats':
+                self.resolution = (7, 7)
+                self.resolution3d = (16, 7, 7)
+
+        elif args.backbone == 'inception':
+            self.resnet = torch.hub.load('pytorch/vision:v0.10.0', 'inception_v3', pretrained=True)
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 192
             if args.dataset == 'taco':
@@ -358,7 +376,6 @@ class ACTION_SLOT(nn.Module):
         attn_masks = attn_masks.view(b*n, 1, new_seq_len, attn_masks.shape[3], attn_masks.shape[4])
         # b, n, t, h, w
         if seq_len > new_seq_len:
-
             attn_masks = F.interpolate(attn_masks, size=(seq_len, new_h, new_w), mode='trilinear')
         # b, l, n, h, w
         attn_masks = torch.reshape(attn_masks, (b, n, seq_len, new_h, new_w))

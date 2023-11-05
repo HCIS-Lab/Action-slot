@@ -424,7 +424,7 @@ class OATS(Dataset):
                 data['obj_masks'].append(get_obj_mask(obj_masks_list[i]))
         if self.args.plot:
             data['raw'] = to_np_no_norm(data['raw'], self.args.model_name)
-        data['videos'] = to_np(data['videos'], self.args.model_name)
+        data['videos'] = to_np(data['videos'], self.args.model_name, self.args.backbone)
 
         return data
 
@@ -490,15 +490,20 @@ def read_box(box_path):
 
 
 
-def to_np(v, model_name):
-    for i, _ in enumerate(v):
+def to_np(v, model_name, backbone):
+    if backbone == 'inception':
         transform = transforms.Compose([
-                                transforms.ToTensor(),
-                                transforms.Normalize(mean=[0.45, 0.45, 0.45], std=[0.225, 0.225, 0.225])])
+                        transforms.ToTensor(),
+                        transforms.Normalize(mean=[0.45, 0.45, 0.45], std=[0.225, 0.225, 0.225])])
+    else:
+        transform = transforms.Compose([
+                        transforms.ToTensor(),
+                        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    for i, _ in enumerate(v):
         v[i] = transform(v[i])
     return v
 
-def to_np_no_norm(v, model_name):
+def to_np_no_norm(v, model_name,):
     for i, _ in enumerate(v):
         transform = transforms.Compose([
                                 transforms.ToTensor(),

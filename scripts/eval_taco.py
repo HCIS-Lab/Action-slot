@@ -57,15 +57,40 @@ from parser import get_parser
 # matplotlib.use('TkAgg')
 
 
-actor_table = ['z1-z2', 'z1-z3', 'z1-z4',
-                'z2-z1', 'z2-z3', 'z2-z4',
-                'z3-z1', 'z3-z2', 'z3-z4',
-                'z4-z1', 'z4-z2', 'z4-z3',
-                'c1-c2', 'c1-c4', 
-                'c2-c1', 'c2-c3', 
-                'c3-c2', 'c3-c4', 
-                'c4-c1', 'c4-c3', 'bg']
-
+# actor_table = ['z1-z2', 'z1-z3', 'z1-z4',
+#                 'z2-z1', 'z2-z3', 'z2-z4',
+#                 'z3-z1', 'z3-z2', 'z3-z4',
+#                 'z4-z1', 'z4-z2', 'z4-z3',
+#                 'c1-c2', 'c1-c4', 
+#                 'c2-c1', 'c2-c3', 
+#                 'c3-c2', 'c3-c4', 
+#                 'c4-c1', 'c4-c3', 'bg']
+actor_table = ['c:z1-z2', 'c:z1-z3', 'c:z1-z4',
+                'c:z2-z1', 'c:z2-z3', 'c:z2-z4',
+                'c:z3-z1', 'c:z3-z2', 'c:z3-z4',
+                'c:z4-z1', 'c:z4-z2', 'c:z4-z3',
+                'b:z1-z2', 'b:z1-z3', 'b:z1-z4',
+                'b:z2-z1', 'b:z2-z3', 'b:z2-z4',
+                'b:z3-z1', 'b:z3-z2', 'b:z3-z4',
+                'b:z4-z1', 'b:z4-z2', 'b:z4-z3',
+                'c+:z1-z2', 'c+:z1-z3', 'c+:z1-z4',
+                'c+:z2-z1', 'c+:z2-z3', 'c+:z2-z4',
+                'c+:z3-z1', 'c+:z3-z2', 'c+:z3-z4',
+                'c+:z4-z1', 'c+:z4-z2', 'c+:z4-z3',
+                'b+:z1-z2', 'b+:z1-z3', 'b+:z1-z4',
+                'b+:z2-z1', 'b+:z2-z3', 'b+:z2-z4',
+                'b+:z3-z1', 'b+:z3-z2', 'b+:z3-z4',
+                'b+:z4-z1', 'b+:z4-z2', 'b+:z4-z3',
+                'p:c1-c2', 'p:c1-c4', 
+                'p:c2-c1', 'p:c2-c3', 
+                'p:c3-c2', 'p:c3-c4', 
+                'p:c4-c1', 'p:c4-c3', 
+                'p+:c1-c2', 'p+:c1-c4', 
+                'p+:c2-c1', 'p+:c2-c3', 
+                'p+:c3-c2', 'p+:c3-c4', 
+                'p+:c4-c1', 'p+:c4-c3',
+                'bg'] 
+                        
 def plot_slot(masks, model_name, id, v, raw, actor, pred_actor, logdir, threshold, mode):
     path = os.path.join(logdir, 'plot_'+ mode +'_'+str(threshold))
     if not os.path.exists(path):
@@ -428,6 +453,8 @@ def calculate_confusion(confusion_label, pred):
 
     return confuse_sample, confuse_both_sample, confuse_pred, confuse_both_pred, confuse_both_miss, confuse_far_both_sample, confuse_far_both_miss
 
+
+
 torch.cuda.empty_cache()
 args = get_parser()
 print(args)
@@ -444,28 +471,20 @@ class Engine(object):
 
     def __init__(self, args, cur_epoch=0):
         self.cur_epoch = cur_epoch
-        self.bestval_epoch = cur_epoch
-        self.train_loss = []
-        self.val_loss = []
-        self.bestval = 1e10
-        self.best_f1 = 1e-5
-        self.bce_weight = bce_weight
-        self.ego_weight = ego_weight
         self.args = args
 
     def validate(self, model, dataloader, epoch):
         model.eval()
         ego_ce = nn.CrossEntropyLoss(reduction='mean').cuda()
-        seg_ce = nn.CrossEntropyLoss(reduction='mean').cuda()
 
 
         t_confuse_sample, t_confuse_both_sample, t_confuse_pred, t_confuse_both_pred, t_confuse_both_miss, t_confuse_far_both_sample, t_confuse_far_both_miss = 0, 0, 0, 0, 0, 0, 0
 
-        if ('slot' in model_name and not args.fix_slot) or args.box:
+        if ('slot' in args.model_name and not args.allocated_slot) or args.box:
             ce_weights = torch.ones(num_actor_class+1)*args.ce_pos_weight
             ce_weights[-1] = self.args.ce_neg_weight
             ce = nn.CrossEntropyLoss(reduction='mean', weight=ce_weights).cuda()
-        elif 'slot' in model_name and args.fix_slot:
+        elif 'slot' in args.model_name and args.allocated_slot:
             bce_weights = torch.ones([num_actor_class])*args.bce_pos_weight
             bce = nn.BCEWithLogitsLoss(reduction='mean', pos_weight=bce_weights).cuda()
         else:
@@ -483,7 +502,6 @@ class Engine(object):
 
             correct_ego = 0
             correct_actor = 0
-            mean_f1 = 0
             label_actor_list = []
             map_pred_actor_list = []
 
@@ -526,17 +544,9 @@ class Engine(object):
                     else:
                         boxes = box_in.to(args.device, dtype=torch.float32)
                 if args.bg_mask:
-                    for i in range(args.seq_len//2):
+                    for i in range(args.seq_len//args.mask_every_frame):
                         bg_seg.append(bg_seg_in[i].to(args.device, dtype=torch.float32))
 
-                batch_size = inputs[0].shape[0]
-                ego = data['ego'].to(args.device)
-                if ('slot' in args.model_name and not args.allocated_slot) or args.box:
-                    actor = data['actor'].to(args.device)
-                else:
-                    actor = torch.FloatTensor(data['actor']).to(args.device)
-
-                if args.bg_mask:
                     h, w = bg_seg[0].shape[-2], bg_seg[0].shape[-1]
                     bg_seg = torch.stack(bg_seg, 0)
                     bg_seg = torch.permute(bg_seg, (1, 0, 2, 3)) #[batch, len, h, w]
@@ -545,6 +555,14 @@ class Engine(object):
                     bg_seg = torch.reshape(bg_seg, (b*l, 1, h, w))
                     bg_seg = F.interpolate(bg_seg, size=ds_size)
                     bg_seg = torch.reshape(bg_seg, (b, l, ds_size[0], ds_size[1]))
+
+                batch_size = inputs[0].shape[0]
+                ego = data['ego'].to(args.device)
+                if ('slot' in args.model_name and not args.allocated_slot) or args.box:
+                    actor = data['actor'].to(args.device)
+                else:
+                    actor = torch.FloatTensor(data['actor']).to(args.device)
+
 
                 if ('slot' in args.model_name) or args.box or 'mvit' in args.model_name:
                     if args.box:
@@ -564,7 +582,7 @@ class Engine(object):
                                         plot_mvit(attn[0],c_idx,raw,args.logdir,id,v,j,grid_size=(thw[1],thw[2]))
                                 # raise BaseException
                             else:
-                                plot_slot(attn, args.id, id, v, raw, actor, pred_actor, args.logdir, args.plot_threshold, args.plot_mode)
+                                plot_slot(attn, args.id, id, v, raw, actor, pred_actor, logdir, args.plot_threshold, args.plot_mode)
 
                 else:
                     pred_ego, pred_actor = model(inputs)
@@ -593,7 +611,9 @@ class Engine(object):
 
                 elif 'slot' in args.model_name and args.allocated_slot:
                     actor_loss = bce(pred_actor, actor)
-                    if args.bg_slot and not args.bg_mask and args.action_attn_weight >0:
+
+                    # w/o L_bg, w/ L_neg
+                    if not args.bg_attn_weight >0 and args.action_attn_weight >0:
                         b, l, n, h, w = attn.shape
                         if args.bg_upsample != 1:
                             attn = attn.reshape(-1, 1, h, w)
@@ -617,9 +637,9 @@ class Engine(object):
                         attn_loss_epoch += float(attn_loss.item())
                         action_attn_loss_epoch += float(action_attn_loss.item())
 
-                    elif args.bg_slot and args.bg_mask and args.action_attn_weight >0. and args.bg_attn_weight>0.:
+                    # w/ L_bg, w/ L_neg
+                    elif args.action_attn_weight >0. and args.bg_attn_weight>0.:
                         b, l, n, h, w = attn.shape
-
                         if args.bg_upsample != 1:
                             attn = attn.reshape(-1, 1, h, w)
                             attn = F.interpolate(attn, size=ds_size, mode='bilinear')
@@ -627,12 +647,9 @@ class Engine(object):
                             attn = attn.reshape(b, l, n, h, w)
 
                         action_attn = attn[:, :, :num_actor_class, :, :]
-                        bg_attn = attn[:, ::2, -1, :, :].reshape(b, l//2, h, w)
+                        bg_attn = attn[:, ::args.mask_every_frame, -1, :, :].reshape(b, -1, h, w)
 
                         class_idx = actor == 0.0
-                        # bg_idx = torch.ones(b, dtype=torch.bool).cuda()
-                        # bg_idx = torch.reshape(bg_idx, (b, 1))
-                        # class_idx = torch.cat((class_idx, bg_idx), -1)
                         class_idx = class_idx.view(b, num_actor_class, 1, 1, 1).repeat(1, 1, l, h, w)
                         class_idx = torch.permute(class_idx, (0, 2, 1, 3, 4))
 
@@ -654,7 +671,9 @@ class Engine(object):
                         attn_loss_epoch += float(attn_loss.item())
                         action_attn_loss_epoch += float(action_attn_loss.item())
                         bg_attn_loss_epoch += float(bg_attn_loss.item())
-                    elif not args.bg_slot and args.bg_mask and args.bg_attn_weight>0.:
+
+                    # w/ L_bg, w/o L_neg
+                    elif args.bg_attn_weight>0. and not args.action_attn_weight >0:
                         b, l, n, h, w = attn.shape
 
                         if args.bg_upsample != 1:
@@ -682,7 +701,7 @@ class Engine(object):
                 else:
                     actor_loss = bce(pred_actor, actor)
                 
-                if (args.bg_slot and args.action_attn_weight>0.) or (args.bg_mask and args.bg_attn_weight>0.):
+                if args.action_attn_weight>0.or and args.bg_attn_weight>0.:
                     loss = actor_loss + args.ego_loss_weight*ego_loss + attn_loss
                 else:
                     loss = actor_loss + args.ego_loss_weight*ego_loss
@@ -692,10 +711,6 @@ class Engine(object):
                 pred_ego = torch.nn.functional.softmax(pred_ego, dim=1)
                 _, pred_ego = torch.max(pred_ego.data, 1)
 
-                num_batches += 1
-                total_loss += float(loss.item())
-                pred_ego = torch.nn.functional.softmax(pred_ego, dim=1)
-                _, pred_ego = torch.max(pred_ego.data, 1)
                 if ('slot' in args.model_name and not args.allocated_slot) or args.box:
                     pred_actor = torch.nn.functional.softmax(pred_actor, dim=-1)
                     _, pred_actor_idx = torch.max(pred_actor.data, -1)
@@ -729,24 +744,24 @@ class Engine(object):
                 total_ego += ego.size(0)
                 correct_ego += (pred_ego == ego).sum().item()
 
-            if (args.bg_slot and args.action_attn_weight>0.) or (args.bg_mask and args.bg_attn_weight>0.):
+            if args.action_attn_weight>0. or args.bg_attn_weight>0.:
                 attn_loss_epoch = attn_loss_epoch / num_batches
                 print('attn loss:')
                 print(attn_loss_epoch)
-                if args.bg_slot:
+                if args.action_attn_weight >0:
                     action_attn_loss_epoch = action_attn_loss_epoch /num_batches
                     print('action_attn_loss')
                     print(action_attn_loss_epoch)
-                if args.bg_mask:
+                if args.bg_attn_weight > 0:
                     bg_attn_loss_epoch = bg_attn_loss_epoch / num_batches
                     print('bg_attn_loss_epoch')
                     print(bg_attn_loss_epoch)
                 
-            if args.bg_mask and args.bg_slot:
+            if args.action_attn_weight>0:
                 iou = action_inter.sum / (action_union.sum + 1e-10)
                 for i, val in enumerate(iou):
                     print('Action IoU {0}: {1:.2f}'.format(i, val * 100))
-
+            if args.bg_attn_weight > 0:
                 iou = bg_inter.sum / (bg_union.sum + 1e-10)
                 for i, val in enumerate(iou):
                     print('BG IoU {0}: {1:.2f}'.format(i, val * 100))
@@ -804,22 +819,15 @@ class Engine(object):
 
             print(f'acc of the ego: {correct_ego/total_ego}')
             writer.add_scalar('ego', correct_ego/total_ego, epoch)
-            if mAP > self.best_mAP:
-                self.best_mAP = mAP
-                save_cp = True
-            print(f'best mAP : {self.best_mAP}')
+
+            # mAP_per_class = average_precision_score(
+            #         label_actor_list,
+            #         map_pred_actor_list.astype(np.float32), 
+            #         average=None)
+
+
+            # mAP_per_class = np.round(mAP_per_class*100,1)
             # print('mAP vehicle:')
-            # print(mAP_per_class[:12])
-            # print('mAP ped:')
-            # print(mAP_per_class[12:])
-            mAP_per_class = average_precision_score(
-                    label_actor_list,
-                    map_pred_actor_list.astype(np.float32), 
-                    average=None)
-
-
-            mAP_per_class = np.round(mAP_per_class*100,1)
-            print('mAP vehicle:')
             # for value in mAP_per_class[:12]:
             #     print(value,end=' & ')
             # # print(np.round(mAP_per_class[:12],3))
@@ -844,8 +852,8 @@ num_actor_class = 64
 
 
 # Data
-val_set = video_data.Video_Data(args=args, training=False)
-dataloader_val = DataLoader(val_set, batch_size=1, shuffle=False, num_workers=8, pin_memory=True, drop_last=True)
+val_set = taco.TACO(args=args, training=False)
+dataloader_val = DataLoader(val_set, batch_size=1, shuffle=False, num_workers=4, pin_memory=True, drop_last=True)
 
 model = generate_model(args, num_ego_class, num_actor_class).cuda()
 trainer = Engine(args)

@@ -206,13 +206,15 @@ class Engine(object):
 			else:
 				actor = torch.FloatTensor(data['actor']).to(args.device)
 			
-			optimizer.zero_grad()
+			
+
+			ds_size = (model.resolution[0]*args.bg_upsample, model.resolution[1]*args.bg_upsample)
 			if args.bg_mask:
 				h, w = bg_seg[0].shape[-2], bg_seg[0].shape[-1]
 				bg_seg = torch.stack(bg_seg, 0)
 				bg_seg = torch.permute(bg_seg, (1, 0, 2, 3)) #[batch, len, h, w]
 				b, l, h, w = bg_seg.shape
-				ds_size = (model.resolution[0]*args.bg_upsample, model.resolution[1]*args.bg_upsample)
+				
 				bg_seg = torch.reshape(bg_seg, (b*l, 1, h, w))
 				bg_seg = F.interpolate(bg_seg, size=ds_size)
 				bg_seg = torch.reshape(bg_seg, (b, l, ds_size[0], ds_size[1]))
@@ -220,6 +222,10 @@ class Engine(object):
 				obj_mask_list = torch.stack(obj_mask_list, 0)
 				obj_mask_list = torch.permute(obj_mask_list, (1, 0, 2, 3, 4)) #[batch, len, n, h, w]
 				b, l, n, h, w = obj_mask_list.shape
+
+
+
+			optimizer.zero_grad()
 
 			# object-based models
 			if args.box:
@@ -581,12 +587,13 @@ class Engine(object):
 				else:
 					actor = torch.FloatTensor(data['actor']).to(args.device)
 
+				ds_size = (model.resolution[0]*args.bg_upsample, model.resolution[1]*args.bg_upsample)
 				if args.bg_mask:
 					h, w = bg_seg[0].shape[-2], bg_seg[0].shape[-1]
 					bg_seg = torch.stack(bg_seg, 0)
 					bg_seg = torch.permute(bg_seg, (1, 0, 2, 3)) #[batch, len, h, w]
 					b, l, h, w = bg_seg.shape
-					ds_size = (model.resolution[0]*args.bg_upsample, model.resolution[1]*args.bg_upsample)
+					
 					bg_seg = torch.reshape(bg_seg, (b*l, 1, h, w))
 					bg_seg = F.interpolate(bg_seg, size=ds_size)
 					bg_seg = torch.reshape(bg_seg, (b, l, ds_size[0], ds_size[1]))

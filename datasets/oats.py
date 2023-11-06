@@ -491,7 +491,7 @@ def read_box(box_path):
 
 
 def to_np(v, model_name, backbone):
-    if backbone == 'inception':
+    if backbone != 'inception':
         transform = transforms.Compose([
                         transforms.ToTensor(),
                         transforms.Normalize(mean=[0.45, 0.45, 0.45], std=[0.225, 0.225, 0.225])])

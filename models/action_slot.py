@@ -7,6 +7,7 @@ from pytorchvideo.models.hub import i3d_r50
 from pytorchvideo.models.hub import csn_r101
 from pytorchvideo.models.hub import mvit_base_16x4
 import i3d
+import inception
 import numpy as np
 from math import ceil 
 from ptflops import get_model_complexity_info
@@ -131,7 +132,18 @@ class ACTION_SLOT(nn.Module):
         self.resnet = i3d_r50(True)
         self.args = args
         # self.resnet = self.resnet.blocks[:2]
-        if args.backbone == 'i3d-2':
+
+        if args.backbone == 'inception':
+            self.resnet = inception.INCEPTION()
+            self.in_c = 2048
+            if args.dataset == 'taco':
+                self.resolution = (8, 24)
+                self.resolution3d = (args.seq_len, 5, 5)
+            elif args.dataset == 'oats':
+                self.resolution = (5, 5)
+                self.resolution3d = (args.seq_len, 5, 5)
+
+        elif args.backbone == 'i3d-2':
             self.resnet = self.resnet.blocks[:-2]
             self.in_c = 1024
             if args.dataset == 'taco':
@@ -140,6 +152,7 @@ class ACTION_SLOT(nn.Module):
             elif args.dataset == 'oats':
                 self.resolution = (14, 14)
                 self.resolution3d = (4, 14, 14)
+
         elif args.backbone == 'i3d-1':
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 2048
@@ -150,35 +163,24 @@ class ACTION_SLOT(nn.Module):
                 self.resolution = (7, 7)
                 self.resolution3d = (4, 7, 7)
 
-        elif args.backbone == 'i3d_inception_4f':
-            self.resnet = i3d(final_endpoint='Mixed_4f')
-            self.resnet.load_state_dict(torch.load('/media/hankung/ssd/retrieval/models/rgb_charades.pt'), strict=False)
-            self.in_c = 832
-            if args.dataset == 'oats':
-                self.resolution = (14, 14)
-                self.resolution3d = (8, 14, 14)
+        # elif args.backbone == 'i3d_inception_4f':
+        #     self.resnet = i3d(final_endpoint='Mixed_4f')
+        #     self.resnet.load_state_dict(torch.load('/media/hankung/ssd/retrieval/models/rgb_charades.pt'), strict=False)
+        #     self.in_c = 832
+        #     if args.dataset == 'oats':
+        #         self.resolution = (14, 14)
+        #         self.resolution3d = (8, 14, 14)
 
-        elif args.backbone == 'i3d_inception_5c':
-            self.resnet = i3d(final_endpoint='Mixed_5c')
-            self.resnet.load_state_dict(torch.load('/media/hankung/ssd/retrieval/models/rgb_charades.pt'), strict=False)
-            self.in_c = 1024
-            if args.dataset == 'oats':
-                self.resolution = (7, 7)
-                self.resolution3d = (4, 7, 7)
+        # elif args.backbone == 'i3d_inception_5c':
+        #     self.resnet = i3d(final_endpoint='Mixed_5c')
+        #     self.resnet.load_state_dict(torch.load('/media/hankung/ssd/retrieval/models/rgb_charades.pt'), strict=False)
+        #     self.in_c = 1024
+        #     if args.dataset == 'oats':
+        #         self.resolution = (7, 7)
+        #         self.resolution3d = (4, 7, 7)
 
         elif args.backbone == 'x3d-2':
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo:main', 'x3d_m', pretrained=True)
-            self.resnet = self.resnet.blocks[:-1]
-            self.in_c = 192
-            if args.dataset == 'taco':
-                self.resolution = (8, 24)
-                self.resolution3d = (16, 8, 24)
-            elif args.dataset == 'oats':
-                self.resolution = (7, 7)
-                self.resolution3d = (16, 7, 7)
-
-        elif args.backbone == 'inception':
-            self.resnet = torch.hub.load('pytorch/vision:v0.10.0', 'inception_v3', pretrained=True)
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 192
             if args.dataset == 'taco':
@@ -286,12 +288,17 @@ class ACTION_SLOT(nn.Module):
                     x = self.resnet[i](x)
                 x[1] = self.path_pool(x[1])
                 x = torch.cat((x[0], x[1]), dim=1)
+        elif self.args.backbone == 'inception':
+            if isinstance(x, list):
+                x = torch.stack(x, dim=0) #[T, b, C, h, w]
+                x = torch.reshape(x, (seq_len*batch_size, 3, height, width))
         else:
             if isinstance(x, list):
                 x = torch.stack(x, dim=0) #[T, b, C, h, w]
                 # l, b, c, h, w
                 x = torch.permute(x, (1,2,0,3,4)) #[b, C, T, h, w]
         
+        # ---- backbone forward ----
         if self.args.backbone == 'mvit':
             x = self.model.patch_embed(x) # torch.Size([8, 25088, 96])
             # x = self.model.cls_positional_encoding(x) # torch.Size([8, 25089, 96])
@@ -308,7 +315,11 @@ class ACTION_SLOT(nn.Module):
             x = self.model.forward_features(x,pretrained=True) # B,TxHxW,C
             x = x.reshape(batch_size,self.resolution3d[0],self.resolution3d[1],self.resolution3d[2],-1) # B,T,H,W,C
             x = x.permute(0,4,1,2,3) # B,C,T,H,W
-            
+        elif self.args.backbone == 'inception':
+            x = self.resnet(x)
+            _, c, h, w  = x.shape
+            x = torch.reshape(x, (self.args.seq_len, batch_size, c, h, w))
+            x = x.permute(1, 2, 0, 3, 4)
         else:
             for i in range(len(self.resnet)):
                 # x = self.resnet.blocks[i](x)

@@ -24,27 +24,35 @@ import torch.nn as nn
 torch.backends.cudnn.benchmark = True
 
 import sys
-sys.path.append('/media/hankung/ssd/retrieval/datasets')
-sys.path.append('/media/hankung/ssd/retrieval/config')
-sys.path.append('/media/hankung/ssd/retrieval/models')
-
-sys.path.append('/home/hcis-s19/Desktop/retrieval/datasets')
-sys.path.append('/home/hcis-s19/Desktop/retrieval/config')
-sys.path.append('/home/hcis-s19/Desktop/retrieval/models')
-
-sys.path.append('/home/hcis-s20/Desktop/retrieval/datasets')
-sys.path.append('/home/hcis-s20/Desktop/retrieval/config')
-sys.path.append('/home/hcis-s20/Desktop/retrieval/models')
+sys.path.append('/media/hankung/ssd/Action-Slot/datasets')
+sys.path.append('/media/hankung/ssd/Action-Slot/config')
+sys.path.append('/media/hankung/ssd/Action-Slot/models')
 
 sys.path.append('/work/u8526971/retrieval/datasets')
 sys.path.append('/work/u8526971/retrieval/config')
 sys.path.append('/work/u8526971/retrieval/models')
 
-# from .configs.config import GlobalConfig
-import video_data
-import feature_data
 
-from sklearn.metrics import average_precision_score, precision_score, f1_score, recall_score, accuracy_score, hamming_loss
+sys.path.append('/media/hcis-s19/DATA/Action-Slot/datasets')
+sys.path.append('/media/hcis-s19/DATA/Action-Slot/config')
+sys.path.append('/media/hcis-s19/DATA/Action-Slot/models')
+
+sys.path.append('/media/hcis-s20/SRL/Action-Slot/datasets')
+sys.path.append('/media/hcis-s20/SRL/Action-Slot/configs')
+sys.path.append('/media/hcis-s20/SRL/Action-Slot/models')
+
+sys.path.append('/media/hcis-s16/hank/Action-Slot/datasets')
+sys.path.append('/media/hcis-s16/hank/Action-Slot/configs')
+sys.path.append('/media/hcis-s16/hank/Action-Slot/models')
+
+sys.path.append('/media/user/data/Action-Slot/datasets')
+sys.path.append('/media/user/data/Action-Slot/configs')
+sys.path.append('/media/user/data/Action-Slot/models')
+
+# from .configs.config import GlobalConfig
+import taco
+
+from sklearn.metrics import average_precision_score, precision_score, recall_score, accuracy_score, hamming_loss
 
 from PIL import Image, ImageDraw
 
@@ -91,7 +99,7 @@ actor_table = ['c:z1-z2', 'c:z1-z3', 'c:z1-z4',
                 'p+:c4-c1', 'p+:c4-c3',
                 'bg'] 
                         
-def plot_slot(masks, model_name, id, v, raw, actor, pred_actor, logdir, threshold, mode):
+def plot_slot(attn, model_name, id, v, raw, actor, pred_actor, logdir, threshold, mode):
     path = os.path.join(logdir, 'plot_'+ mode +'_'+str(threshold))
     if not os.path.exists(path):
         os.makedirs(path)
@@ -102,12 +110,11 @@ def plot_slot(masks, model_name, id, v, raw, actor, pred_actor, logdir, threshol
 
     actor_str = ''
     actor = actor[0]
-    print(pred_actor.shape)
     pred_actor = pred_actor[0]
 
     pred_actor = torch.sigmoid(pred_actor)
     pred_actor = pred_actor > 0.5
-    if args.fix_slot:
+    if args.allocated_slot:
         for i, a in enumerate(actor):
             if a.data == 1.0:
                 actor_str += actor_table[i]
@@ -124,7 +131,7 @@ def plot_slot(masks, model_name, id, v, raw, actor, pred_actor, logdir, threshol
                     actor_str += actor_table[i] 
                     actor_str += '                          TN'
             actor_str +='\n'
-        with open(os.path.join(path, "alabel.txt"), "w") as text_file:
+        with open(os.path.join(path, "label_result.txt"), "w") as text_file:
             text_file.write(actor_str)
 
     cmap = plt.get_cmap('rainbow')
@@ -137,12 +144,12 @@ def plot_slot(masks, model_name, id, v, raw, actor, pred_actor, logdir, threshol
     raw = torch.stack(raw, dim=0)
     raw = torch.permute(raw, (1,2,0,3,4))
     seq_len = 16
-    masks = masks.detach()
-    m_l, m_n, m_h, m_w = masks.shape[1], masks.shape[2], masks.shape[3], masks.shape[4]
-    masks = torch.reshape(masks, (-1, 1, m_h, m_w))
+    attn = attn.detach()
+    m_l, m_n, m_h, m_w = attn.shape[1], attn.shape[2], attn.shape[3], attn.shape[4]
+    attn = torch.reshape(attn, (-1, 1, m_h, m_w))
     # masks = F.interpolate(masks, (masks.shape[-3], 128,384))
-    masks = F.interpolate(masks, (128,384), mode='bilinear')
-    masks = torch.reshape(masks, (1, m_l, m_n, 128, 384))
+    attn = F.interpolate(attn, (128,384), mode='bilinear')
+    attn = torch.reshape(attn, (1, m_l, m_n, 128, 384))
     # index_mask = masks.argmax(dim = 2)
     # index_mask = F.one_hot(index_mask,num_classes = 20)
     # index_mask = index_mask.permute(0,1,4,2,3)
@@ -152,7 +159,7 @@ def plot_slot(masks, model_name, id, v, raw, actor, pred_actor, logdir, threshol
     raw = raw.permute(0, 2, 1, 3, 4)
     # cur_image = F.interpolate(image, (3, 128,384))
     cur_raw = F.interpolate(raw, (3, 128,384))
-    masks = masks[0]
+    attn = attn[0]
     # cur_image = cur_image[0]
     cur_raw = cur_raw[0]
     for j in range(seq_len):
@@ -160,72 +167,83 @@ def plot_slot(masks, model_name, id, v, raw, actor, pred_actor, logdir, threshol
         raw_j = cur_raw[j].permute(1,2,0).cpu().numpy()
         # image_j = image_j * 0.5 + 0.5
         new_raw_j = raw_j * 0.8 + 0.1
-        masks_j = masks[j]
+        masks_j = attn[j]
         tk = args.num_slots
-        if args.seg:
+        if args.bg_slot:
             tk += 1
         masks_j = masks_j.cpu().numpy()
-        if mode != 'multi':
-            for seg in range(tk):
-                if mode == 'both':
-                    masks_j[seg] = masks_j[seg] * (masks_j[seg] > threshold).astype('uint8')
-                    plt.figure(figsize=(15, 5))
-                    plt.imshow(new_raw_j)
-                    plt.imshow(masks_j[seg], alpha=0.8)
-                    plt.axis('off')
-                    plt.show()
+        # if mode != 'multi':
+        #     for slot_idx in range(tk):
+        #         if mode == 'both':
+        #             masks_j[slot_idx] = masks_j[slot_idx] * (masks_j[slot_idx] > threshold).astype('uint8')
+        #             plt.figure(figsize=(15, 5))
+        #             plt.imshow(new_raw_j)
+        #             plt.imshow(masks_j[slot_idx], alpha=0.8)
+        #             plt.axis('off')
+        #             plt.show()
 
-                    seg_path = os.path.join(path, actor_table[seg]+ '_frame'+str(j)+'.jpg')
-                    # fig.savefig(path)
-                    plt.savefig(seg_path)
-                    plt.close()
+        #             seg_path = os.path.join(path, actor_table[slot_idx]+ '_frame'+str(j)+'.jpg')
+        #             # fig.savefig(path)
+        #             plt.savefig(seg_path)
+        #             plt.close()
 
-                    plt.figure(figsize=(15, 5))
-                    plt.imshow(raw_j)
-                    plt.axis('off')
-                    plt.show()
-                    img_path = os.path.join(path, actor_table[seg] + '_frame'+str(j)+ '_img' +'.jpg') 
-                    plt.savefig(img_path)
-                    plt.close()
+        #             plt.figure(figsize=(15, 5))
+        #             plt.imshow(raw_j)
+        #             plt.axis('off')
+        #             plt.show()
+        #             img_path = os.path.join(path, actor_table[slot_idx] + '_frame'+str(j)+ '_img' +'.jpg') 
+        #             plt.savefig(img_path)
+        #             plt.close()
 
-                    im1 = Image.open(img_path)
-                    im2 = Image.open(seg_path)
-                    dst = Image.new('RGB', (im1.width, im1.height + im2.height))
-                    dst.paste(im1, (0, 0))
-                    dst.paste(im2, (0, im1.height))
-                    dst.save(seg_path)
-                    os.remove(img_path)
+        #             im1 = Image.open(img_path)
+        #             im2 = Image.open(seg_path)
+        #             dst = Image.new('RGB', (im1.width, im1.height + im2.height))
+        #             dst.paste(im1, (0, 0))
+        #             dst.paste(im2, (0, im1.height))
+        #             dst.save(seg_path)
+        #             os.remove(img_path)
 
-                elif mode == 'attn':
-                    masks_j[seg] = masks_j[seg] * (masks_j[seg] > threshold).astype('uint8')
-                    # plt.figure(figsize=(15, 5))
-                    # plt.imshow(new_raw_j)
-                    # plt.imshow(masks_j[seg], alpha=0.5)
-                    # plt.axis('off')
-                    # plt.show()
 
-                    # seg_path = os.path.join(path, actor_table[seg]+ '_frame'+str(j)+'.png')
-                    # # fig.savefig(path)
-                    # plt.savefig(seg_path)
-                    # plt.close()
+        #         elif mode == 'attn':
+        #             masks_j[slot_idx] = masks_j[slot_idx] * (masks_j[slot_idx] > threshold).astype('uint8')
+        #             # plt.figure(figsize=(15, 5))
+        #             # plt.imshow(new_raw_j)
+        #             # plt.imshow(masks_j[seg], alpha=0.5)
+        #             # plt.axis('off')
+        #             # plt.show()
 
-                    plt.imshow(new_raw_j)
-                    plt.axis('off')
-                    # plt.imshow()
-                    plt.imshow(masks_j[seg], alpha=0.5)
-                    # plt.show()
-                    seg_path = os.path.join(path, actor_table[seg]+ '_frame'+str(j)+'.jpg')
-                    plt.savefig(seg_path, bbox_inches='tight', pad_inches=0.0)
-                    plt.close()
+        #             # seg_path = os.path.join(path, actor_table[seg]+ '_frame'+str(j)+'.png')
+        #             # # fig.savefig(path)
+        #             # plt.savefig(seg_path)
+        #             # plt.close()
 
-            if mode == 'rgb':
-                # plt.figure(figsize=(15, 5))
-                plt.imshow(raw_j)
-                plt.axis('off')
-                # plt.show()
-                img_path = os.path.join(path,'frame'+str(j)+ '_img' +'.jpg') 
-                plt.savefig(img_path, bbox_inches='tight', pad_inches=0.0)
-                plt.close()
+        #             plt.imshow(new_raw_j)
+        #             plt.axis('off')
+        #             # plt.imshow()
+        #             plt.imshow(masks_j[slot_idx], alpha=0.5)
+        #             # plt.show()
+        #             seg_path = os.path.join(path, actor_table[slot_idx]+ '_frame'+str(j)+'.jpg')
+        #             plt.savefig(seg_path, bbox_inches='tight', pad_inches=0.0)
+        #             plt.close()
+
+        #     if mode == 'rgb':
+        #         # plt.figure(figsize=(15, 5))
+        #         plt.imshow(raw_j)
+        #         plt.axis('off')
+        #         # plt.show()
+        #         img_path = os.path.join(path,'frame'+str(j)+ '_img' +'.jpg') 
+        #         plt.savefig(img_path, bbox_inches='tight', pad_inches=0.0)
+        #         plt.close()
+
+        if mode == 'bg':
+            t_mask_bg = (masks_j[-1] > threshold)
+            masks_bg = (masks_j[-1] > threshold).astype('uint8').reshape((128,384))
+            raw_j[t_mask_bg, 0] = masks_bg[t_mask_bg]
+            plt.imshow(raw_j, cmap='gist_rainbow')
+            plt.axis('off')
+            img_path = os.path.join(path,'frame'+str(j)+ '_bg' +'.jpg') 
+            plt.savefig(img_path, bbox_inches='tight', pad_inches=0.0)
+            plt.close()
         else:
             # plt.imshow(raw_j)
             # plt.axis('off')
@@ -337,8 +355,6 @@ def plot_mask(masks, model_name, id, v, logdir):
     path = os.path.join(path, id + '_' + v)
     if not os.path.exists(path):
         os.makedirs(path)
-
-
 
     seq_len = 16
     masks = masks.detach()
@@ -456,9 +472,9 @@ def calculate_confusion(confusion_label, pred):
 
 
 torch.cuda.empty_cache()
-args = get_parser()
+args, logdir = get_parser()
 print(args)
-writer = SummaryWriter(log_dir=args.logdir)
+writer = SummaryWriter(log_dir=logdir)
 
 class Engine(object):
     """Engine that runs training and inference.
@@ -476,7 +492,7 @@ class Engine(object):
     def validate(self, model, dataloader, epoch):
         model.eval()
         ego_ce = nn.CrossEntropyLoss(reduction='mean').cuda()
-
+        mask_bce = nn.BCELoss()
 
         t_confuse_sample, t_confuse_both_sample, t_confuse_pred, t_confuse_both_pred, t_confuse_both_miss, t_confuse_far_both_sample, t_confuse_far_both_miss = 0, 0, 0, 0, 0, 0, 0
 
@@ -543,6 +559,9 @@ class Engine(object):
                         boxes = torch.from_numpy(box_in).to(args.device, dtype=torch.float32)
                     else:
                         boxes = box_in.to(args.device, dtype=torch.float32)
+                
+                if args.action_attn_weight>0 or args.bg_attn_weight>0:
+                    ds_size = (model.resolution[0]*args.bg_upsample, model.resolution[1]*args.bg_upsample)
                 if args.bg_mask:
                     for i in range(args.seq_len//args.mask_every_frame):
                         bg_seg.append(bg_seg_in[i].to(args.device, dtype=torch.float32))
@@ -551,7 +570,6 @@ class Engine(object):
                     bg_seg = torch.stack(bg_seg, 0)
                     bg_seg = torch.permute(bg_seg, (1, 0, 2, 3)) #[batch, len, h, w]
                     b, l, h, w = bg_seg.shape
-                    ds_size = (model.resolution[0]*args.bg_upsample, model.resolution[1]*args.bg_upsample)
                     bg_seg = torch.reshape(bg_seg, (b*l, 1, h, w))
                     bg_seg = F.interpolate(bg_seg, size=ds_size)
                     bg_seg = torch.reshape(bg_seg, (b, l, ds_size[0], ds_size[1]))
@@ -569,20 +587,21 @@ class Engine(object):
                         pred_ego, pred_actor = model(inputs, boxes)
                     else:
                         pred_ego, pred_actor, attn = model(inputs)
-                        if args.plot_mode == 'mask':
-                            plot_mask(seg_front, args.id, id, v, args.logdir)
-                        elif args.plot:
+                        # if args.plot_mode == 'mask':
+                        #     plot_mask(seg_front, args.id, id, v, logdir)
+                        # elif args.plot:
+                        if args.plot:
                             channel_idx = [-1]
-                            if ('mvit' in model_name):
+                            if ('mvit' in args.model_name):
                                 for j,(attn,thw) in enumerate(attn):
                                     # attn = attn[0].mean(0)
                                     # print(attn.shape)
                                     # print(thw)
                                     for c_idx in channel_idx:
-                                        plot_mvit(attn[0],c_idx,raw,args.logdir,id,v,j,grid_size=(thw[1],thw[2]))
+                                        plot_mvit(attn[0], c_idx, raw, logdir , id, v, j, grid_size=(thw[1],thw[2]))
                                 # raise BaseException
                             else:
-                                plot_slot(attn, args.id, id, v, raw, actor, pred_actor, logdir, args.plot_threshold, args.plot_mode)
+                                plot_slot(attn, args.model_name, id, v, raw, actor, pred_actor, logdir, args.plot_threshold, args.plot_mode)
 
                 else:
                     pred_ego, pred_actor = model(inputs)
@@ -701,7 +720,7 @@ class Engine(object):
                 else:
                     actor_loss = bce(pred_actor, actor)
                 
-                if args.action_attn_weight>0.or and args.bg_attn_weight>0.:
+                if args.action_attn_weight>0.or args.bg_attn_weight>0.:
                     loss = actor_loss + args.ego_loss_weight*ego_loss + attn_loss
                 else:
                     loss = actor_loss + args.ego_loss_weight*ego_loss
@@ -820,26 +839,6 @@ class Engine(object):
             print(f'acc of the ego: {correct_ego/total_ego}')
             writer.add_scalar('ego', correct_ego/total_ego, epoch)
 
-            # mAP_per_class = average_precision_score(
-            #         label_actor_list,
-            #         map_pred_actor_list.astype(np.float32), 
-            #         average=None)
-
-
-            # mAP_per_class = np.round(mAP_per_class*100,1)
-            # print('mAP vehicle:')
-            # for value in mAP_per_class[:12]:
-            #     print(value,end=' & ')
-            # # print(np.round(mAP_per_class[:12],3))
-            # print('\nmAP ped:')
-            # for value in mAP_per_class[12:]:
-            #     print(value,end=' & ')
-
-            # if args.val_confusion:
-            #     print(f'Confusion-both-and-miss  {t_confuse_both_miss/t_confuse_both_sample}')
-            #     print(f'Confusion-far-both-and-miss  {t_confuse_far_both_miss/t_confuse_far_both_sample}')
-            #     print(f'Confusion-one-and-confused-w/-one  {t_confuse_pred/t_confuse_sample}')
-            #     print(f'Confusion-one-and-confused-w/-both  {t_confuse_both_pred/t_confuse_sample}')
 
             total_loss = total_loss / float(num_batches)
             tqdm.write(f'Epoch {self.cur_epoch:03d}, Batch {batch_num:03d}:' + f' Loss: {total_loss:3.3f}')
@@ -850,7 +849,6 @@ seq_len = args.seq_len
 num_ego_class = 4
 num_actor_class = 64
 
-
 # Data
 val_set = taco.TACO(args=args, training=False)
 dataloader_val = DataLoader(val_set, batch_size=1, shuffle=False, num_workers=4, pin_memory=True, drop_last=True)
@@ -859,7 +857,7 @@ model = generate_model(args, num_ego_class, num_actor_class).cuda()
 trainer = Engine(args)
 # model.load_state_dict(torch.load(os.path.join(args.logdir, 'model_100.pth')))
 
-model_path = os.path.join(args.logdir, args.cp)
+model_path = os.path.join(logdir, args.cp)
 model.load_state_dict(torch.load(model_path))
 
 trainer.validate(model, dataloader_val, None)

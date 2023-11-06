@@ -17,8 +17,7 @@ def get_parser():
     parser.add_argument('--channel', type=int, default=256, help='')
     parser.add_argument('--box', help="", action="store_true")
 
-    parser.add_argument('--cp', type=str, default='best_model.pth')
-
+    
     # attention
     parser.add_argument('--bg_slot', help="", action="store_true")
     parser.add_argument('--action_attn_weight', type=float, default=0., help='')
@@ -46,19 +45,23 @@ def get_parser():
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
     parser.add_argument('--num_workers', type=int, default=8, help='Number of train epochs.')
     parser.add_argument('--parallel', help="", action="store_true")
-    parser.add_argument('--model_index', type=int, default=-1)
     parser.add_argument('--tune_block_idx', type=int, default=[0,1,2,-3,-2,-1],nargs='+')
     
 
     # eval
+    parser.add_argument('--model_index', type=int, default=-1)
+    parser.add_argument('--cp', type=str, default='best_model.pth')
     parser.add_argument('--plot', help="", action="store_true")
     parser.add_argument('--plot_threshold', type=float, default=0, help='')
     parser.add_argument('--plot_mode', type=str, default='both')
     parser.add_argument('--val_confusion', help="", action="store_true")
     parser.add_argument('--ego_motion', type=int, default=-1)
+
+    
     # others
     parser.add_argument('--test', help="", action="store_true")
     parser.add_argument('--gt', help="", action="store_true")
+
 
     args = parser.parse_args()
 
@@ -144,15 +147,6 @@ def get_parser():
             +'ego_loss_weight: ' + str(args.ego_loss_weight)
             )
 
-    # if 'slot' in args.id and not args.fix_slot:
-    #     args.logdir = args.logdir +'_no_fix'
-    # if args.obj_mask:
-    #     args.logdir = args.logdir +'_obj_mask'
-        
-    # if args.gt:
-    #     args.logdir = args.logdir + '_gt'
-
-    # if args.model_index != -1:
-    #     args.logdir = args.logdir + '_'+str(args.model_index)
-    # print(f'Checkpoint path: {logdir}')
+    if args.model_index != -1:
+        logdir = logdir + '\n' + 'idx: ' + str(args.model_index)
     return args, logdir

@@ -109,6 +109,7 @@ class SoftPositionEmbed3D(nn.Module):
 class SLOT_SAVI(nn.Module):
     def __init__(self, args, num_ego_class, num_actor_class, num_slots=21, box=False):
         super(SLOT_SAVI, self).__init__()
+        self.num_ego_class = num_ego_class
         self.hidden_dim = args.channel
         self.hidden_dim2 = args.channel
         self.slot_dim, self.temp_dim = args.channel, args.channel
@@ -159,8 +160,12 @@ class SLOT_SAVI(nn.Module):
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 192
-            self.resolution = (8, 24)
-            self.resolution3d = (16, 8, 24)
+            if args.dataset == 'oats':
+                self.resolution = (7, 7)
+                self.resolution3d = (16, 7, 7)
+            else:
+                self.resolution = (8, 24)
+                self.resolution3d = (16, 8, 24)
 
         if args.allocated_slot:
             self.head = Instance_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)
@@ -254,7 +259,12 @@ class SLOT_SAVI(nn.Module):
 
 
         # x = torch.sum(x, 1)
-        x = self.drop(x)
-        ego_x = self.drop(ego_x)
-        ego_x, x = self.head(x, ego_x)
-        return ego_x, x, attn_masks.view(b, seq_len, n, self.resolution[0], self.resolution[1])
+
+        if self.num_ego_class != 0:
+            ego_x = self.drop(ego_x)
+            ego_x, x = self.head(x, ego_x)
+            return ego_x, x, attn_masks.view(b, seq_len, n, self.resolution[0], self.resolution[1])
+        else:
+            x = self.head(x)
+            return x, attn_masks.view(b, seq_len, n, self.resolution[0], self.resolution[1])
+

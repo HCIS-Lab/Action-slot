@@ -73,7 +73,7 @@ class OATS(Dataset):
         # root = '/home/hcis-s20/Desktop/data_collection'
         # root = '/media/hankung/ssd/oats/oats_data/'
         # root = '/media/hcis-s16/hank/taco'
-        # root = '/media/hcis-s20/SRL/taco'
+        # root = '/media/hcis-s20/SRL/oats/oats_data'
         root = '/media/user/data/oats/oats_data'
         # root = '/media/hcis-s19/DATA/taco'
 

@@ -3,8 +3,6 @@ from torch import nn
 import numpy as np
 
 import sys
-# sys.path.append('/media/hankung/ssd/retrieval/models')
-sys.path.append('/work/u8526971/retrieval/models')
 sys.path.append('/media/hcis-s16/hank/Action-Slot/models')
 sys.path.append('/media/hcis-s20/SRL/action-slot/models')
 sys.path.append('/media/hankung/ssd/Action-Slot/models')
@@ -12,8 +10,6 @@ sys.path.append('/media/hcis-s19/DATA/Action-Slot/models')
 
 
 import vivit
-# import cnn_gru
-# import cnn_convgru
 import res3d
 import i3d
 import i3d_kinetics

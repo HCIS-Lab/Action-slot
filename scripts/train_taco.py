@@ -195,9 +195,9 @@ class Engine(object):
 				bg_seg = torch.permute(bg_seg, (1, 0, 2, 3)) #[batch, len, h, w]
 				b, l, h, w = bg_seg.shape
 				
-				bg_seg = torch.reshape(bg_seg, (b*l, 1, h, w))
-				bg_seg = F.interpolate(bg_seg, size=ds_size)
-				bg_seg = torch.reshape(bg_seg, (b, l, ds_size[0], ds_size[1]))
+				# bg_seg = torch.reshape(bg_seg, (b*l, 1, h, w))
+				# bg_seg = F.interpolate(bg_seg, size=ds_size)
+				# bg_seg = torch.reshape(bg_seg, (b, l, ds_size[0], ds_size[1]))
 
 			if args.obj_mask:
 				for i in range(args.seq_len):
@@ -376,7 +376,7 @@ class Engine(object):
 				# w/ L_bg, w/o L_neg 
 				elif args.bg_slot and args.bg_mask and args.bg_attn_weight>0. and not args.action_attn_weight > 0.:
 					b, l, n, h, w = attn.shape
-
+					print(55555555)
 					if args.bg_upsample != 1:
 						attn = attn.reshape(-1, 1, h, w)
 						attn = F.interpolate(attn, size=ds_size, mode='bilinear')
@@ -591,9 +591,9 @@ class Engine(object):
 					bg_seg = torch.permute(bg_seg, (1, 0, 2, 3)) #[batch, len, h, w]
 					b, l, h, w = bg_seg.shape
 					
-					bg_seg = torch.reshape(bg_seg, (b*l, 1, h, w))
-					bg_seg = F.interpolate(bg_seg, size=ds_size)
-					bg_seg = torch.reshape(bg_seg, (b, l, ds_size[0], ds_size[1]))
+					# bg_seg = torch.reshape(bg_seg, (b*l, 1, h, w))
+					# bg_seg = F.interpolate(bg_seg, size=ds_size)
+					# bg_seg = torch.reshape(bg_seg, (b, l, ds_size[0], ds_size[1]))
 				if ('slot' in args.model_name) or args.box or 'mvit' in args.model_name:
 					if args.box:
 						pred_ego, pred_actor = model(inputs, boxes)

@@ -41,8 +41,8 @@ class TACO(Dataset):
         # root = '/media/hankung/ssd/carla_13/CARLA_0.9.13/PythonAPI/examples/data_collection'
         # root = '/media/hcis-s16/hank/taco'
         # root = '/media/hcis-s20/SRL/taco'
-        root = '/media/user/data/taco'
-        # root = '/media/hcis-s19/DATA/taco'
+        # root = '/media/user/data/taco'
+        root = '/media/hcis-s19/DATA/taco'
 
         self.training = training
         self.model_name = args.model_name
@@ -304,8 +304,8 @@ class TACO(Dataset):
                                 if os.path.isfile(v+"/rgb/"+video_folder+imgname):
                                     videos_temp.append(v+"/rgb/"+video_folder +imgname)
                                     idx_temp.append(i-start)
-                                if os.path.isfile(v+"/instance_segmentation/ins_front/"+segname):
-                                    seg_temp.append(v+"/instance_segmentation/ins_front/"+segname)
+                                if os.path.isfile(v+"/mask/background/"+segname):
+                                    seg_temp.append(v+"/mask/background/"+segname)
                                 if os.path.isfile(v+"/seg_mask/"+objname):
                                     obj_temp.append(v+"/seg_mask/"+objname)
                                 # if self.box:
@@ -572,32 +572,43 @@ class TACO(Dataset):
             if self.args.plot:
                 data['raw'].append(x)
             if self.args.bg_mask and i %self.args.mask_every_frame == 0:
-                data['bg_seg'].append(get_stuff_mask(seq_seg[i]))
-            if self.args.obj_mask and i % self.mask_every_frame:
+                data['bg_seg'].append(Image.open(seq_seg[i]).convert('L'))
+            if self.args.obj_mask and i % self.mask_every_frame == 0:
                 data['obj_masks'].append(get_obj_mask(obj_masks_list[i]))
         if self.args.plot:
-            data['raw'] = to_np_no_norm(data['raw'], self.args.model_name)
-        data['videos'] = to_np(data['videos'], self.args.model_name, args.backbone)
+            data['raw'] = to_np_no_norm(data['raw'])
+
+        data['videos'] = to_np(data['videos'], self.args.model_name, self.args.backbone)
+        data['bg_seg'] = to_np_no_norm(data['bg_seg'])
+
 
         if self.args.val_confusion:
             data['confusion_label'] = self.confusion_label_list[index]
         return data
 
-def get_stuff_mask(seg_path):
-    img = cv2.imread(os.path.join(seg_path), cv2.IMREAD_COLOR)
-    img = torch.flip(torch.from_numpy(img).type(torch.int).permute(2,0,1),[0])
+# def get_stuff_mask(seg_path):
+#     img = cv2.imread(os.path.join(seg_path), cv2.IMREAD_COLOR)
+#     img = torch.flip(torch.from_numpy(img).type(torch.int).permute(2,0,1),[0])
 
-    condition = img[0] == 4 
-    condition += img[0] == 6
-    condition += img[0] == 7
-    condition += img[0] == 8
-    condition += img[0] == 10
-    condition += img[0] == 14
-    condition = ~condition
-    condition = condition.type(torch.int)
-    condition = condition.type(torch.float32)
+#     condition = img[0] == 4 
+#     condition += img[0] == 6
+#     condition += img[0] == 7
+#     condition += img[0] == 8
+#     condition += img[0] == 10
+#     condition += img[0] == 14
+#     condition = ~condition
+#     condition = condition.type(torch.int)
+#     condition = condition.type(torch.float32)
 
-    return condition
+    # return condition
+
+# def get_stuff_mask(seg_path):
+#     img = cv2.imread(os.path.join(seg_path), cv2.IMREAD_GRAYSCALE)
+#     img = torch.flip(torch.from_numpy(img).type(torch.int).permute(2,0,1),[0])
+
+#     condition = condition.type(torch.float32)
+
+#     return condition
 
 def get_obj_mask(obj_path):
     seg_dict = np.load(obj_path)
@@ -657,11 +668,11 @@ def to_np(v, model_name, backbone):
         v[i] = transform(v[i])
     return v
 
-def to_np_no_norm(v, model_name):
+def to_np_no_norm(v):
+    transform = transforms.Compose([
+                transforms.ToTensor(),
+                ])
     for i, _ in enumerate(v):
-        transform = transforms.Compose([
-                                transforms.ToTensor(),
-                                ])
         v[i] = transform(v[i])
     return v
 

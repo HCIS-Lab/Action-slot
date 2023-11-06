@@ -174,6 +174,7 @@ class SoftPositionEmbed3D(nn.Module):
 class SLOT_VPS(nn.Module):
     def __init__(self, args, num_ego_class, num_actor_class, num_slots=21):
         super(SLOT_VPS, self).__init__()
+        self.num_ego_class = num_ego_class
         self.hidden_dim = args.channel
         self.hidden_dim2 = args.channel
         self.slot_dim, self.temp_dim = args.channel, args.channel
@@ -195,8 +196,12 @@ class SLOT_VPS(nn.Module):
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 192
-            self.resolution = (8, 24)
-            self.resolution3d = (16, 8, 24)
+            if args.dataset == 'oats':
+                self.resolution = (7, 7)
+                self.resolution3d = (16, 7, 7)
+            else:
+                self.resolution = (8, 24)
+                self.resolution3d = (16, 8, 24)
         
 
         if args.allocated_slot:
@@ -303,8 +308,8 @@ class SLOT_VPS(nn.Module):
         slots = self.vr6(slots)
         slots = torch.sum(slots, dim=1)
         slots = self.drop(slots)
-        ego_x = self.drop(ego_x)
-        ego_x, slots = self.head(slots, ego_x)
+
+        
 
 
         b, l, n, thw = attn_masks.shape
@@ -316,5 +321,12 @@ class SLOT_VPS(nn.Module):
         attn_masks = attn_masks.view(attn_masks.shape[0],attn_masks.shape[1],self.resolution[0], self.resolution[1])
         attn_masks = attn_masks.unsqueeze(-1)
 
+        if self.num_ego_class != 0:
+            ego_x = self.drop(ego_x)
+            ego_x, slots = self.head(slots, ego_x)
+            return ego_x, slots, attn_masks.view(b, seq_len, n, self.resolution[0], self.resolution[1])
+        else:
+            slots = self.head(slots)
+            return slots, attn_masks.view(b, seq_len, n, self.resolution[0], self.resolution[1])
 
-        return ego_x, slots, attn_masks.view(b, seq_len, n, self.resolution[0], self.resolution[1])
+

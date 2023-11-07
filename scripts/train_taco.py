@@ -191,7 +191,9 @@ class Engine(object):
 				for i in range(args.seq_len//args.mask_every_frame):
 					bg_seg.append(bg_seg_in[i].to(args.device, dtype=torch.float32))
 				h, w = bg_seg[0].shape[-2], bg_seg[0].shape[-1]
-				bg_seg = torch.stack(bg_seg, 0)
+				bg_seg = torch.stack(bg_seg, 0) #[l, b, 1, h, w]
+				l, b, _, h, w = bg_seg.shape
+				bg_seg = torch.reshape(bg_seg, (l, b, h, w))
 				bg_seg = torch.permute(bg_seg, (1, 0, 2, 3)) #[batch, len, h, w]
 				b, l, h, w = bg_seg.shape
 				
@@ -588,6 +590,8 @@ class Engine(object):
 				if args.bg_mask:
 					h, w = bg_seg[0].shape[-2], bg_seg[0].shape[-1]
 					bg_seg = torch.stack(bg_seg, 0)
+					l, b, _, h, w = bg_seg.shape
+					bg_seg = torch.reshape(bg_seg, (l, b, h, w))
 					bg_seg = torch.permute(bg_seg, (1, 0, 2, 3)) #[batch, len, h, w]
 					b, l, h, w = bg_seg.shape
 					

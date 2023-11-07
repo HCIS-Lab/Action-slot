@@ -56,7 +56,7 @@ def get_parser():
     parser.add_argument('--plot_mode', type=str, default='both')
     parser.add_argument('--val_confusion', help="", action="store_true")
     parser.add_argument('--ego_motion', type=int, default=-1)
-
+    parser.add_argument('--scale', type=float, default=-1.0)
     
     # others
     parser.add_argument('--test', help="", action="store_true")
@@ -124,7 +124,7 @@ def get_parser():
     elif args.model_name in ['mvit', 'videomae']:
         logdir = os.path.join(
             based_log,
-            'tune_block_idx: ' + str(tune_block_idx) + '\n'
+            'tune_block_idx: ' + str(args.tune_block_idx) + '\n'
             + 'channel :' + str(args.channel) + '\n'
             +'epoch: ' + str(args.epochs) + '\n'
             +'lr: ' + str(args.lr) + '\n'

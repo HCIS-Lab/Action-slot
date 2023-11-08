@@ -180,14 +180,14 @@ def generate_model(args, num_ego_class, num_actor_class):
         model = action_slot.ACTION_SLOT(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
         for t in model.parameters():
             t.requires_grad=True
-        # for t in model.resnet.parameters():
-        #     t.requires_grad=False
-        # for t in model.resnet.blocks[-1].parameters():
-        #     t.requires_grad=True
-        # for t in model.resnet.blocks[-2].parameters():
-        #     t.requires_grad=True
-        # for t in model.resnet.blocks[-3].parameters():
-        #     t.requires_grad=True
+        for t in model.resnet.parameters():
+            t.requires_grad=False
+        for t in model.resnet.blocks[-1].parameters():
+            t.requires_grad=True
+        for t in model.resnet.blocks[-2].parameters():
+            t.requires_grad=True
+        for t in model.resnet.blocks[-3].parameters():
+            t.requires_grad=True
 
     elif model_name == 'action_slot' and args.backbone == 'i3d_inception': 
         model = action_slot.ACTION_SLOT(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)

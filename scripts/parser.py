@@ -10,6 +10,7 @@ def get_parser():
 
     # model
     parser.add_argument('--model_name', type=str, help='Unique experiment identifier.')
+    parser.add_argument('--root', type=str, help='dataset path')
     parser.add_argument('--backbone', type=str, help="x3d-2")
     parser.add_argument('--num_slots', type=int, default=64, help='')
     parser.add_argument('--seq_len', type=int, default=16, help='')
@@ -121,7 +122,7 @@ def get_parser():
             +'bce_pos_weight: ' + str(args.bce_pos_weight) + '\n'
             +'ego_loss_weight: ' + str(args.ego_loss_weight)
             )
-    elif args.model_name in ['mvit', 'videomae']:
+    elif args.model_name in ['mvit', 'videoMAE']:
         logdir = os.path.join(
             based_log,
             'tune_block_idx: ' + str(args.tune_block_idx) + '\n'

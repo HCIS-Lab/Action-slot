@@ -42,7 +42,7 @@ class TACO(Dataset):
         # root = '/media/hcis-s16/hank/taco'
         # root = '/media/hcis-s20/SRL/taco'
         # root = '/media/user/data/taco'
-        root = '/media/hcis-s19/DATA/taco'
+        root = args.root
 
         self.training = training
         self.model_name = args.model_name

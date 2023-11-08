@@ -511,18 +511,6 @@ if __name__ == '__main__':
     trainer = Engine(args,model,optimizer,num_actor_class,scheduler)
 
     # Create logdir
-    model_index = 1
-    while(1):
-        if not os.path.isdir(logdir):
-            os.makedirs(logdir)
-            break
-        else:
-            if not os.path.isdir(logdir + '\n' + 'idx: ' + str(model_index)):
-                logdir = logdir + '\n' + 'idx: ' + str(model_index)
-                os.makedirs(logdir)
-                break
-            else:
-                model_index += 1
     print(f'Checkpoint path: {logdir}')
 
     result_list = []

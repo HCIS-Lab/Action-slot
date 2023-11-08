@@ -219,6 +219,7 @@ class Engine(object):
         self.criterion = nn.DataParallel(self.criterion)
 
     def train(self):
+        self.reset_log()
         model_name = self.args.model_name
         if scheduler is not None:
             print(f"Current epoch: {self.cur_epoch}, lr: {scheduler.get_last_lr()}")

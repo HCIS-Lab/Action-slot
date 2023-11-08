@@ -11,7 +11,7 @@ from tqdm import tqdm
 import sys
 import json 
 import random
-from tool import get_rot
+# from tool import get_rot
 import torchvision.transforms as transforms
 # from torchvideotransforms import video_transforms, volume_transforms
 

@@ -80,7 +80,7 @@ class TACO(Dataset):
 
         type_list = ['interactive', 'non-interactive', 'ap_Town01', 
         'ap_Town02','ap_Town03', 'ap_Town04', 'ap_Town05', 'ap_Town06', 'ap_Town07', 'ap_Town10HD', 
-        'runner_Town05', 'runner_Town10HD']
+        'runner_Town03','runner_Town05', 'runner_Town10HD']
         n=0
 
         # statistic

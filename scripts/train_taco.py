@@ -448,8 +448,8 @@ class Engine(object):
         # }
 
         # Save ckpt for every epoch
-        torch.save(model.state_dict(), os.path.join(logdir, 'model_%d.pth'%self.cur_epoch))
-        tqdm.write('====== Saved recent model ======>')
+        # torch.save(model.state_dict(), os.path.join(logdir, 'model_%d.pth'%self.cur_epoch))
+        # tqdm.write('====== Saved recent model ======>')
         
         if save_best:
             torch.save(model.state_dict(), os.path.join(logdir, 'best_model.pth'))

@@ -209,34 +209,38 @@ def generate_model(args, num_ego_class, num_actor_class):
         model = slot_vps.SLOT_VPS(args, num_ego_class, num_actor_class, args.num_slots)
         for t in model.parameters():
             t.requires_grad=True
-        for t in model.resnet.parameters():
-            t.requires_grad=False
-        for t in model.resnet[-1].parameters():
-            t.requires_grad=True
-        for t in model.resnet[-2].parameters():
-            t.requires_grad=True
+
+        if args.backbone !='inception':
+            for t in model.resnet.parameters():
+                t.requires_grad=False
+            for t in model.resnet[-1].parameters():
+                t.requires_grad=True
+            for t in model.resnet[-2].parameters():
+                t.requires_grad=True
 
     elif model_name == 'slot_mo':
         model = slot_mo.SLOT_MO(args, num_ego_class, num_actor_class, args.num_slots)
         for t in model.parameters():
             t.requires_grad=True
-        for t in model.resnet.parameters():
-            t.requires_grad=False
-        for t in model.resnet[-1].parameters():
-            t.requires_grad=True
-        for t in model.resnet[-2].parameters():
-            t.requires_grad=True
+        if args.backbone != 'inception':
+            for t in model.resnet.parameters():
+                t.requires_grad=False
+            for t in model.resnet[-1].parameters():
+                t.requires_grad=True
+            for t in model.resnet[-2].parameters():
+                t.requires_grad=True
 
     elif model_name == 'slot_savi':
         model = slot_savi.SLOT_SAVI(args, num_ego_class, num_actor_class, args.num_slots)
         for t in model.parameters():
             t.requires_grad=True
-        for t in model.resnet.parameters():
-            t.requires_grad=False
-        for t in model.resnet[-1].parameters():
-            t.requires_grad=True
-        for t in model.resnet[-2].parameters():
-            t.requires_grad=True
+        if args.backbone !='inception':
+            for t in model.resnet.parameters():
+                t.requires_grad=False
+            for t in model.resnet[-1].parameters():
+                t.requires_grad=True
+            for t in model.resnet[-2].parameters():
+                t.requires_grad=True
 
     elif model_name == 'ARG' or model_name == 'ORN':
         if model_name == 'ARG':

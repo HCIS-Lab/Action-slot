@@ -71,10 +71,10 @@ class OATS(Dataset):
         # root = '/work/u8526971/data_collection'
         # root = '/home/hcis-s19/Desktop/data_collection'
         # root = '/home/hcis-s20/Desktop/data_collection'
-        # root = '/media/hankung/ssd/oats/oats_data/'
+        root = '/media/hankung/ssd/oats/oats_data/'
         # root = '/media/hcis-s16/hank/taco'
         # root = '/media/hcis-s20/SRL/oats/oats_data'
-        root = '/media/user/data/oats/oats_data'
+        # root = '/media/user/data/oats/oats_data'
         # root = '/media/hcis-s19/DATA/taco'
 
         self.training = training
@@ -97,7 +97,6 @@ class OATS(Dataset):
 
         self.step = []
         self.start_idx = []
-        self.num_class = 64
         
         
         self.Max_N = Max_N

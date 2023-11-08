@@ -4,6 +4,8 @@ import torchvision.models as models
 import torch.nn.functional as F
 from classifier import Head, Instance_Head
 from pytorchvideo.models.hub import i3d_r50
+import inception
+
 import numpy as np
 # from models.ConvGRU import *
 from math import ceil 
@@ -109,6 +111,7 @@ class SoftPositionEmbed3D(nn.Module):
 class SLOT_SAVI(nn.Module):
     def __init__(self, args, num_ego_class, num_actor_class, num_slots=21, box=False):
         super(SLOT_SAVI, self).__init__()
+        self.args = args
         self.num_ego_class = num_ego_class
         self.hidden_dim = args.channel
         self.hidden_dim2 = args.channel
@@ -116,7 +119,18 @@ class SLOT_SAVI(nn.Module):
         self.ego_c = 128
         self.num_slots = num_slots
         self.resnet = i3d_r50(True)
-        if args.backbone == 'i3d-2':
+
+        if args.backbone == 'inception':
+            self.resnet = inception.INCEPTION()
+            self.in_c = 2048
+            if args.dataset == 'taco':
+                self.resolution = (8, 24)
+                self.resolution3d = (args.seq_len, 5, 5)
+            elif args.dataset == 'oats':
+                self.resolution = (5, 5)
+                self.resolution3d = (args.seq_len, 5, 5)
+
+        elif args.backbone == 'i3d-2':
             self.resnet = self.resnet.blocks[:-2]
             self.resolution = (16, 48)
             self.resolution3d = (4, 16, 48)
@@ -172,11 +186,12 @@ class SLOT_SAVI(nn.Module):
         else:
             self.head = Head(self.slot_dim, num_ego_class, num_actor_class+1, self.ego_c)
 
-        self.conv3d_ego = nn.Sequential(
-                nn.ReLU(),
-                nn.BatchNorm3d(self.in_c),
-                nn.Conv3d(self.in_c, self.ego_c, (1, 1, 1), stride=1),
-                )
+        if self.num_ego_class != 0:
+            self.conv3d_ego = nn.Sequential(
+                    nn.ReLU(),
+                    nn.BatchNorm3d(self.in_c),
+                    nn.Conv3d(self.in_c, self.ego_c, (1, 1, 1), stride=1),
+                    )
 
         self.conv3d = nn.Sequential(
                 nn.ReLU(),
@@ -216,22 +231,31 @@ class SLOT_SAVI(nn.Module):
         batch_size = x[0].shape[0]
         height, width = x[0].shape[2], x[0].shape[3]
         if isinstance(x, list):
-            x = torch.stack(x, dim=0) #[v, b, 2048, h, w]
-            # l, b, c, h, w
+            x = torch.stack(x, dim=0) #[T, b, C, h, w]
+
+        if self.args.backbone == 'inception':
+            x = torch.reshape(x, (seq_len*batch_size, 3, height, width))
+            x = self.resnet(x)
+            _, c, h, w  = x.shape
+            x = torch.reshape(x, (self.args.seq_len, batch_size, c, h, w))
+            x = x.permute(1, 2, 0, 3, 4)
+        else:
             x = torch.permute(x, (1,2,0,3,4)) #[b, v, 2048, h, w]
-        # [bs, c, n, w, h]
+            for i in range(len(self.resnet)):
+                x = self.resnet[i](x)
 
-        for i in range(len(self.resnet)):
-            x = self.resnet[i](x)
 
-        ego_x = self.conv3d_ego(x)
+        if self.num_ego_class != 0:
+            ego_x = self.conv3d_ego(x)
+            ego_x = self.pool(ego_x)
+            ego_x = torch.reshape(ego_x, (batch_size, self.ego_c))
+
         new_seq_len = x.shape[2]
         new_h, new_w = x.shape[3], x.shape[4]
 
         # # [b, c, n , w, h]
         x = self.conv3d(x)
-        ego_x = self.pool(ego_x)
-        ego_x = torch.reshape(ego_x, (batch_size, self.ego_c))
+        
 
 
         x = torch.permute(x, (0, 2, 3, 4, 1))

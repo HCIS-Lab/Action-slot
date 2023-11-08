@@ -163,22 +163,6 @@ class ACTION_SLOT(nn.Module):
                 self.resolution = (7, 7)
                 self.resolution3d = (4, 7, 7)
 
-        # elif args.backbone == 'i3d_inception_4f':
-        #     self.resnet = i3d(final_endpoint='Mixed_4f')
-        #     self.resnet.load_state_dict(torch.load('/media/hankung/ssd/retrieval/models/rgb_charades.pt'), strict=False)
-        #     self.in_c = 832
-        #     if args.dataset == 'oats':
-        #         self.resolution = (14, 14)
-        #         self.resolution3d = (8, 14, 14)
-
-        # elif args.backbone == 'i3d_inception_5c':
-        #     self.resnet = i3d(final_endpoint='Mixed_5c')
-        #     self.resnet.load_state_dict(torch.load('/media/hankung/ssd/retrieval/models/rgb_charades.pt'), strict=False)
-        #     self.in_c = 1024
-        #     if args.dataset == 'oats':
-        #         self.resolution = (7, 7)
-        #         self.resolution3d = (4, 7, 7)
-
         elif args.backbone == 'x3d-2':
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo:main', 'x3d_m', pretrained=True)
             self.resnet = self.resnet.blocks[:-1]

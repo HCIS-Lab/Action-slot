@@ -4,6 +4,8 @@ import torchvision.models as models
 import torch.nn.functional as F
 from classifier import Head, Instance_Head
 from pytorchvideo.models.hub import i3d_r50
+import inception
+
 import numpy as np
 from math import ceil 
 
@@ -174,6 +176,7 @@ class SoftPositionEmbed3D(nn.Module):
 class SLOT_VPS(nn.Module):
     def __init__(self, args, num_ego_class, num_actor_class, num_slots=21):
         super(SLOT_VPS, self).__init__()
+        self.args = args
         self.num_ego_class = num_ego_class
         self.hidden_dim = args.channel
         self.hidden_dim2 = args.channel
@@ -181,7 +184,18 @@ class SLOT_VPS(nn.Module):
         self.ego_c = 128
         self.num_slots = num_slots
         self.resnet = i3d_r50(True)
-        if args.backbone == 'i3d-2':
+
+        if args.backbone == 'inception':
+            self.resnet = inception.INCEPTION()
+            self.in_c = 2048
+            if args.dataset == 'taco':
+                self.resolution = (8, 24)
+                self.resolution3d = (args.seq_len, 5, 5)
+            elif args.dataset == 'oats':
+                self.resolution = (5, 5)
+                self.resolution3d = (args.seq_len, 5, 5)
+
+        elif args.backbone == 'i3d-2':
             self.resnet = self.resnet.blocks[:-2]
             self.resolution = (16, 48)
             self.resolution3d = (4, 16, 48)
@@ -256,13 +270,21 @@ class SLOT_VPS(nn.Module):
         seq_len = len(x)
         batch_size = x[0].shape[0]
         height, width = x[0].shape[2], x[0].shape[3]
+
         if isinstance(x, list):
             x = torch.stack(x, dim=0) #[v, b, 2048, h, w]
-            # l, b, c, h, w
+
+        if self.args.backbone == 'inception':
+            x = torch.reshape(x, (seq_len*batch_size, 3, height, width))
+            x = self.resnet(x)
+            _, c, h, w  = x.shape
+            x = torch.reshape(x, (self.args.seq_len, batch_size, c, h, w))
+            x = x.permute(1, 2, 0, 3, 4)
+        else:
             x = torch.permute(x, (1,2,0,3,4)) #[b, v, 2048, h, w]
-        # [bs, c, n, w, h]
-        for i in range(len(self.resnet)):
-            x = self.resnet[i](x)
+            # [bs, c, n, w, h]
+            for i in range(len(self.resnet)):
+                x = self.resnet[i](x)
 
         if self.num_ego_class != 0:
             ego_x = self.conv3d_ego(x)

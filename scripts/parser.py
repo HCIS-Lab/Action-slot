@@ -7,10 +7,11 @@ def get_parser():
     #dataset
     parser.add_argument('--dataset', type=str, default='taco', choices=['taco', 'oats', 'road'])
     parser.add_argument('--oats_test_split', type=str, default='0', choices=['s1', 's2', 's3'])
+    parser.add_argument('--root', type=str, help='dataset path')
 
+    
     # model
     parser.add_argument('--model_name', type=str, help='Unique experiment identifier.')
-    parser.add_argument('--root', type=str, help='dataset path')
     parser.add_argument('--backbone', type=str, help="x3d-2")
     parser.add_argument('--num_slots', type=int, default=64, help='')
     parser.add_argument('--seq_len', type=int, default=16, help='')

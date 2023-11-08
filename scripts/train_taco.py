@@ -77,7 +77,11 @@ class Engine(object):
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.num_actor_class = num_actor_class
-        self.criterion = ActionSlotLoss(args,num_actor_class).to(self.args.device)
+        if hasattr(self.model, 'resolution'):
+            attention_res = (self.model.resolution[0]*args.bg_upsample, self.model.resolution[1]*args.bg_upsample)
+        else:
+            attention_res = None
+        self.criterion = ActionSlotLoss(args, num_actor_class, attention_res).to(self.args.device)
 
         self.cur_epoch = 0
         self.train_loss = []

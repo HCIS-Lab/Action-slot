@@ -289,15 +289,15 @@ class Engine(object):
                 self.step(data,'val')
             
             if args.action_attn_weight>0. or args.bg_attn_weight>0.:
-                attn_loss_epoch = attn_loss_epoch / self.num_batches
+                attn_loss_epoch = self.attn_loss_epoch / self.num_batches
                 print('attn loss:')
                 print(attn_loss_epoch)
                 if args.action_attn_weight>0.:
-                    action_attn_loss_epoch = action_attn_loss_epoch /self.num_batches
+                    action_attn_loss_epoch = self.action_attn_loss_epoch /self.num_batches
                     print('action_attn_loss')
                     print(action_attn_loss_epoch)
                 if args.bg_attn_weight>0.:
-                    bg_attn_loss_epoch = bg_attn_loss_epoch / self.num_batches
+                    bg_attn_loss_epoch = self.bg_attn_loss_epoch / self.num_batches
                     print('bg_attn_loss_epoch')
                     print(bg_attn_loss_epoch)
                 

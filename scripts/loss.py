@@ -8,11 +8,11 @@ from scipy.optimize import linear_sum_assignment
 from utils import inter_and_union
 
 class ActionSlotLoss(nn.Module):
-    def __init__(self, args, num_actor_class):
+    def __init__(self, args, num_actor_class, attention_res=None):
         super(ActionSlotLoss, self).__init__()
         self.args = args
         self.num_actor_class = num_actor_class
-        
+        self.attention_res = attention_res
         self.ego_ce = nn.CrossEntropyLoss(reduction='mean')
         self.actor_loss_type =  self._parse_actor_loss(args)
         self.attn_loss_type = self._parse_attn_loss(args)
@@ -43,8 +43,7 @@ class ActionSlotLoss(nn.Module):
                 flag = 4
         if flag >0:
             self.obj_bce = nn.BCELoss()
-        if flag >1:
-            self.ds_size = (self.model.resolution[0]*args.bg_upsample, self.model.resolution[1]*args.bg_upsample)
+        
         return flag
     
     def ego_loss(self,pred, label):
@@ -86,17 +85,12 @@ class ActionSlotLoss(nn.Module):
             bg_seg = []
             bg_seg_in = label['bg_seg']
             for i in range(self.args.seq_len//self.args.mask_every_frame):
-                    bg_seg.append(bg_seg_in[i].to(self.args.device, dtype=torch.float32))
+                bg_seg.append(bg_seg_in[i].to(self.args.device, dtype=torch.float32))
             h, w = bg_seg[0].shape[-2], bg_seg[0].shape[-1]
             bg_seg = torch.stack(bg_seg, 0)
+            b, l, _, h, w = bg_seg.shape
+            bg_seg = torch.reshape(bg_seg, (b, l, h, w))
             bg_seg = torch.permute(bg_seg, (1, 0, 2, 3)) #[batch, len, h, w]
-            b, l, h, w = bg_seg.shape
-
-            h, w = bg_seg[0].shape[-2], bg_seg[0].shape[-1]
-            bg_seg = torch.stack(bg_seg, 0) # l b 1 h w
-            bg_seg = torch.permute(bg_seg.squeeze(2), (1, 0, 2, 3)) #[batch, len, h, w]
-            b, l, h, w = bg_seg.shape
-
             
         if self.attn_loss_type == 1:
             obj_mask_list = []
@@ -135,7 +129,7 @@ class ActionSlotLoss(nn.Module):
             b, l, n, h, w = attn.shape
             if self.args.bg_upsample != 1:
                 attn = attn.reshape(-1, 1, h, w)
-                attn = F.interpolate(attn, size=self.ds_size, mode='bilinear')
+                attn = F.interpolate(attn, size=self.attention_res, mode='bilinear')
                 _, _, h, w = attn.shape
                 attn = attn.reshape(b, l, n, h, w)
             action_attn = attn[:, :, :self.num_actor_class, :, :]
@@ -152,7 +146,7 @@ class ActionSlotLoss(nn.Module):
 
             if self.args.bg_upsample != 1:
                 attn = attn.reshape(-1, 1, h, w)
-                attn = F.interpolate(attn, size=self.ds_size, mode='bilinear')
+                attn = F.interpolate(attn, size=self.attention_res, mode='bilinear')
                 _, _, h, w = attn.shape
                 attn = attn.reshape(b, l, n, h, w)
 
@@ -175,7 +169,7 @@ class ActionSlotLoss(nn.Module):
 
             if self.args.bg_upsample != 1:
                 attn = attn.reshape(-1, 1, h, w)
-                attn = F.interpolate(attn, size=self.ds_size, mode='bilinear')
+                attn = F.interpolate(attn, size=self.attention_res, mode='bilinear')
                 _, _, h, w = attn.shape
                 attn = attn.reshape(b, l, n, h, w)
 

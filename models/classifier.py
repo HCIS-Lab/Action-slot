@@ -20,18 +20,16 @@ class Head(nn.Module):
 			nn.ReLU(inplace=False),
 			nn.Linear(in_channel, num_actor_classes)
 			)
-
+		
 	def forward(self, x, ego_x=None):
+		y_ego = None
 		y_actor = self.fc_actor(x)
 		if self.num_ego_classes != 0:
 			if ego_x != None:
 				y_ego = self.fc_ego(ego_x)
 			else:
 				y_ego = self.fc_ego(x)
-		
-			return y_ego, y_actor
-		else:
-			return y_actor
+		return y_ego, y_actor
 
 class Instance_Head(nn.Module):
 	def __init__(self, in_channel, num_ego_classes, num_actor_classes, ego_channel=0):
@@ -62,6 +60,7 @@ class Instance_Head(nn.Module):
 
 		b, n, _ = x.shape
 		y_actor = []
+		y_ego = None
 		for i in range(self.num_actor_classes):
 			y_actor.append(self.fc_actor[i](x[:, i, :]))
 		y_actor = torch.stack(y_actor, dim=0)
@@ -70,7 +69,5 @@ class Instance_Head(nn.Module):
 		# x = torch.reshape(x, (b, n))
 		if self.num_ego_classes != 0:
 			y_ego = self.fc_ego(ego_x)
-			return y_ego, y_actor
-		else:
-			return y_actor
-
+			
+		return y_ego, y_actor

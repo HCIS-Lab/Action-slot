@@ -8,6 +8,7 @@ from pytorchvideo.models.hub import csn_r101
 from pytorchvideo.models.hub import mvit_base_16x4
 import i3d
 import inception
+import r50
 import numpy as np
 from math import ceil 
 from ptflops import get_model_complexity_info
@@ -135,13 +136,23 @@ class ACTION_SLOT(nn.Module):
 
         if args.backbone == 'inception':
             self.resnet = inception.INCEPTION()
+            self.in_c = 768
+            if args.dataset == 'taco':
+                self.resolution = (8, 24)
+                self.resolution3d = (args.seq_len, 5, 5)
+            elif args.dataset == 'oats':
+                self.resolution = (12, 12)
+                self.resolution3d = (args.seq_len, 12, 12)
+
+        elif args.backbone == 'r50':
+            self.resnet = r50.R50()
             self.in_c = 2048
             if args.dataset == 'taco':
                 self.resolution = (8, 24)
                 self.resolution3d = (args.seq_len, 5, 5)
             elif args.dataset == 'oats':
-                self.resolution = (5, 5)
-                self.resolution3d = (args.seq_len, 5, 5)
+                self.resolution = (7, 7)
+                self.resolution3d = (args.seq_len, 7, 7)
 
         elif args.backbone == 'i3d-2':
             self.resnet = self.resnet.blocks[:-2]
@@ -221,12 +232,24 @@ class ACTION_SLOT(nn.Module):
                     nn.BatchNorm3d(self.in_c),
                     nn.Conv3d(self.in_c, self.ego_c, (1, 1, 1), stride=1),
                     )
-
-        self.conv3d = nn.Sequential(
-                nn.ReLU(),
-                nn.BatchNorm3d(self.in_c),
-                nn.Conv3d(self.in_c, self.hidden_dim2, (1, 1, 1), stride=1),
-                nn.ReLU(),)
+        if args.backbone == 'inception' or args.backbone == 'r50':
+            self.conv3d = nn.Sequential(
+                    nn.ReLU(),
+                    nn.BatchNorm3d(self.in_c),
+                    nn.Conv3d(self.in_c, self.in_c, (3, 1, 1), stride=1, padding='same'),
+                    nn.ReLU(),
+                    nn.BatchNorm3d(self.in_c),
+                    nn.Conv3d(self.in_c, self.in_c, (3, 1, 1), stride=1, padding='same'),
+                    nn.ReLU(),
+                    nn.BatchNorm3d(self.in_c),
+                    nn.Conv3d(self.in_c, self.hidden_dim2, (1, 1, 1), stride=1),
+                    nn.ReLU(),)
+        else:
+            self.conv3d = nn.Sequential(
+                    nn.ReLU(),
+                    nn.BatchNorm3d(self.in_c),
+                    nn.Conv3d(self.in_c, self.hidden_dim2, (1, 1, 1), stride=1),
+                    nn.ReLU(),)
 
         if args.bg_slot:
             self.slot_attention = SlotAttention(
@@ -272,10 +295,11 @@ class ACTION_SLOT(nn.Module):
                     x = self.resnet[i](x)
                 x[1] = self.path_pool(x[1])
                 x = torch.cat((x[0], x[1]), dim=1)
-        elif self.args.backbone == 'inception':
+        elif self.args.backbone == 'inception' or self.args.backbone == 'r50':
             if isinstance(x, list):
                 x = torch.stack(x, dim=0) #[T, b, C, h, w]
                 x = torch.reshape(x, (seq_len*batch_size, 3, height, width))
+
         else:
             if isinstance(x, list):
                 x = torch.stack(x, dim=0) #[T, b, C, h, w]
@@ -299,7 +323,7 @@ class ACTION_SLOT(nn.Module):
             x = self.model.forward_features(x,pretrained=True) # B,TxHxW,C
             x = x.reshape(batch_size,self.resolution3d[0],self.resolution3d[1],self.resolution3d[2],-1) # B,T,H,W,C
             x = x.permute(0,4,1,2,3) # B,C,T,H,W
-        elif self.args.backbone == 'inception':
+        elif self.args.backbone == 'inception' or self.args.backbone == 'r50':
             x = self.resnet(x)
             _, c, h, w  = x.shape
             x = torch.reshape(x, (self.args.seq_len, batch_size, c, h, w))

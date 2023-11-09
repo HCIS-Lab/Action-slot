@@ -165,34 +165,40 @@ def generate_model(args, num_ego_class, num_actor_class):
         for t in model.resnet[-1].parameters():
             t.requires_grad=True
 
-    elif model_name == 'action_slot' and args.backbone != 'i3d_inception' and args.backbone != 'inception': 
+    elif model_name == 'action_slot': 
         model = action_slot.ACTION_SLOT(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
         for t in model.parameters():
-            t.requires_grad=True
-        for t in model.resnet.parameters():
-            t.requires_grad=False
-        for t in model.resnet[-1].parameters():
-            t.requires_grad=True
-        for t in model.resnet[-2].parameters():
             t.requires_grad=True
 
-    elif model_name == 'action_slot' and args.backbone == 'inception': 
-        model = action_slot.ACTION_SLOT(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
-        for t in model.parameters():
-            t.requires_grad=True
-        for t in model.resnet.parameters():
-            t.requires_grad=False
-        for t in model.resnet.blocks[-1].parameters():
-            t.requires_grad=True
-        for t in model.resnet.blocks[-2].parameters():
-            t.requires_grad=True
-        for t in model.resnet.blocks[-3].parameters():
-            t.requires_grad=True
+        if args.backbone == 'inception':
+            for t in model.resnet.parameters():
+                t.requires_grad=False
+            for t in model.resnet.blocks[-1].parameters():
+                t.requires_grad=True
+            for t in model.resnet.blocks[-2].parameters():
+                t.requires_grad=True
+            for t in model.resnet.blocks[-3].parameters():
+                t.requires_grad=True
+        elif args.backbone == 'i3d_inception':
+            for t in model.parameters():
+                t.requires_grad=True
+        elif args.backbone == 'r50':
+            for t in model.resnet.parameters():
+                t.requires_grad=False
+            for t in model.resnet.blocks[-1].parameters():
+                t.requires_grad=True
+        else:
+            for t in model.resnet.parameters():
+                t.requires_grad=False
+            for t in model.resnet[-1].parameters():
+                t.requires_grad=True
+            for t in model.resnet[-2].parameters():
+                t.requires_grad=True
+
 
     elif model_name == 'action_slot' and args.backbone == 'i3d_inception': 
         model = action_slot.ACTION_SLOT(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
-        for t in model.parameters():
-            t.requires_grad=True
+        
 
     # elif model_name == 'slot_seg':	
     #     model = slot_seg.SLOT_SEG(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)

@@ -396,7 +396,7 @@ class TACO(Dataset):
                         total_frame += num_frame
                         total_videos += 1
         if False:
-            self.parse_tracklets_detection() 
+            self.parse_tracklets() 
         print('num_videos: ' + str(len(self.variants)))
         print('c_stat:')
         print(label_stat[0])
@@ -503,21 +503,43 @@ class TACO(Dataset):
             
         # for each data
         for data in tqdm(self.videos_list):
+            root = data[0][0].split('/')
+            root = root[:-3]
+            root = '/'+os.path.join(*root)
+            if not os.path.isdir(os.path.join(root,'tracks')):
+                os.mkdir(os.path.join(root,'tracks'))
+            if not os.path.isdir(os.path.join(root,'tracks','gt')):
+                os.mkdir(os.path.join(root,'tracks','gt'))
+            if not os.path.isdir(os.path.join(root,'tracks','pred')):
+                os.mkdir(os.path.join(root,'tracks','pred'))
+            # read bbox.json
+            f = open(os.path.join(root,'bbox.json'))
+            bboxs = json.load(f)
+            f.close()
             for i,sample in enumerate(data):
-                temp = []
-                root = sample[0].split('/')
-                root = root[:-3]
-                root = '/'+os.path.join(*root)
-                if not os.path.isdir(os.path.join(root,'tracks')):
-                    os.mkdir(os.path.join(root,'tracks'))
-                for img in sample:
-                    # read bbox
-                    box_path = parse_file_name(img)
-                    f = open(box_path)
-                    track = json.load(f)
-                    temp.append(track)
-                    f.close()
-                parse_tracklet(temp,root,i)
+                out = np.zeros((self.seq_len,self.Max_N,4))
+                obj_id_dict = {}
+                count = 0
+                # iterate each imgs
+                for j,frame_idx in enumerate(sample):
+                    frame_idx = frame_idx.split('/')[-1][:-4]
+                    for obj_id, box in bboxs[frame_idx].items():
+                        if obj_id not in obj_id_dict:
+                            obj_id_dict[obj_id] = count
+                            count += 1
+                        out[j][obj_id_dict[obj_id]] = box
+                np.save(os.path.join(root,'tracks','gt','%s' % (i)),out)
+            
+                # if not os.path.isdir(os.path.join(root,'tracks')):
+                #     os.mkdir(os.path.join(root,'tracks'))
+                # for img in sample:
+                #     # read bbox
+                #     box_path = parse_file_name(img)
+                #     f = open(box_path)
+                #     track = json.load(f)
+                #     temp.append(track)
+                #     f.close()
+                # parse_tracklet(temp,root,i)
         
 
     def __len__(self):
@@ -559,9 +581,9 @@ class TACO(Dataset):
             track_path = seq_videos[0].split('/')
             track_path = track_path[:-3]
             if self.args.gt:
-                track_path = '/' + os.path.join(*track_path,'tracks',str(sample_idx)) + '.npy'
+                track_path = '/' + os.path.join(*track_path,'tracks','gt',str(sample_idx)) + '.npy'
             else:
-                track_path = '/' + os.path.join(*track_path,'tracks_pred',str(sample_idx)) + '.npy'
+                track_path = '/' + os.path.join(*track_path,'tracks','pred',str(sample_idx)) + '.npy'
             tracklets = np.load(track_path)
             data['box'] = tracklets
 
@@ -656,7 +678,7 @@ def scale(image, scale=2.0, model_name=None):
 
 
 def to_np(v, model_name, backbone):
-    if backbone == 'inception':
+    if backbone != 'inception':
         transform = transforms.Compose([
                         transforms.ToTensor(),
                         transforms.Normalize(mean=[0.45, 0.45, 0.45], std=[0.225, 0.225, 0.225])])

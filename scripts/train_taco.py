@@ -77,11 +77,7 @@ class Engine(object):
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.num_actor_class = num_actor_class
-        if hasattr(self.model, 'resolution'):
-            attention_res = (self.model.resolution[0]*args.bg_upsample, self.model.resolution[1]*args.bg_upsample)
-        else:
-            attention_res = None
-        self.criterion = ActionSlotLoss(args, num_actor_class, attention_res).to(self.args.device)
+        self.criterion = ActionSlotLoss(args,num_actor_class).to(self.args.device)
 
         self.cur_epoch = 0
         self.train_loss = []
@@ -142,6 +138,8 @@ class Engine(object):
                     v = v.mean()
 
         ego_loss = loss_dict['ego']
+        if ego_loss is None:
+            ego_loss = torch.Tensor([0.0])
         actor_loss = loss_dict['actor']
         action_attn_loss, bg_attn_loss = loss_dict['attn']['attn_loss'], loss_dict['attn']['bg_attn_loss']
 

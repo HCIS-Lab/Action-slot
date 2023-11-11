@@ -212,14 +212,14 @@ class ACTION_SLOT(nn.Module):
         elif args.backbone == 'slowfast':
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo:main', 'slowfast_r50', pretrained=True)
             self.resnet = self.resnet.blocks[:-2]
-            self.path_pool = nn.AdaptiveAvgPool3d((8, 8, 24))
+            self.path_pool = nn.AdaptiveAvgPool3d((4, 8, 24))
             self.in_c = 2304
             if args.dataset == 'taco':
                 self.resolution = (8, 24)
-                self.resolution3d = (8, 8, 24)
+                self.resolution3d = (4, 8, 24)
             elif args.dataset == 'oats':
                 self.resolution = (7, 7)
-                self.resolution3d = (8, 7, 7)
+                self.resolution3d = (4, 7, 7)
             
         if args.allocated_slot:
             self.head = Instance_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)
@@ -236,13 +236,16 @@ class ACTION_SLOT(nn.Module):
             self.conv3d = nn.Sequential(
                     nn.ReLU(),
                     nn.BatchNorm3d(self.in_c),
-                    nn.Conv3d(self.in_c, self.in_c, (3, 1, 1), stride=1, padding='same'),
+                    nn.Conv3d(self.in_c, self.in_c//2, (1, 1, 1), stride=1),
                     nn.ReLU(),
-                    nn.BatchNorm3d(self.in_c),
-                    nn.Conv3d(self.in_c, self.in_c, (3, 1, 1), stride=1, padding='same'),
+                    nn.BatchNorm3d(self.in_c//2),
+                    nn.Conv3d(self.in_c//2, self.in_c//2, (3, 3, 3), stride=1, padding='same'),
                     nn.ReLU(),
-                    nn.BatchNorm3d(self.in_c),
-                    nn.Conv3d(self.in_c, self.hidden_dim2, (1, 1, 1), stride=1),
+                    nn.BatchNorm3d(self.in_c//2),
+                    nn.Conv3d(self.in_c//2, self.in_c//2, (3, 3, 3), stride=1, padding='same'),
+                    nn.ReLU(),
+                    nn.BatchNorm3d(self.in_c//2),
+                    nn.Conv3d(self.in_c//2, self.hidden_dim2, (1, 1, 1), stride=1),
                     nn.ReLU(),)
         else:
             self.conv3d = nn.Sequential(
@@ -279,6 +282,19 @@ class ACTION_SLOT(nn.Module):
         batch_size = x[0].shape[0]
         height, width = x[0].shape[2], x[0].shape[3]
 
+        
+        if self.args.backbone == 'inception' or self.args.backbone == 'r50':
+            if isinstance(x, list):
+                x = torch.stack(x, dim=0) #[T, b, C, h, w]
+                x = torch.reshape(x, (seq_len*batch_size, 3, height, width))
+
+        elif self.args.backbone != 'slowfast':
+            if isinstance(x, list):
+                x = torch.stack(x, dim=0) #[T, b, C, h, w]
+                # l, b, c, h, w
+                x = torch.permute(x, (1,2,0,3,4)) #[b, C, T, h, w]
+        
+        # ---- backbone forward ----
         if self.args.backbone == 'slowfast':
             slow_x = []
             for i in range(0, seq_len, 4):
@@ -295,19 +311,8 @@ class ACTION_SLOT(nn.Module):
                     x = self.resnet[i](x)
                 x[1] = self.path_pool(x[1])
                 x = torch.cat((x[0], x[1]), dim=1)
-        elif self.args.backbone == 'inception' or self.args.backbone == 'r50':
-            if isinstance(x, list):
-                x = torch.stack(x, dim=0) #[T, b, C, h, w]
-                x = torch.reshape(x, (seq_len*batch_size, 3, height, width))
 
-        else:
-            if isinstance(x, list):
-                x = torch.stack(x, dim=0) #[T, b, C, h, w]
-                # l, b, c, h, w
-                x = torch.permute(x, (1,2,0,3,4)) #[b, C, T, h, w]
-        
-        # ---- backbone forward ----
-        if self.args.backbone == 'mvit':
+        elif self.args.backbone == 'mvit':
             x = self.model.patch_embed(x) # torch.Size([8, 25088, 96])
             # x = self.model.cls_positional_encoding(x) # torch.Size([8, 25089, 96])
             # x = self.model.pos_drop(x)

@@ -71,9 +71,9 @@ def plot_result(result):
     text = ["mAP", "loss"]
     x = [i+1 for i in range(0,args.epochs,args.val_every)]
     x = x if x[-1] == args.epochs else x+[args.epochs]
-    fig, ax = plt.subplots(3,1,figsize=(10,6))
+    fig, ax = plt.subplots(2,1,figsize=(10,6))
     
-    for i in range(3):
+    for i in range(2):
         ax[i].plot(x,result[:,i])
         ax[i].title.set_text(text[i])
     plt.show()	

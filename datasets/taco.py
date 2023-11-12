@@ -48,6 +48,7 @@ class TACO(Dataset):
         self.model_name = args.model_name
         self.seq_len = args.seq_len
 
+        self.maps = []
         self.id = []
         self.variants = []
         self.args =args
@@ -216,7 +217,6 @@ class TACO(Dataset):
 
                         # remove those data with no traffic pattern
                         if not torch.count_nonzero(gt_actor):
-                            print(111)
                             continue
                         
                         if args.ego_motion != -1:
@@ -369,7 +369,7 @@ class TACO(Dataset):
 
                         label_stat[6][ego_class] +=1
 
-
+                        self.maps.append(t)
                         self.id.append(s.split('/')[-1])
                         self.variants.append(v.split('/')[-1])
 
@@ -556,6 +556,7 @@ class TACO(Dataset):
         data['raw'] = []
         data['ego'] = self.gt_ego[index]
         data['actor'] = self.gt_actor[index]
+        data['map'] = self.maps[index]
         data['id'] = self.id[index]
         data['variants'] = self.variants[index]
 
@@ -601,7 +602,8 @@ class TACO(Dataset):
             data['raw'] = to_np_no_norm(data['raw'])
 
         data['videos'] = to_np(data['videos'], self.args.model_name, self.args.backbone)
-        data['bg_seg'] = to_np_no_norm(data['bg_seg'])
+        if self.args.bg_mask:
+            data['bg_seg'] = to_np_no_norm(data['bg_seg'])
 
 
         if self.args.val_confusion:

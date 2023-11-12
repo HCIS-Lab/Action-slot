@@ -71,7 +71,7 @@ class OATS(Dataset):
         # root = '/work/u8526971/data_collection'
         # root = '/home/hcis-s19/Desktop/data_collection'
         # root = '/home/hcis-s20/Desktop/data_collection'
-        root = '/media/hankung/ssd/oats/oats_data/'
+        root = '/media/hcis-s19/DATA/oats/oats_data'
         # root = '/media/hcis-s16/hank/taco'
         # root = '/media/hcis-s20/SRL/oats/oats_data'
         # root = '/media/user/data/oats/oats_data'
@@ -197,7 +197,7 @@ class OATS(Dataset):
                     segname = f"{str(i).zfill(3)}.png"
                     if os.path.isfile(os.path.join(scenario_path, imgname)):
                         videos_temp.append(os.path.join(scenario_path, imgname))
-                        idx_temp.append(i-start)
+                        idx_temp.append(i-start_frame)
                     if os.path.isfile(os.path.join(seg_video_path, segname)):
                         seg_temp.append(os.path.join(seg_video_path, segname))
                     # if os.path.isfile(v+"/seg_mask/"+objname):
@@ -248,7 +248,7 @@ class OATS(Dataset):
                 min_frame_a_video = num_frame
             total_frame += num_frame
             total_videos += 1
-        if False:
+        if True:
             self.parse_tracklets_detection() 
         print('c_stat:')
         print(label_stat[0])
@@ -295,11 +295,13 @@ class OATS(Dataset):
         
         for data,idx in tqdm(zip(self.videos_list,self.idx)):
             root = data[0][0].split('/')
-            root = root[:-3]
+            scenario = root[-2]
+            root = root[:-1]
             root = '/'+os.path.join(*root)
+
             if not os.path.isdir(os.path.join(root,'tracks_pred')):
                 os.mkdir(os.path.join(root,'tracks_pred'))
-            f = open(os.path.join(root,'tracking_pred_2','tracks','front.txt'))
+            f = open(os.path.join(root,'pred',scenario+'.txt'))
             tracklet = f.readlines()
             # parse_tracklet
             tracklet = parse_tracklet()
@@ -324,51 +326,7 @@ class OATS(Dataset):
                                 continue
                     except:
                         continue
-                np.save(os.path.join(root,'tracks_pred','%s' % (i)),out)
-                        
-        
-
-    def parse_tracklets(self):
-        """
-            tracklet (List[List[Dict]]):
-                T , boxes per_frame , key: obj_id
-            return:
-                T x N x 4
-        """
-        def parse_tracklet(tracklet,root,index):
-            out = np.zeros((self.seq_len,self.Max_N,4))
-            obj_id_dict = {}
-            count = 0
-            for i,track in enumerate(tracklet):
-                for boxes in track:
-                    for obj in boxes:
-                        if obj not in obj_id_dict:
-                            obj_id_dict[obj] = count
-                            count += 1
-                        out[i][obj_id_dict[obj]] = boxes[obj]
-            np.save(os.path.join(root,'tracks','%s' % (index)),out)
-            # with open(os.path.join(root,'tracks','%s.json' % (index)), 'w') as f:
-            #     json.dump(out, f)
-                        
-            
-        # for each data
-        for data in tqdm(self.videos_list):
-            for i,sample in enumerate(data):
-                temp = []
-                root = sample[0].split('/')
-                root = root[:-3]
-                root = '/'+os.path.join(*root)
-                if not os.path.isdir(os.path.join(root,'tracks')):
-                    os.mkdir(os.path.join(root,'tracks'))
-                for img in sample:
-                    # read bbox
-                    box_path = parse_file_name(img)
-                    f = open(box_path)
-                    track = json.load(f)
-                    temp.append(track)
-                    f.close()
-                parse_tracklet(temp,root,i)
-        
+                np.save(os.path.join(root,'tracks_pred','%s' % (i)),out)        
 
     def __len__(self):
         """Returns the length of the dataset. """
@@ -404,11 +362,8 @@ class OATS(Dataset):
         # add tracklets
         if self.args.box:
             track_path = seq_videos[0].split('/')
-            track_path = track_path[:-3]
-            if self.args.gt:
-                track_path = '/' + os.path.join(*track_path,'tracks',str(sample_idx)) + '.npy'
-            else:
-                track_path = '/' + os.path.join(*track_path,'tracks_pred',str(sample_idx)) + '.npy'
+            track_path = track_path[:-1]
+            track_path = '/' + os.path.join(*track_path,'tracks_pred',str(sample_idx)) + '.npy'
             tracklets = np.load(track_path)
             data['box'] = tracklets
 

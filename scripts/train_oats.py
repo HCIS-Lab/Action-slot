@@ -537,7 +537,7 @@ class Engine(object):
 					bg_seg = torch.reshape(bg_seg, (b, l, ds_size[0], ds_size[1]))
 				if ('slot' in args.model_name) or args.box or 'mvit' in args.model_name:
 					if args.box:
-						pred_actor = model(inputs, boxes)
+						_, pred_actor = model(inputs, boxes)
 					else:
 						pred_actor, attn = model(inputs)
 				else:

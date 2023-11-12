@@ -197,6 +197,9 @@ class TACO(Dataset):
                                     continue
                                 else:
                                     gt.remove('x')
+
+                                if args.plot and not c_bp:
+                                    continue
                                 # if c_p and c_pp and c_c and c_cp:
                                 #     print(v)
 
@@ -210,6 +213,9 @@ class TACO(Dataset):
                             gt_ego, gt_actor = get_labels(args, gt, scenario_id, v_id, num_slots=args.num_slots)
                         
 
+
+                        if args.plot and torch.count_nonzero(gt_actor) > 3 :
+                            continue
                         # ------------statistics-------------
                         if torch.count_nonzero(gt_actor) > max_num_label_a_video:
                             max_num_label_a_video = torch.count_nonzero(gt_actor)
@@ -369,7 +375,7 @@ class TACO(Dataset):
 
                         label_stat[6][ego_class] +=1
 
-                        self.maps.append(t)
+                        self.maps.append(str(type))
                         self.id.append(s.split('/')[-1])
                         self.variants.append(v.split('/')[-1])
 

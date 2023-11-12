@@ -21,6 +21,9 @@ def get_eval_parser():
 
     # attention
     parser.add_argument('--bg_slot', help="", action="store_true")
+    parser.add_argument('--bg_mask', help="", action="store_true")
+
+    parser.add_argument('--obj_mask', help="", action="store_true")
 
     # training
     parser.add_argument('--device', type=str, default='cuda', help='Device to use')
@@ -34,7 +37,7 @@ def get_eval_parser():
     parser.add_argument('--plot_mode', type=str, default='both')
     parser.add_argument('--val_confusion', help="", action="store_true")
     parser.add_argument('--scale', type=float, default=-1.0)
-    
+    parser.add_argument('--ego_motion', type=int, default=-1)
     # others
     parser.add_argument('--test', help="", action="store_true")
     parser.add_argument('--gt', help="", action="store_true")
@@ -42,8 +45,6 @@ def get_eval_parser():
 
     args = parser.parse_args()
 
-    if not args.bg_mask:
-        args.bg_attn_weight = 0.
 
     if args.dataset == 'oats' and args.oats_test_split != '0':
         based_log = args.dataset + '_' + args.oats_test_split + '_eval'

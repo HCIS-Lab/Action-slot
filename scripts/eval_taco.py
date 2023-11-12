@@ -44,6 +44,9 @@ sys.path.append('/media/user/data/Action-Slot/datasets')
 sys.path.append('/media/user/data/Action-Slot/configs')
 sys.path.append('/media/user/data/Action-Slot/models')
 
+os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH")
+
+
 # from .configs.config import GlobalConfig
 import taco
 
@@ -148,122 +151,154 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
     attn = attn[0]
     # cur_image = cur_image[0]
     cur_raw = cur_raw[0]
-    for pred_i, pred in enumerate(pred_actor):
-        if pred_actor[i].data != True:
-            continue
-        for j in range(seq_len):
-            # image_j = cur_image[j].permute(1,2,0).cpu().numpy()
-            raw_j = cur_raw[j].permute(1,2,0).cpu().numpy()
-            # image_j = image_j * 0.5 + 0.5
-            new_raw_j = raw_j * 0.8 + 0.1
-            masks_j = attn[j]
-            tk = args.num_slots
-            if args.bg_slot:
-                tk += 1
-            masks_j = masks_j.cpu().numpy()
-            if mode != 'multi-class':
-                for slot_idx in range(tk):
-                    if mode == 'both':
-                        masks_j[slot_idx] = masks_j[slot_idx] * (masks_j[slot_idx] > threshold).astype('uint8')
-                        plt.figure(figsize=(15, 5))
-                        plt.imshow(new_raw_j)
-                        plt.imshow(masks_j[slot_idx], alpha=0.8)
-                        plt.axis('off')
-                        plt.show()
-
-                        seg_path = os.path.join(path, actor_table[slot_idx]+ '_frame'+str(j)+'.jpg')
-                        # fig.savefig(path)
-                        plt.savefig(seg_path)
-                        plt.close()
-
-                        plt.figure(figsize=(15, 5))
-                        plt.imshow(raw_j)
-                        plt.axis('off')
-                        plt.show()
-                        img_path = os.path.join(path, actor_table[slot_idx] + '_frame'+str(j)+ '_img' +'.jpg') 
-                        plt.savefig(img_path)
-                        plt.close()
-
-                        im1 = Image.open(img_path)
-                        im2 = Image.open(seg_path)
-                        dst = Image.new('RGB', (im1.width, im1.height + im2.height))
-                        dst.paste(im1, (0, 0))
-                        dst.paste(im2, (0, im1.height))
-                        dst.save(seg_path)
-                        os.remove(img_path)
-
-
-                    elif mode == 'attn':
-                        masks_j[slot_idx] = masks_j[slot_idx] * (masks_j[slot_idx] > threshold).astype('uint8')
-                        # plt.figure(figsize=(15, 5))
-                        # plt.imshow(new_raw_j)
-                        # plt.imshow(masks_j[seg], alpha=0.5)
-                        # plt.axis('off')
-                        # plt.show()
-
-                        # seg_path = os.path.join(path, actor_table[seg]+ '_frame'+str(j)+'.png')
-                        # # fig.savefig(path)
-                        # plt.savefig(seg_path)
-                        # plt.close()
-
-                        plt.imshow(new_raw_j)
-                        plt.axis('off')
-                        # plt.imshow()
-                        plt.imshow(masks_j[slot_idx], alpha=0.5)
-                        # plt.show()
-                        seg_path = os.path.join(path, actor_table[slot_idx]+ '_frame'+str(j)+'.jpg')
-                        plt.savefig(seg_path, bbox_inches='tight', pad_inches=0.0)
-                        plt.close()
-
-                if mode == 'rgb':
-                    # plt.figure(figsize=(15, 5))
-                    plt.imshow(raw_j)
+    
+    for j in range(seq_len):
+        # image_j = cur_image[j].permute(1,2,0).cpu().numpy()
+        raw_j = cur_raw[j].permute(1,2,0).cpu().numpy()
+        # image_j = image_j * 0.5 + 0.5
+        new_raw_j = raw_j * 0.8 + 0.1
+        masks_j = attn[j]
+        tk = args.num_slots
+        if args.bg_slot:
+            tk += 1
+        masks_j = masks_j.cpu().numpy()
+        if mode != 'multi-class':
+            for slot_idx in range(tk):
+                if mode == 'both':
+                    masks_j[slot_idx] = masks_j[slot_idx] * (masks_j[slot_idx] > threshold).astype('uint8')
+                    plt.figure(figsize=(15, 5))
+                    plt.imshow(new_raw_j)
+                    plt.imshow(masks_j[slot_idx], alpha=0.8)
                     plt.axis('off')
-                    # plt.show()
-                    img_path = os.path.join(path,'frame'+str(j)+ '_img' +'.jpg') 
-                    plt.savefig(img_path, bbox_inches='tight', pad_inches=0.0)
+                    plt.show()
+
+                    seg_path = os.path.join(path, actor_table[slot_idx]+ '_frame'+str(j)+'.jpg')
+                    # fig.savefig(path)
+                    plt.savefig(seg_path)
                     plt.close()
 
-            if mode == 'bg':
-                t_mask_bg = (masks_j[-1] > threshold)
-                masks_bg = (masks_j[-1] > threshold).astype('uint8').reshape((128,384))
-                raw_j[t_mask_bg, 0] = masks_bg[t_mask_bg]
-                plt.imshow(raw_j, cmap='gist_rainbow')
+                    plt.figure(figsize=(15, 5))
+                    plt.imshow(raw_j)
+                    plt.axis('off')
+                    plt.show()
+                    img_path = os.path.join(path, actor_table[slot_idx] + '_frame'+str(j)+ '_img' +'.jpg') 
+                    plt.savefig(img_path)
+                    plt.close()
+
+                    im1 = Image.open(img_path)
+                    im2 = Image.open(seg_path)
+                    dst = Image.new('RGB', (im1.width, im1.height + im2.height))
+                    dst.paste(im1, (0, 0))
+                    dst.paste(im2, (0, im1.height))
+                    dst.save(seg_path)
+                    os.remove(img_path)
+
+
+                elif mode == 'attn':
+                    masks_j[slot_idx] = masks_j[slot_idx] * (masks_j[slot_idx] > threshold).astype('uint8')
+                    # plt.figure(figsize=(15, 5))
+                    # plt.imshow(new_raw_j)
+                    # plt.imshow(masks_j[seg], alpha=0.5)
+                    # plt.axis('off')
+                    # plt.show()
+
+                    # seg_path = os.path.join(path, actor_table[seg]+ '_frame'+str(j)+'.png')
+                    # # fig.savefig(path)
+                    # plt.savefig(seg_path)
+                    # plt.close()
+
+                    plt.imshow(new_raw_j)
+                    plt.axis('off')
+                    # plt.imshow()
+                    plt.imshow(masks_j[slot_idx], alpha=0.5)
+                    # plt.show()
+                    seg_path = os.path.join(path, actor_table[slot_idx]+ '_frame'+str(j)+'.jpg')
+                    plt.savefig(seg_path, bbox_inches='tight', pad_inches=0.0)
+                    plt.close()
+
+            if mode == 'rgb':
+                # plt.figure(figsize=(15, 5))
+                plt.imshow(raw_j)
                 plt.axis('off')
-                img_path = os.path.join(path,'frame'+str(j)+ '_bg' +'.jpg') 
+                # plt.show()
+                img_path = os.path.join(path,'frame'+str(j)+ '_img' +'.jpg') 
                 plt.savefig(img_path, bbox_inches='tight', pad_inches=0.0)
                 plt.close()
-            else:
-                # plt.imshow(raw_j)
-                # plt.axis('off')
-                t_masks_3 = (masks_j[0] > threshold)
-                t_masks_6 = (masks_j[18] > threshold)
-                # t_masks_b = (masks_j[-1] > threshold)
-                # t = t_masks_3+t_masks_6+t_masks_b
-                t = t_masks_3+t_masks_6
 
-                masks_3 = (masks_j[0] > threshold).astype('uint8').reshape((128,384))
-                masks_6 = (masks_j[18] > threshold).astype('uint8').reshape((128,384))
-                # masks_b = (masks_j[-1] > threshold).astype('uint8').reshape((128,384))
-                # print(masks_3.shape)
-                # print(t_masks_3.shape)
-                # print(raw_j.shape)
-                raw_j[t_masks_3, 0] = masks_3[t_masks_3]
-                raw_j[t_masks_6, 1] = masks_6[t_masks_6]
-                # raw_j[t_masks_b, 2] = masks_b[t_masks_b]
-                plt.imshow(raw_j, cmap='gist_rainbow')
-                plt.axis('off')
-                # plt.imshow(masks_j[3], alpha=0.5, cmap='Oranges')
+        if mode == 'bg':
+            t_mask_bg = (masks_j[-1] > threshold)
+            masks_bg = (masks_j[-1] > threshold).astype('uint8').reshape((128,384))
+            raw_j[t_mask_bg, 0] = masks_bg[t_mask_bg]
+            plt.imshow(raw_j, cmap='gist_rainbow')
+            plt.axis('off')
+            img_path = os.path.join(path,'frame'+str(j)+ '_bg' +'.jpg') 
+            plt.savefig(img_path, bbox_inches='tight', pad_inches=0.0)
+            plt.close()
+        else:
+            # for pred_i, pred in enumerate(pred_actor):
+            #     if pred_actor[i].data != True:
+            #         continue
+            # plt.imshow(raw_j)
+            # plt.axis('off')
+            # t_masks_3 = (masks_j[0] > threshold)
+            # t_masks_6 = (masks_j[18] > threshold)
+            # t_masks_b = (masks_j[-1] > threshold)
+            # t = t_masks_3+t_masks_6+t_masks_b
+            # t = t_masks_3+t_masks_6
 
-                # masks_j[6] = (masks_j[6] > threshold).astype('uint8')
-                # plt.imshow(masks_j[6], alpha=0.5, cmap='Blues')
+            # masks_3 = (masks_j[0] > threshold).astype('uint8').reshape((128,384))
+            # masks_6 = (masks_j[18] > threshold).astype('uint8').reshape((128,384))
+            # masks_b = (masks_j[-1] > threshold).astype('uint8').reshape((128,384))
 
-                # masks_j[-1] = (masks_j[-1] > threshold).astype('uint8')
-                # plt.imshow(masks_j[-1], alpha=0.5, cmap='Purples')
+            num_pos = 0
+            num_tp = 0
+            for i, a in enumerate(actor):
+                if a.data == 1.0:
+                    num_pos +=1
+                    if pred_actor[i].data == True:
+                        num_tp+=1
+            if num_pos != num_tp:
+                return
 
-                img_path = os.path.join(path,'frame'+str(j)+ '_multi' +'.jpg') 
-                plt.savefig(img_path, bbox_inches='tight', pad_inches=0.0)
-                plt.close()
+            alpha_1 = 0.5
+            alpha_2 = 0.5
+            alpha_3 = 0.5
+
+            color_1 = np.array([1.0, 0.0, 0.0])  # Red
+            color_2 = np.array([0.0, 1.0, 0.0])  # Green
+            color_3 = np.array([0.0, 0.0, 1.0])  # Blue
+            color_4 = np.array([1.0, 1.0, 0.0])  # Yellow
+            color_5 = np.array([1.0, 0.0, 1.0])  # Magenta
+            colors = [color_1, color_2, color_3, color_4, color_5]
+            # Overlay the masks on raw_j with opacity
+            bool_mask_list = []
+            attn_mask_list = []
+            for i, a in enumerate(actor):
+                if a.data == 1.0:
+                    bool_mask_list.append(masks_j[i] > threshold)
+                    attn_mask_list.append((masks_j[i] > threshold).astype('uint8').reshape((128,384)))
+
+            for num_gt in range(len(bool_mask_list)):
+                raw_j[bool_mask_list[num_gt], :3] = attn_mask_list[num_gt][bool_mask_list[num_gt]][:, np.newaxis] * colors[num_gt] * alpha_1 + raw_j[bool_mask_list[num_gt], :3] * (1 - alpha_1)
+
+            # raw_j[t_masks_3, 0] = masks_3[t_masks_3] * alpha_3 + raw_j[t_masks_3, 0] * (1 - alpha_3)
+            # raw_j[t_masks_6, 1] = masks_6[t_masks_6] * alpha_6 + raw_j[t_masks_6, 1] * (1 - alpha_6)
+            # raw_j[t_masks_6, 1] = masks_6[t_masks_6] * alpha_6 + raw_j[t_masks_6, 1] * (1 - alpha_6)
+            
+
+            plt.imshow(raw_j, cmap='gist_rainbow')
+            plt.axis('off')
+            # plt.imshow(masks_j[3], alpha=0.5, cmap='Oranges')
+
+            # masks_j[6] = (masks_j[6] > threshold).astype('uint8')
+            # plt.imshow(masks_j[6], alpha=0.5, cmap='Blues')
+
+            # masks_j[-1] = (masks_j[-1] > threshold).astype('uint8')
+            # plt.imshow(masks_j[-1], alpha=0.5, cmap='Purples')
+
+            img_path = os.path.join(path,'frame'+str(j) +'.jpg') 
+            plt.savefig(img_path, bbox_inches='tight', pad_inches=0.0)
+            plt.close()
 
 def plot_mvit(att_map, grid_index, raw,logdir,id,v, head_idx,grid_size=14, alpha=0.6,threshold=0.5):
     path = os.path.join(logdir, id + '_' + v)
@@ -493,16 +528,17 @@ class Engine(object):
             map_pred_actor_list = []
 
             for batch_num, data in enumerate(tqdm(dataloader)):
-                map = data['map']
+                map = data['map'][0]
+                print(map)
                 id = data['id'][0]
                 v = data['variants'][0]
                 video_in = data['videos']
                 raw = data['raw']
                 if args.val_confusion:
                     confusion_label = data['confusion_label']
-                scenario = map + '_'id + '_' + v
+                scenario = map + '_'+id + '_' + v
                 # plot_list = []
-                plot_list = ['ap_Town10HD_t6_9080']
+                # plot_list = ['ap_Town10HD_t6_9080']
                 # plot_list = ['i1_901', '10_t1-7_1_p_c_r_1_0_1']
                 # plot_list = ['t2_221', 't2_251']
                 # plot_list = ['t2_157']
@@ -542,7 +578,7 @@ class Engine(object):
                         #     plot_mask(seg_front, args.id, id, v, logdir)
                         # elif args.plot:
 
-                        if args.plot and scenario in plot_list:
+                        if args.plot:
                             channel_idx = [-1]
                             if ('mvit' in args.model_name):
                                 for j,(attn,thw) in enumerate(attn):
@@ -650,7 +686,6 @@ class Engine(object):
             print(f'(val) mAP of the p+: {group_p_mAP}')
 
             print(f'acc of the ego: {correct_ego/total_ego}')
-            writer.add_scalar('ego', correct_ego/total_ego, epoch)
 
 
             
@@ -667,7 +702,7 @@ model = generate_model(args, num_ego_class, num_actor_class).cuda()
 trainer = Engine(args)
 # model.load_state_dict(torch.load(os.path.join(args.logdir, 'model_100.pth')))
 
-model_path = os.path.join(logdir, args.cp)
+model_path = os.path.join(args.cp)
 model.load_state_dict(torch.load(model_path))
 
 trainer.validate(model, dataloader_val, None)

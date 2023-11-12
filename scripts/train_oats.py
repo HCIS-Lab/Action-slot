@@ -14,34 +14,34 @@ import torch.nn as nn
 torch.backends.cudnn.benchmark = True
 
 import sys
-sys.path.append('/media/hankung/ssd/Action-Slot/datasets')
-sys.path.append('/media/hankung/ssd/Action-Slot/config')
-sys.path.append('/media/hankung/ssd/Action-Slot/models')
+# sys.path.append('/media/hankung/ssd/Action-Slot/datasets')
+# sys.path.append('/media/hankung/ssd/Action-Slot/config')
+# sys.path.append('/media/hankung/ssd/Action-Slot/models')
 
-sys.path.append('/work/u8526971/retrieval/datasets')
-sys.path.append('/work/u8526971/retrieval/config')
-sys.path.append('/work/u8526971/retrieval/models')
+# sys.path.append('/work/u8526971/retrieval/datasets')
+# sys.path.append('/work/u8526971/retrieval/config')
+# sys.path.append('/work/u8526971/retrieval/models')
 
 
-sys.path.append('/media/hcis-s19/DATA/Action-Slot/datasets')
-sys.path.append('/media/hcis-s19/DATA/Action-Slot/config')
-sys.path.append('/media/hcis-s19/DATA/Action-Slot/models')
+# sys.path.append('/media/hcis-s19/DATA/Action-Slot/datasets')
+# sys.path.append('/media/hcis-s19/DATA/Action-Slot/config')
+# sys.path.append('/media/hcis-s19/DATA/Action-Slot/models')
 
-# sys.path.append('/home/hcis-s20/Desktop/retrieval/datasets')
-# sys.path.append('/home/hcis-s20/Desktop/retrieval/config')
-# sys.path.append('/home/hcis-s20/Desktop/retrieval/models')
+# # sys.path.append('/home/hcis-s20/Desktop/retrieval/datasets')
+# # sys.path.append('/home/hcis-s20/Desktop/retrieval/config')
+# # sys.path.append('/home/hcis-s20/Desktop/retrieval/models')
 
-sys.path.append('/media/hcis-s20/SRL/Action-Slot/datasets')
-sys.path.append('/media/hcis-s20/SRL/Action-Slot/configs')
-sys.path.append('/media/hcis-s20/SRL/Action-Slot/models')
+# sys.path.append('/media/hcis-s20/SRL/Action-Slot/datasets')
+# sys.path.append('/media/hcis-s20/SRL/Action-Slot/configs')
+# sys.path.append('/media/hcis-s20/SRL/Action-Slot/models')
 
-sys.path.append('/media/hcis-s16/hank/Action-Slot/datasets')
-sys.path.append('/media/hcis-s16/hank/Action-Slot/configs')
-sys.path.append('/media/hcis-s16/hank/Action-Slot/models')
+# sys.path.append('/media/hcis-s16/hank/Action-Slot/datasets')
+# sys.path.append('/media/hcis-s16/hank/Action-Slot/configs')
+# sys.path.append('/media/hcis-s16/hank/Action-Slot/models')
 
-sys.path.append('/media/user/data/Action-Slot/datasets')
-sys.path.append('/media/user/data/Action-Slot/configs')
-sys.path.append('/media/user/data/Action-Slot/models')
+sys.path.append('../datasets')
+sys.path.append('../configs')
+sys.path.append('../models')
 
 
 
@@ -71,9 +71,9 @@ def plot_result(result):
     text = ["mAP", "loss"]
     x = [i+1 for i in range(0,args.epochs,args.val_every)]
     x = x if x[-1] == args.epochs else x+[args.epochs]
-    fig, ax = plt.subplots(3,1,figsize=(10,6))
+    fig, ax = plt.subplots(2,1,figsize=(10,6))
     
-    for i in range(3):
+    for i in range(2):
         ax[i].plot(x,result[:,i])
         ax[i].title.set_text(text[i])
     plt.show()	
@@ -210,7 +210,7 @@ class Engine(object):
 
 			# object-based models
 			if args.box:
-				pred_actor = model(inputs, boxes)
+				_, pred_actor = model(inputs, boxes)
 
 			else:
 				if 'slot' in args.model_name or 'mvit' in args.model_name:
@@ -537,7 +537,7 @@ class Engine(object):
 					bg_seg = torch.reshape(bg_seg, (b, l, ds_size[0], ds_size[1]))
 				if ('slot' in args.model_name) or args.box or 'mvit' in args.model_name:
 					if args.box:
-						pred_actor = model(inputs, boxes)
+						_, pred_actor = model(inputs, boxes)
 					else:
 						pred_actor, attn = model(inputs)
 				else:

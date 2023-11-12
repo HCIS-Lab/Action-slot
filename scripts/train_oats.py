@@ -210,7 +210,7 @@ class Engine(object):
 
 			# object-based models
 			if args.box:
-				pred_actor = model(inputs, boxes)
+				_, pred_actor = model(inputs, boxes)
 
 			else:
 				if 'slot' in args.model_name or 'mvit' in args.model_name:

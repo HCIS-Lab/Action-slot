@@ -830,11 +830,11 @@ class Engine(object):
 		# with open(os.path.join(args.logdir, 'recent.log'), 'w') as f:
 		# 	f.write(json.dumps(log_table))
 
-		tqdm.write('====== Saved recent model ======>')
+		# tqdm.write('====== Saved recent model ======>')
 		
 		if save_best:
 			torch.save(model.state_dict(), os.path.join(logdir, 'best_model.pth'))
-			torch.save(optimizer.state_dict(), os.path.join(logdir, 'best_optim.pth'))
+			# torch.save(optimizer.state_dict(), os.path.join(logdir, 'best_optim.pth'))
 			tqdm.write('====== Overwrote best model ======>')
 
 torch.cuda.empty_cache() 
@@ -886,18 +886,18 @@ else:
 trainer = Engine(args)
 
 # Create logdir
-model_index = 1
-while(1):
-	if not os.path.isdir(logdir):
-		os.makedirs(logdir)
-		break
-	else:
-		if not os.path.isdir(logdir + '\n' + 'idx: ' + str(model_index)):
-			logdir = logdir + '\n' + 'idx: ' + str(model_index)
-			os.makedirs(logdir)
-			break
-		else:
-			model_index += 1
+# model_index = 1
+# while(1):
+# 	if not os.path.isdir(logdir):
+# 		os.makedirs(logdir)
+# 		break
+# 	else:
+# 		if not os.path.isdir(logdir + '\n' + 'idx: ' + str(model_index)):
+# 			logdir = logdir + '\n' + 'idx: ' + str(model_index)
+# 			os.makedirs(logdir)
+# 			break
+# 		else:
+# 			model_index += 1
 
 result_list = []
 if not args.test:

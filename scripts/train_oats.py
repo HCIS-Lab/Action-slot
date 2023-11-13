@@ -57,7 +57,7 @@ from utils import *
 from torchvision import models
 import matplotlib.image
 import matplotlib.pyplot as plt
-# matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 from scipy.optimize import linear_sum_assignment
 from parser import get_parser
 import math
@@ -239,7 +239,6 @@ class Engine(object):
 
 				target_classes[idx] = target_classes_o
 				actor_loss = instance_ce(pred_actor.transpose(1, 2), target_classes)
-
 				if args.obj_mask:
 					obj_bce = nn.BCELoss()
 					loss_mask = 0.0
@@ -762,11 +761,19 @@ class Engine(object):
 			print(f'(val) mAP of the c+: {group_c_mAP}')
 			# print(f'(val) mAP of the b+: {group_b_mAP}')
 			print(f'(val) mAP of the p+: {group_p_mAP}')
-
+			print(f'best mAP : {self.best_mAP}')
 			if mAP > self.best_mAP:
 				self.best_mAP = mAP
 				save_cp = True
-			print(f'best mAP : {self.best_mAP}')
+				tmp_s = []
+				tmp_s.append(f'(val) mAP of the actor: {mAP}')
+				tmp_s.append(f'(val) mAP of the c: {c_mAP}')
+				tmp_s.append(f'(val) mAP of the b: {b_mAP}')
+				tmp_s.append(f'(val) mAP of the p: {p_mAP}')
+				tmp_s.append(f'(val) mAP of the c+: {group_c_mAP}')
+				# print(f'(val) mAP of the b+: {group_b_mAP}')
+				tmp_s.append(f'(val) mAP of the p+: {group_p_mAP}')
+				self.best_performance = tmp_s
 
 			with open(os.path.join(logdir, 'mAP.txt'), 'a') as f:
 				f.write('epoch: ' + str(self.cur_epoch))
@@ -813,11 +820,11 @@ class Engine(object):
 			save_best = True
 
 		# Save ckpt for every epoch
-		torch.save(model.state_dict(), os.path.join(logdir, 'model_%d.pth'%self.cur_epoch))
+		# torch.save(model.state_dict(), os.path.join(logdir, 'model_%d.pth'%self.cur_epoch))
 
 		# Save the recent model/optimizer states
-		torch.save(model.state_dict(), os.path.join(logdir, 'model.pth'))
-		torch.save(optimizer.state_dict(), os.path.join(logdir, 'recent_optim.pth'))
+		# torch.save(model.state_dict(), os.path.join(logdir, 'model.pth'))
+		# torch.save(optimizer.state_dict(), os.path.join(logdir, 'recent_optim.pth'))
 
 		# Log other data corresponding to the recent model
 		# with open(os.path.join(args.logdir, 'recent.log'), 'w') as f:
@@ -905,5 +912,8 @@ if not args.test:
 
 else:
 	trainer.validate(cam=cam)
-
+print("***************** Best map *****************")
+print(f'best mAP : {trainer.best_mAP}')
+for s in trainer.best_performance:
+    print(s)
 plot_result(np.array(result_list))

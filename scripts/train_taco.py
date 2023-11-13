@@ -319,7 +319,6 @@ class Engine(object):
             label_actor_list = label_actor_list.reshape((label_actor_list.shape[0], num_actor_class))
             map_pred_actor_list = np.array(map_pred_actor_list)
             label_actor_list = np.array(label_actor_list)
-            
 
             mAP = average_precision_score(
                     label_actor_list,
@@ -330,16 +329,16 @@ class Engine(object):
                     map_pred_actor_list[:, :12].astype(np.float32)
                     )
             b_mAP = average_precision_score(
-                    label_actor_list[:, 12:24],
-                    map_pred_actor_list[:, 12:24].astype(np.float32)
+                    label_actor_list[:, 24:36],
+                    map_pred_actor_list[:, 24:36].astype(np.float32)
                     )
             p_mAP = average_precision_score(
                     label_actor_list[:, 48:56],
                     map_pred_actor_list[:, 48:56].astype(np.float32),
                     )
             group_c_mAP = average_precision_score(
-                    label_actor_list[:, 24:36],
-                    map_pred_actor_list[:, 24:36].astype(np.float32)
+                    label_actor_list[:, 12:24],
+                    map_pred_actor_list[:, 12:24].astype(np.float32)
                     )
             group_b_mAP = average_precision_score(
                     label_actor_list[:, 36:48],

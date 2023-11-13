@@ -480,7 +480,7 @@ if __name__ == '__main__':
         for k in train_set.label_stat[i].keys():
             label_stat[i][k] = train_set.label_stat[i][k] + val_set.label_stat[i][k]
     print('*'*20)
-    print('TACO Dataset')
+    print('nuScenes Dataset')
     print('c_stat:')
     print(label_stat[0])
     print('b_stat:')

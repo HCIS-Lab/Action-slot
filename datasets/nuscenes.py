@@ -386,7 +386,7 @@ def scale(image, model_name=None, pretrain=None):
     if pretrain == 'oats':
         (width, height) = (224, 224)
     else:
-        (width, height) = (256, 768)
+        (width, height) = (768, 256)
     # else:
     #     (width, height) = (int(image.width // scale), int(image.height // scale))
     im_resized = image.resize((width, height), Image.Resampling.LANCZOS)

@@ -178,12 +178,13 @@ class ACTION_SLOT(nn.Module):
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo:main', 'x3d_m', pretrained=True)
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 192
-            if args.dataset == 'taco':
-                self.resolution = (8, 24)
-                self.resolution3d = (16, 8, 24)
-            elif args.dataset == 'oats':
+            
+            if args.dataset == 'oats':
                 self.resolution = (7, 7)
                 self.resolution3d = (16, 7, 7)
+            else:
+                self.resolution = (8, 24)
+                self.resolution3d = (16, 8, 24)
             
         elif args.backbone == 'videomae':
             self.model = videomae

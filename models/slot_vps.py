@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from classifier import Head, Instance_Head
 from pytorchvideo.models.hub import i3d_r50
 import inception
+import r50
 
 import numpy as np
 from math import ceil 
@@ -194,6 +195,15 @@ class SLOT_VPS(nn.Module):
             elif args.dataset == 'oats':
                 self.resolution = (5, 5)
                 self.resolution3d = (args.seq_len, 5, 5)
+        elif args.backbone == 'r50':
+            self.resnet = r50.R50()
+            self.in_c = 2048
+            if args.dataset == 'taco':
+                self.resolution = (8, 24)
+                self.resolution3d = (args.seq_len, 5, 5)
+            elif args.dataset == 'oats':
+                self.resolution = (7, 7)
+                self.resolution3d = (args.seq_len, 7, 7)
 
         elif args.backbone == 'i3d-2':
             self.resnet = self.resnet.blocks[:-2]

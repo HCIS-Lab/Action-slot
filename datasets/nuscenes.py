@@ -111,7 +111,7 @@ class NUSCENES(Dataset):
 
 
 
-        all_imgs = [os.path.join(root, img) for img in os.listdir(root) if os.path.isfile(os.path.join(root, img))]
+        all_imgs = [os.path.join(root, 'CAM_FRONT',img) for img in os.listdir(os.path.join(root, 'CAM_FRONT')) if os.path.isfile(os.path.join(root, 'CAM_FRONT',img))]
         all_imgs.sort()
 
         for label_file in label_files:
@@ -134,10 +134,10 @@ class NUSCENES(Dataset):
                         label_stat, proposal_train_label, gt_ego, gt_actor = get_labels(args, label_stat, ego_gt, actor_gt, num_slots=args.num_slots)
                     else:
                         label_stat, gt_ego, gt_actor = get_labels(args, label_stat, ego_gt, actor_gt, num_slots=args.num_slots)
-                    start_frame = os.path.join(root, start_frame)
+                    start_frame = os.path.join(root, 'CAM_FRONT', start_frame)
                     start_frame_idx = all_imgs.index(start_frame)
                     video = all_imgs[start_frame_idx-1:start_frame_idx-1+16]
-
+                    seg = [os.path.join(root, 'segmentation_32x96', os.path.basename(img)[:-4]+'.png') for img in video]
                     # ------------statistics-------------
                     if torch.count_nonzero(gt_actor) > max_num_label_a_video:
                         max_num_label_a_video = torch.count_nonzero(gt_actor)
@@ -145,7 +145,7 @@ class NUSCENES(Dataset):
 
                     self.city.append(label_file)
                     self.video_list.append(video)
-                    # self.seg_list.append(segs)
+                    self.seg_list.append(seg)
                     # self.obj_seg_list.append(obj_f)
 
                     self.gt_ego.append(gt_ego)
@@ -319,8 +319,8 @@ class NUSCENES(Dataset):
 
 
         seq_videos = self.video_list[index]
-        # if self.args.bg_mask:
-        #     seq_seg = self.seg_list[index][sample_idx]
+        if self.args.bg_mask:
+            seq_seg = self.seg_list[index]
         # if self.args.obj_mask:
         #     obj_masks_list = self.obj_seg_list[index][sample_idx]
 
@@ -342,13 +342,74 @@ class NUSCENES(Dataset):
             data['videos'].append(x)
 
             if self.args.bg_mask and i %self.args.mask_every_frame == 0:
-                data['bg_seg'].append(Image.open(seq_seg[i]).convert('L'))
+                data['bg_seg'].append(self.get_stuff_mask(seq_seg[i]))
 
         data['videos'] = to_np(data['videos'], self.args.model_name, self.args.backbone)
-        data['bg_seg'] = to_np_no_norm(data['bg_seg'])
         return data
 
+    def get_stuff_mask(self, seg_path):
+        img = cv2.imread(os.path.join(seg_path), cv2.IMREAD_COLOR)
+        img = torch.from_numpy(img).type(torch.int).permute(2,0,1)
+        #c, h, w
+        img = torch.sum(img, dim=0)
+        # target = Image.open(os.path.join(seg_path))
+        # target = self.encode_target(target)
+        condition = img == 320
+        condition += img == 511
+        condition += img == 300
+        condition += img == 255
+        condition += img == 142
+        condition += img == 70
+        condition += img == 100
+        condition += img == 90
+        condition += img == 110
+        condition += img == 230
+        condition += img == 162
+        condition += img == 142
 
+        #     CityscapesClass('unlabeled',            0, 255, 'void', 0, False, True, (0, 0, 0)),
+        #     CityscapesClass('ego vehicle',          1, 255, 'void', 0, False, True, (0, 0, 0)),
+        #     CityscapesClass('rectification border', 2, 255, 'void', 0, False, True, (0, 0, 0)),
+        #     CityscapesClass('out of roi',           3, 255, 'void', 0, False, True, (0, 0, 0)),
+        #     CityscapesClass('static',               4, 255, 'void', 0, False, True, (0, 0, 0)),
+        #     CityscapesClass('dynamic',              5, 255, 'void', 0, False, True, (111, 74, 0)), #185
+        #     CityscapesClass('ground',               6, 255, 'void', 0, False, True, (81, 0, 81)),
+          # CityscapesClass('road',                 7, 0, 'flat', 1, False, False, (128, 64, 128)), #256+64=320
+        # # CityscapesClass('sidewalk',             8, 1, 'flat', 1, False, False, (244, 35, 232)),279+232=511
+        #     CityscapesClass('parking',              9, 255, 'flat', 1, False, True, (250, 170, 160)), #420+160=580
+        #     CityscapesClass('rail track',           10, 255, 'flat', 1, False, True, (230, 150, 140)),
+        #     CityscapesClass('building',             11, 2, 'construction', 2, False, False, (70, 70, 70)),
+        #     CityscapesClass('wall',                 12, 3, 'construction', 2, False, False, (102, 102, 156)),
+        #     CityscapesClass('fence',                13, 4, 'construction', 2, False, False, (190, 153, 153)),
+        #     CityscapesClass('guard rail',           14, 255, 'construction', 2, False, True, (180, 165, 180)),
+        #     CityscapesClass('bridge',               15, 255, 'construction', 2, False, True, (150, 100, 100)),
+        #     CityscapesClass('tunnel',               16, 255, 'construction', 2, False, True, (150, 120, 90)),
+        #     CityscapesClass('pole',                 17, 5, 'object', 3, False, False, (153, 153, 153)),
+        #     CityscapesClass('polegroup',            18, 255, 'object', 3, False, True, (153, 153, 153)),
+        #     CityscapesClass('traffic light',        19, 6, 'object', 3, False, False, (250, 170, 30)),
+        #     CityscapesClass('traffic sign',         20, 7, 'object', 3, False, False, (220, 220, 0)),
+        #     CityscapesClass('vegetation',           21, 8, 'nature', 4, False, False, (107, 142, 35)),
+        #     CityscapesClass('terrain',              22, 9, 'nature', 4, False, False, (152, 251, 152)),
+        #     CityscapesClass('sky',                  23, 10, 'sky', 5, False, False, (70, 130, 180)),
+        # # CityscapesClass('person',               24, 11, 'human', 6, True, False, (220, 20, 60)),
+        # # CityscapesClass('rider',                25, 12, 'human', 6, True, False, (255, 0, 0)),
+        # # CityscapesClass('car',                  26, 13, 'vehicle', 7, True, False, (0, 0, 142)),
+        # # CityscapesClass('truck',                27, 14, 'vehicle', 7, True, False, (0, 0, 70)),
+        # # CityscapesClass('bus',                  28, 15, 'vehicle', 7, True, False, (0, 60, 100)),
+        # # CityscapesClass('caravan',              29, 255, 'vehicle', 7, True, True, (0, 0, 90)),
+        # # CityscapesClass('trailer',              30, 255, 'vehicle', 7, True, True, (0, 0, 110)),
+        # # CityscapesClass('train',                31, 16, 'vehicle', 7, True, False, (0, 80, 100)),
+        # # CityscapesClass('motorcycle',           32, 17, 'vehicle', 7, True, False, (0, 0, 230)),
+        # # CityscapesClass('bicycle',              33, 18, 'vehicle', 7, True, False, (119, 11, 32)),
+        # # CityscapesClass('license plate',        -1, 255, 'vehicle', 7, False, True, (0, 0, 142)),
+        condition = ~condition
+        condition = condition.type(torch.int)
+        # condition[:4, :] = 1
+        # condition[-2:, :] = 1
+        condition = condition.type(torch.float32)
+        h, w = condition.shape[0], condition.shape[1]
+        condition = torch.reshape(condition, (1, h, w))
+        return condition
 def get_obj_mask(obj_path):
     seg_dict = np.load(obj_path)
     obj_masks = list(seg_dict.values())

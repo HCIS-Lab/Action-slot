@@ -329,16 +329,16 @@ class Engine(object):
                     map_pred_actor_list[:, :12].astype(np.float32)
                     )
             b_mAP = average_precision_score(
-                    label_actor_list[:, 12:24],
-                    map_pred_actor_list[:, 12:24].astype(np.float32)
+                    label_actor_list[:, 24:36],
+                    map_pred_actor_list[:, 24:36].astype(np.float32)
                     )
             p_mAP = average_precision_score(
                     label_actor_list[:, 48:56],
                     map_pred_actor_list[:, 48:56].astype(np.float32),
                     )
             group_c_mAP = average_precision_score(
-                    label_actor_list[:, 24:36],
-                    map_pred_actor_list[:, 24:36].astype(np.float32)
+                    label_actor_list[:, 12:24],
+                    map_pred_actor_list[:, 12:24].astype(np.float32)
                     )
             group_b_mAP = average_precision_score(
                     label_actor_list[:, 36:48],
@@ -514,6 +514,10 @@ if __name__ == '__main__':
 
     # -----------	
     trainer = Engine(args,model,optimizer,num_actor_class,scheduler)
+
+    if args.pretrain != '':
+        model_path = os.path.join(args.cp)
+        model.load_state_dict(torch.load(model_path))
 
     # Create logdir
     print(f'Checkpoint path: {logdir}')

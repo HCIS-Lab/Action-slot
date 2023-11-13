@@ -5,7 +5,7 @@ def get_parser():
     parser = argparse.ArgumentParser()
 
     #dataset
-    parser.add_argument('--dataset', type=str, default='taco', choices=['taco', 'oats', 'road'])
+    parser.add_argument('--dataset', type=str, default='taco', choices=['taco', 'oats', 'nuscenes'])
     parser.add_argument('--oats_test_split', type=str, default='0', choices=['s1', 's2', 's3'])
     parser.add_argument('--root', type=str, help='dataset path')
 
@@ -37,6 +37,7 @@ def get_parser():
     
     # training
     parser.add_argument('--device', type=str, default='cuda', help='Device to use')
+    parser.add_argument('--pretrain', type=str, default='', choices=['taco', 'oats'])
     parser.add_argument('--epochs', type=int, default=100, help='Number of train epochs.')
     parser.add_argument('--wd', type=float, default=0.1, help='')
     parser.add_argument('--lr', type=float, default=5e-4, help='Learning rate.')
@@ -70,10 +71,13 @@ def get_parser():
     if not args.bg_mask:
         args.bg_attn_weight = 0.
 
-    if args.dataset == 'oats' and args.oats_test_split != '0':
-        based_log = args.dataset + '_' + args.oats_test_split + '_log'
+    if args.pretrain == '':
+        if args.dataset == 'oats' and args.oats_test_split != '0':
+            based_log = args.dataset + '_' + args.oats_test_split + '_log'
+        else:
+            based_log = args.dataset + '_log'
     else:
-        based_log = args.dataset + '_log'
+        based_log = args.dataset + '_pretrained_' + args.pretrain 
     if not os.path.isdir(based_log):
         os.makedirs(based_log)
     based_log = os.path.join(based_log, args.model_name)

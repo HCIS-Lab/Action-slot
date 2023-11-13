@@ -88,8 +88,8 @@ class ActionSlotLoss(nn.Module):
                 bg_seg.append(bg_seg_in[i].to(self.args.device, dtype=torch.float32))
             h, w = bg_seg[0].shape[-2], bg_seg[0].shape[-1]
             bg_seg = torch.stack(bg_seg, 0)
-            b, l, _, h, w = bg_seg.shape
-            bg_seg = torch.reshape(bg_seg, (b, l, h, w))
+            l, b, _, h, w = bg_seg.shape
+            bg_seg = torch.reshape(bg_seg, (l, b, h, w))
             bg_seg = torch.permute(bg_seg, (1, 0, 2, 3)) #[batch, len, h, w]
             
         if self.attn_loss_type == 1:

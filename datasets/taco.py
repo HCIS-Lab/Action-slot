@@ -34,7 +34,7 @@ class TACO(Dataset):
                 args,
                 training=True,
                 root='/data/carla_dataset/data_collection',
-                Max_N=63):
+                Max_N=20):
         # root = '/work/u8526971/data_collection'
         # root = '/home/hcis-s19/Desktop/data_collection'
         # root = '/home/hcis-s20/Desktop/data_collection'
@@ -48,7 +48,6 @@ class TACO(Dataset):
         self.model_name = args.model_name
         self.seq_len = args.seq_len
 
-        self.maps = []
         self.id = []
         self.variants = []
         self.args =args
@@ -79,7 +78,7 @@ class TACO(Dataset):
         total_frame = 0
         total_videos = 0
 
-        type_list = ['interactive', 'non-interactive', 'ap_Town01', 
+        type_list = ['interactive', 'non-interactive', 'ap_Town01',
         'ap_Town02','ap_Town03', 'ap_Town04', 'ap_Town05', 'ap_Town06', 'ap_Town07', 'ap_Town10HD', 
         'runner_Town03','runner_Town05', 'runner_Town10HD']
         n=0
@@ -197,9 +196,6 @@ class TACO(Dataset):
                                     continue
                                 else:
                                     gt.remove('x')
-
-                                if args.plot and not c_bp:
-                                    continue
                                 # if c_p and c_pp and c_c and c_cp:
                                 #     print(v)
 
@@ -213,9 +209,6 @@ class TACO(Dataset):
                             gt_ego, gt_actor = get_labels(args, gt, scenario_id, v_id, num_slots=args.num_slots)
                         
 
-
-                        if args.plot and torch.count_nonzero(gt_actor) > 3 :
-                            continue
                         # ------------statistics-------------
                         if torch.count_nonzero(gt_actor) > max_num_label_a_video:
                             max_num_label_a_video = torch.count_nonzero(gt_actor)
@@ -223,6 +216,7 @@ class TACO(Dataset):
 
                         # remove those data with no traffic pattern
                         if not torch.count_nonzero(gt_actor):
+                            print(111)
                             continue
                         
                         if args.ego_motion != -1:
@@ -309,7 +303,7 @@ class TACO(Dataset):
                                 objname = f"{str(i).zfill(8)}.npz"
                                 if os.path.isfile(v+"/rgb/"+video_folder+imgname):
                                     videos_temp.append(v+"/rgb/"+video_folder +imgname)
-                                    idx_temp.append(i-start)
+                                    idx_temp.append(i-start_frame)
                                 if os.path.isfile(v+"/mask/background/"+segname):
                                     seg_temp.append(v+"/mask/background/"+segname)
                                 if os.path.isfile(v+"/seg_mask/"+objname):
@@ -375,7 +369,7 @@ class TACO(Dataset):
 
                         label_stat[6][ego_class] +=1
 
-                        self.maps.append(str(type))
+
                         self.id.append(s.split('/')[-1])
                         self.variants.append(v.split('/')[-1])
 
@@ -401,8 +395,12 @@ class TACO(Dataset):
                             min_frame_a_video = num_frame
                         total_frame += num_frame
                         total_videos += 1
-        if False:
-            self.parse_tracklets() 
+        if args.box:
+            if args.gt:
+                self.parse_tracklets() 
+            else:
+                self.parse_tracklets_detection()
+                
         print('num_videos: ' + str(len(self.variants)))
         print('c_stat:')
         print(label_stat[0])
@@ -453,9 +451,9 @@ class TACO(Dataset):
             root = data[0][0].split('/')
             root = root[:-3]
             root = '/'+os.path.join(*root)
-            if not os.path.isdir(os.path.join(root,'tracks_pred')):
-                os.mkdir(os.path.join(root,'tracks_pred'))
-            f = open(os.path.join(root,'tracking_pred_2','tracks','front.txt'))
+            # if not os.path.isdir(os.path.join(root,'tracks_pred')):
+            #     os.mkdir(os.path.join(root,'tracks_pred'))
+            f = open(os.path.join(root,'tracks','pred','downsampled.txt'))
             tracklet = f.readlines()
             # parse_tracklet
             tracklet = parse_tracklet()
@@ -480,7 +478,7 @@ class TACO(Dataset):
                                 continue
                     except:
                         continue
-                np.save(os.path.join(root,'tracks_pred','%s' % (i)),out)
+                np.save(os.path.join(root,'tracks','pred','%s' % (i)),out)
                         
         
 
@@ -498,7 +496,9 @@ class TACO(Dataset):
             for i,track in enumerate(tracklet):
                 for boxes in track:
                     for obj in boxes:
-                        if obj not in obj_id_dict:
+                        if obj not in obj_id_dict :
+                            if count == 20:
+                                continue
                             obj_id_dict[obj] = count
                             count += 1
                         out[i][obj_id_dict[obj]] = boxes[obj]
@@ -531,6 +531,8 @@ class TACO(Dataset):
                     frame_idx = frame_idx.split('/')[-1][:-4]
                     for obj_id, box in bboxs[frame_idx].items():
                         if obj_id not in obj_id_dict:
+                            if count == 20:
+                                continue
                             obj_id_dict[obj_id] = count
                             count += 1
                         out[j][obj_id_dict[obj_id]] = box
@@ -562,7 +564,6 @@ class TACO(Dataset):
         data['raw'] = []
         data['ego'] = self.gt_ego[index]
         data['actor'] = self.gt_actor[index]
-        data['map'] = self.maps[index]
         data['id'] = self.id[index]
         data['variants'] = self.variants[index]
 
@@ -606,10 +607,19 @@ class TACO(Dataset):
                 data['obj_masks'].append(get_obj_mask(obj_masks_list[i]))
         if self.args.plot:
             data['raw'] = to_np_no_norm(data['raw'])
-
+            
+        # fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        # out = cv2.VideoWriter(os.path.join('/home/hcis-s19/Desktop/debug',f"{index}.mp4"), fourcc, 12.0, (768,  256))
+        # for img, boxs in zip(data['videos'],data['box']):
+        #     img = np.array(img)
+        #     for box in boxs:
+        #         cv2.rectangle(img, (int(box[0]),int(box[1])), (int(box[2]),int(box[3])), (255,0,0, 255), 1)  
+        #     out.write(img)
+        # out.release()
+        # raise BaseException
+    
         data['videos'] = to_np(data['videos'], self.args.model_name, self.args.backbone)
-        if self.args.bg_mask:
-            data['bg_seg'] = to_np_no_norm(data['bg_seg'])
+        data['bg_seg'] = to_np_no_norm(data['bg_seg'])
 
 
         if self.args.val_confusion:

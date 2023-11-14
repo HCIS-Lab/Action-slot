@@ -504,9 +504,9 @@ if __name__ == '__main__':
     # Model
     model = generate_model(args, num_ego_class, num_actor_class).cuda()
 
-    if args.pretrain != '':
+    if args.pretrain != '' :
         model_path = os.path.join(args.cp)
-        if 'slot' not in args.model_name:
+        if 'slot' not in args.model_name and args.pretrain != 'taco':
             checkpoint = torch.load(model_path)
             checkpoint = {k: v for k, v in checkpoint.items() if (k in checkpoint and 'fc' not in k)}
             model.load_state_dict(checkpoint, strict=False)

@@ -97,6 +97,9 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
     if not os.path.exists(path):
         os.makedirs(path)
 
+
+    num_pos = 0
+    num_tp = 0
     actor_str = ''
     actor = actor[0]
     pred_actor = pred_actor[0]
@@ -106,9 +109,11 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
     if args.allocated_slot:
         for i, a in enumerate(actor):
             if a.data == 1.0:
+                num_pos += 1
                 actor_str += actor_table[i]
                 if pred_actor[i].data == True:
                     actor_str += '  TP'
+                    num_tp +=1
                 else:
                     actor_str += '          FN'
             
@@ -120,6 +125,8 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
                     actor_str += actor_table[i] 
                     actor_str += '                          TN'
             actor_str +='\n'
+        if num_pos != num_tp:
+            return
         with open(os.path.join(path, "label_result.txt"), "w") as text_file:
             text_file.write(actor_str)
 
@@ -250,15 +257,15 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
             # masks_6 = (masks_j[18] > threshold).astype('uint8').reshape((128,384))
             # masks_b = (masks_j[-1] > threshold).astype('uint8').reshape((128,384))
 
-            num_pos = 0
-            num_tp = 0
-            for i, a in enumerate(actor):
-                if a.data == 1.0:
-                    num_pos +=1
-                    if pred_actor[i].data == True:
-                        num_tp+=1
-            if num_pos != num_tp:
-                return
+            # num_pos = 0
+            # num_tp = 0
+            # for i, a in enumerate(actor):
+            #     if a.data == 1.0:
+            #         num_pos +=1
+            #         if pred_actor[i].data == True:
+            #             num_tp+=1
+            # if num_pos != num_tp:
+            #     return
 
             alpha_1 = 0.5
             alpha_2 = 0.5

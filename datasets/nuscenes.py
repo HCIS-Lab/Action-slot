@@ -33,7 +33,7 @@ class NUSCENES(Dataset):
     def __init__(self, 
                 args,
                 training=True,
-                Max_N=63):
+                Max_N=20):
         root = args.root
         # /media/hcis-s20/SRL/nuscenes/trainval/samples/CAM_FRONT
         self.training = training
@@ -129,7 +129,7 @@ class NUSCENES(Dataset):
                     actor_gt = actor_gt.split(' ')
 
                     if self.args.box:
-                        proposal_train_label, gt_ego, gt_actor = get_labels(args, label_stat, ego_gt, actor_gt, num_slots=self.Max_N)
+                        label_stat, proposal_train_label, gt_ego, gt_actor = get_labels(args, label_stat, ego_gt, actor_gt, num_slots=self.Max_N)
                     elif 'slot' in args.model_name and not args.allocated_slot:
                         label_stat, proposal_train_label, gt_ego, gt_actor = get_labels(args, label_stat, ego_gt, actor_gt, num_slots=args.num_slots)
                     else:
@@ -159,8 +159,7 @@ class NUSCENES(Dataset):
                         self.confusion_label_list.append(confusion_label)
 
                     # -----------statstics--------------
-        if False:
-            self.parse_tracklets() 
+
         print('c_stat:')
         print(label_stat[0])
         print('b_stat:')
@@ -177,127 +176,84 @@ class NUSCENES(Dataset):
         print(label_stat[6])
 
         self.label_stat = label_stat
+        self._parse_tracklet(training)
+    
+    def _save_as_txt(self,training):
+        osp = os.path.join
+        if not os.path.isdir(osp(self.args.root,'pred')):
+            os.mkdir(osp(self.args.root,'pred')) 
+        if training:
+            path = osp(self.args.root,'pred','train')
+        else:
+            path = osp(self.args.root,'pred','val')
+        if not os.path.isdir(path):
+            os.mkdir(path) 
+        for i, samples in enumerate(self.video_list):
+            sample_path = osp(path,str(i))
+            if not os.path.isdir(sample_path):
+                os.mkdir(sample_path) 
+            f = open(osp(sample_path,'imgs.txt'), 'w')
+            for p in samples:
+                f.write(p)
+                f.write('\n')
+            f.close()
 
-        
+    def _parse_tracklet(self,training):
 
-    def parse_tracklets_detection(self):
-        """
-            read {scenario}/tracking_pred_2/tracks/front.txt
-            format: frame, id, x, y, w, h
-        """
-        
         def parse_tracklet():
             # frame_id: {id: [x,y,w,h]}
             out = {}
+            for i in range(self.args.seq_len):
+                out[i+1] = {}
             for line in tracklet:
                 line = line.split(' ')[:6]
                 frame = int(line[0])
                 obj_id = int(line[1])
                 box = [int(line[2]),int(line[3]),int(line[2])+int(line[4]),int(line[3])+int(line[5])]
-                if frame not in out:
-                    out[frame] = {}
                 out[frame][obj_id] = box
             return out
-            
         
-        for data,idx in tqdm(zip(self.videos_list,self.idx)):
-            root = data[0][0].split('/')
-            root = root[:-3]
-            root = '/'+os.path.join(*root)
-            if not os.path.isdir(os.path.join(root,'tracks_pred')):
-                os.mkdir(os.path.join(root,'tracks_pred'))
-            f = open(os.path.join(root,'tracking_pred_2','tracks','front.txt'))
-            tracklet = f.readlines()
-            # parse_tracklet
-            tracklet = parse_tracklet()
-            f.close()
-            # for every sample]
-            assert len(data) == len(idx)
-            for i,idx_list in enumerate(idx):
-                out = np.zeros((self.seq_len,self.Max_N,4))
-                obj_id_dict = {}
-                # tracklet id
-                count = 0
-                # img frame id
-                for j,index in enumerate(idx_list):
-                    try:
-                        for obj_id in tracklet[int(index)+1]:
-                            if obj_id not in obj_id_dict:
-                                obj_id_dict[obj_id] = count
-                                count += 1
-                            try:
-                                out[j][obj_id_dict[obj_id]] = tracklet[int(index)+1][obj_id]
-                            except:
-                                continue
-                    except:
-                        continue
-                np.save(os.path.join(root,'tracks_pred','%s' % (i)),out)
-                        
-        
+        osp = os.path.join
+        if training:
+            path = osp(self.args.root,'pred','train')
+        else:
+            path = osp(self.args.root,'pred','val')
 
-    def parse_tracklets(self):
-        """
-            tracklet (List[List[Dict]]):
-                T , boxes per_frame , key: obj_id
-            return:
-                T x N x 4
-        """
-        def parse_tracklet(tracklet,root,index):
+        self.box = []
+        for i, _ in enumerate(self.video_list):
+            f = open(osp(path,str(i),'CAM_FRONT.txt'))
+            tracklet = f.readlines()
+            tracklet = parse_tracklet()
+
             out = np.zeros((self.seq_len,self.Max_N,4))
             obj_id_dict = {}
+            # tracklet id
             count = 0
-            for i,track in enumerate(tracklet):
-                for boxes in track:
-                    for obj in boxes:
-                        if obj not in obj_id_dict:
-                            obj_id_dict[obj] = count
-                            count += 1
-                        out[i][obj_id_dict[obj]] = boxes[obj]
-            np.save(os.path.join(root,'tracks','%s' % (index)),out)
-            # with open(os.path.join(root,'tracks','%s.json' % (index)), 'w') as f:
-            #     json.dump(out, f)
-                        
+            # img frame id
+            for j in range(self.args.seq_len):
+                for obj_id in tracklet[j+1]:
+                    if obj_id not in obj_id_dict:
+                        if count >=20:
+                            break
+                        obj_id_dict[obj_id] = count
+                        count += 1
+                    try:
+                        out[j][obj_id_dict[obj_id]] = tracklet[j+1][obj_id]
+                    except:
+                        continue
+            self.box.append(out)
+        assert len(self.video_list) == len(self.box)
             
-        # for each data
-        for data in tqdm(self.videos_list):
-            root = data[0][0].split('/')
-            root = root[:-3]
-            root = '/'+os.path.join(*root)
-            if not os.path.isdir(os.path.join(root,'tracks')):
-                os.mkdir(os.path.join(root,'tracks'))
-            if not os.path.isdir(os.path.join(root,'tracks','gt')):
-                os.mkdir(os.path.join(root,'tracks','gt'))
-            if not os.path.isdir(os.path.join(root,'tracks','pred')):
-                os.mkdir(os.path.join(root,'tracks','pred'))
-            # read bbox.json
-            f = open(os.path.join(root,'bbox.json'))
-            bboxs = json.load(f)
-            f.close()
-            for i,sample in enumerate(data):
-                out = np.zeros((self.seq_len,self.Max_N,4))
-                obj_id_dict = {}
-                count = 0
-                # iterate each imgs
-                for j,frame_idx in enumerate(sample):
-                    frame_idx = frame_idx.split('/')[-1][:-4]
-                    for obj_id, box in bboxs[frame_idx].items():
-                        if obj_id not in obj_id_dict:
-                            obj_id_dict[obj_id] = count
-                            count += 1
-                        out[j][obj_id_dict[obj_id]] = box
-                np.save(os.path.join(root,'tracks','gt','%s' % (i)),out)
-            
-                # if not os.path.isdir(os.path.join(root,'tracks')):
-                #     os.mkdir(os.path.join(root,'tracks'))
-                # for img in sample:
-                #     # read bbox
-                #     box_path = parse_file_name(img)
-                #     f = open(box_path)
-                #     track = json.load(f)
-                #     temp.append(track)
-                #     f.close()
-                # parse_tracklet(temp,root,i)
-        
+            # for debug
+            # fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+            # out_video = cv2.VideoWriter(os.path.join('/media/hcis-s20/SRL/debug',f"{i}.mp4"), fourcc, 2.0, (768,  256))
+            # for img, boxs in zip(samples,out):
+            #     img = cv2.imread(img)
+            #     img = cv2.resize(img, (768, 256), interpolation=cv2.INTER_NEAREST)
+            #     for box in boxs:
+            #         cv2.rectangle(img, (int(box[0]),int(box[1])), (int(box[2]),int(box[3])), (255,0,0, 255), 1)  
+            #     out_video.write(img)
+            # out_video.release()
 
     def __len__(self):
         """Returns the length of the dataset. """
@@ -327,14 +283,7 @@ class NUSCENES(Dataset):
 
         # add tracklets
         if self.args.box:
-            track_path = seq_videos[0].split('/')
-            track_path = track_path[:-3]
-            if self.args.gt:
-                track_path = '/' + os.path.join(*track_path,'tracks','gt',str(sample_idx)) + '.npy'
-            else:
-                track_path = '/' + os.path.join(*track_path,'tracks','pred',str(sample_idx)) + '.npy'
-            tracklets = np.load(track_path)
-            data['box'] = tracklets
+            data['box'] = self.box[index]
 
         for i in range(self.seq_len):
             x = Image.open(seq_videos[i]).convert('RGB')

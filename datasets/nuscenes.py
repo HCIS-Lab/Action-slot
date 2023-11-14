@@ -437,34 +437,49 @@ def get_labels(args, label_stat, ego_gt, gt_list, num_slots=64):
                     'c21': 3, 'c23': 4, 'c24': 5,
                     'c31': 6, 'c32': 7, 'c34': 8,
                     'c41': 9, 'c42': 10, 'c43': 11,
-
                     'c+12': 12, 'c+13':13, 'c+14':14,
                     'c+21': 15, 'c+23': 16, 'c+24': 17,
                     'c+31': 18, 'c+32': 19, 'c+34': 20,
                     'c+41': 21, 'c+42': 22, 'c+43': 23,
-
                     'k12': 24, 'k13':25, 'k14':26,
                     'k21': 27, 'k23': 28, 'k24': 29,
                     'k31': 30, 'k32': 31, 'k34': 32,
                     'k41': 33, 'k42': 34, 'k43': 35,
-
                     'k+12': 36, 'k+13':37, 'k+14':38,
                     'k+21': 39, 'k+23': 40, 'k+24': 41,
                     'k+31': 42, 'k+32': 43, 'k+34': 44,
                     'k+41': 45, 'k+42': 46, 'k+43': 47,
-
-
                     'p12': 48, 'p14': 49, 
                     'p21': 50, 'p23': 51, 
                     'p32': 52, 'p34': 53, 
                     'p41': 54, 'p43': 55,
-
                     'p+12': 56, 'p+14': 57, 
                     'p+21': 58, 'p+23': 59, 
                     'p+32': 60, 'p+34': 61, 
                     'p+41': 62, 'p+43': 63 
                     }
 
+    oats_actor_map={
+        # from oats
+        'c+13':0, 'p+12':1, 'p21':2, 'c31':3, 'c21':4,
+        'p43':5, 'c13':6, 'c12':7, 'c24':8, 'c42':9, 
+        'c34':10,  'p23':11,  'c41':12,  'p34':13,  'c14':14,
+         'c23':15,  'p12':16,'p+23':17,  'p32':18,  'p+34':19,
+        'p+43':20 ,  'p14':21, 'p+32': 22,  'c32':23,  'k31':24,
+        'c43':25,  'p+14':26, 'c+42':27, 'p+41':28,  'p+21':29,
+         'c+31':30,  'p41':31,  'k24':32, 'c+24':33, 'k13':34,
+        # absence in oats
+        'c+12':35, 'c+14':36, 'c+21':37, 'c+23':38,  'c+32':39,
+        'c+34':40,  'c+41':41,  'c+43':42,  'k12':43,  'k14':44,
+        'k21':45,  'k23':46,  'k32':47,  'k34':48,  'k41':49,
+         'k42':50, 'k43':51, 'k+12': 52,  'k+13':53, 'k+14':54,
+        'k+21':55, 'k+23':56,  'k+24':57,  'k+31':58,  'k+32':59,
+         'k+34':60,  'k+41':61,  'k+42':62,  'k+43':63
+        }
+    if args.pretrain == 'oats':
+        class_table = oats_actor_map
+    else:
+        class_table = taco_actor_table
 
     actor_class = [0]*64
 
@@ -472,9 +487,9 @@ def get_labels(args, label_stat, ego_gt, gt_list, num_slots=64):
     for gt in gt_list:
         gt = gt.lower()
         if ('slot' in model_name and not allocated_slot) or 'ARG'in model_name or 'ORN'in model_name:
-            if not actor_table[gt] in proposal_train_label:
-                proposal_train_label.append(actor_table[gt])
-        actor_class[actor_table[gt]] = 1
+            if not class_table[gt] in proposal_train_label:
+                proposal_train_label.append(class_table[gt])
+        actor_class[class_table[gt]] = 1
         if 'c+' == gt[:2]:
             label_stat[2][gt]+=1
         elif 'k+' == gt[:2]:

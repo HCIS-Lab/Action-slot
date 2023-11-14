@@ -468,7 +468,10 @@ if __name__ == '__main__':
     seq_len = args.seq_len
 
     num_ego_class = 4
-    num_actor_class = 64
+    if args.pretrain == 'oats' and 'slot' in args.model_name:
+        num_actor_class = 35
+    else:
+        num_actor_class = 64
 
 
     # Data
@@ -501,6 +504,13 @@ if __name__ == '__main__':
     # Model
     model = generate_model(args, num_ego_class, num_actor_class).cuda()
 
+    if args.pretrain != '':
+        model_path = os.path.join(args.cp)
+        if 'slot' not in args.model_name:
+            checkpoint = torch.load(model_path)
+            checkpoint = {k: v for k, v in checkpoint.items() if (k in checkpoint and 'fc' not in k)}
+            model.load_state_dict(checkpoint, strict=False)
+        # else:
     if 'mvit' == args.model_name:
         params = set_lr(model)#
     else:

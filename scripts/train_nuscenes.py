@@ -468,10 +468,10 @@ if __name__ == '__main__':
     seq_len = args.seq_len
 
     num_ego_class = 4
-    if args.pretrain == 'oats' and 'slot' in args.model_name:
-        num_actor_class = 35
-    else:
-        num_actor_class = 64
+    # if args.pretrain == 'oats' and 'slot' in args.model_name:
+    #     num_actor_class = 35
+    # else:
+    num_actor_class = 64
 
 
     # Data
@@ -506,10 +506,12 @@ if __name__ == '__main__':
 
     if args.pretrain != '' :
         model_path = os.path.join(args.cp)
-        if 'slot' not in args.model_name and args.pretrain != 'taco':
+        if args.pretrain == 'oats':
             checkpoint = torch.load(model_path)
             checkpoint = {k: v for k, v in checkpoint.items() if (k in checkpoint and 'fc' not in k)}
             model.load_state_dict(checkpoint, strict=False)
+            if 'slot' in args.model_name:
+                model.slot_attention.extend_slots()
         # else:
     if 'mvit' == args.model_name:
         params = set_lr(model)#
@@ -524,10 +526,6 @@ if __name__ == '__main__':
 
     # -----------	
     trainer = Engine(args,model,optimizer,num_actor_class,scheduler)
-
-    if args.pretrain != '':
-        model_path = os.path.join(args.cp)
-        model.load_state_dict(torch.load(model_path))
 
     # Create logdir
     print(f'Checkpoint path: {logdir}')

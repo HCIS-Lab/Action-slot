@@ -870,7 +870,15 @@ dataloader_train = DataLoader(train_set, batch_size=args.batch_size, shuffle=Tru
 dataloader_val = DataLoader(val_set, batch_size=1, shuffle=False, num_workers=args.num_workers, pin_memory=True, drop_last=True)
 # Model
 model = generate_model(args, num_ego_class, num_actor_class).cuda()
-
+if args.pretrain != '' :
+        model_path = os.path.join(args.cp)
+        if args.pretrain == 'oats':
+            checkpoint = torch.load(model_path)
+            checkpoint = {k: v for k, v in checkpoint.items() if (k in checkpoint and 'fc' not in k)}
+            model.load_state_dict(checkpoint, strict=False)
+            if 'slot' in args.model_name:
+                model.slot_attention.extract_slots_for_oats()
+                
 if 'mvit' == args.model_name:
 	params = set_lr(model)#
 else:

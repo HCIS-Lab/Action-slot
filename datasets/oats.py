@@ -68,15 +68,8 @@ class OATS(Dataset):
                 training=True,
                 root='/data/carla_dataset/data_collection',
                 Max_N=20):
-        # root = '/work/u8526971/data_collection'
-        # root = '/home/hcis-s19/Desktop/data_collection'
-        # root = '/home/hcis-s20/Desktop/data_collection'
-        root = '/media/hcis-s19/DATA/oats/oats_data'
-        # root = '/media/hcis-s16/hank/taco'
-        # root = '/media/hcis-s20/SRL/oats/oats_data'
-        # root = '/media/user/data/oats/oats_data'
-        # root = '/media/hcis-s19/DATA/taco'
 
+        root = args.root
         self.training = training
         self.model_name = args.model_name
         self.seq_len = args.seq_len
@@ -164,10 +157,16 @@ class OATS(Dataset):
                     for line in f:
                         line = line.replace('\n', '')
                         scenarios.append(line)
-
+        if args.pretrain == 'taco':
+            downsample_folder = 'downsampled_256x768'
+            segmentation_folder = '_segmentation_32x96'
+        else:
+            downsample_folder = 'downsampled_224'
+            segmentation_folder = '_segmentation_28x28'
+            
         for scenario in tqdm(scenarios, file=sys.stdout):
-            scenario_path = os.path.join(root, 'downsampled_224', 'scenario_' + scenario)
-            seg_video_path = os.path.join(root, 'images', 'scenario_' + scenario + '_segmentation_28x28')
+            scenario_path = os.path.join(root, downsample_folder, 'scenario_' + scenario)
+            seg_video_path = os.path.join(root, 'images', 'scenario_' + scenario + segmentation_folder)
             annotation_path = os.path.join(root, 'annotations', 'scenario_' + scenario + '.npy')
 
             check_data = [os.path.join(scenario_path, img) for img in os.listdir(scenario_path) if os.path.isfile(os.path.join(scenario_path, img))]
@@ -226,7 +225,8 @@ class OATS(Dataset):
                 max_num_label_a_video = torch.count_nonzero(gt_actor)
             total_label += torch.count_nonzero(gt_actor)
 
-
+            if args.plot and torch.count_nonzero(gt_actor) > 3:
+                continue
 
             self.scenarios.append(scenario)
             self.videos_list.append(videos)
@@ -248,7 +248,7 @@ class OATS(Dataset):
                 min_frame_a_video = num_frame
             total_frame += num_frame
             total_videos += 1
-        if True:
+        if False:
             self.parse_tracklets_detection() 
         print('c_stat:')
         print(label_stat[0])
@@ -341,7 +341,7 @@ class OATS(Dataset):
         # data['box'] = []
         data['raw'] = []
         data['actor'] = self.gt_actor[index]
-
+        data['scenario'] = self.scenarios[index]
 
         if ('slot' in self.args.model_name and not self.args.allocated_slot) or self.args.box:
             data['slot_eval_gt'] = self.slot_eval_gt[index]
@@ -378,8 +378,19 @@ class OATS(Dataset):
                 data['obj_masks'].append(get_obj_mask(obj_masks_list[i]))
         if self.args.plot:
             data['raw'] = to_np_no_norm(data['raw'], self.args.model_name)
+            
+        # fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        # out = cv2.VideoWriter(os.path.join('/home/hcis-s19/Desktop/debug',f"{index}.mp4"), fourcc, 6.0, (224,  224))
+        # for img, boxs in zip(data['videos'],data['box']):
+        #     # print(img.size)
+        #     img = np.array(img)
+        #     for box in boxs:
+        #         cv2.rectangle(img, (int(box[0]),int(box[1])), (int(box[2]),int(box[3])), (255,0,0, 255), 1)  
+        #     out.write(img)
+        # out.release()
+        # raise BaseException
+        
         data['videos'] = to_np(data['videos'], self.args.model_name, self.args.backbone)
-
         return data
 
     def get_stuff_mask(self, seg_path):

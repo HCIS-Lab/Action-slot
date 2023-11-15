@@ -687,7 +687,7 @@ def scale(image, scale=2.0, model_name=None):
     if scale == -1.0:
         (width, height) = (224, 224)
     else:
-        (width, height) = (int(image.width // scale), int(image.height // scale))
+        (width, height) = (int(image.width // scale), int(image.heighft // scale))
     # (width, height) = (int(image.width // scale), int(image.height // scale))
     im_resized = image.resize((width, height), Image.ANTIALIAS)
 

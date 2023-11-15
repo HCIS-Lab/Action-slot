@@ -52,7 +52,28 @@ class SlotAttention(nn.Module):
 
         slots = slots.contiguous()
         self.register_buffer("slots", slots)
+    def extend_slots(self):
+        mu = self.slots_mu.expand(1, 29, -1)
+        sigma = self.slots_sigma.expand(1, 29, -1)
+        slots = torch.normal(mu, sigma)
+        slots = slots.contiguous()
 
+        slots = torch.cat((self.slots[:, :-1, :], slots[:, :, :], torch.reshape(self.slots[:, -1, :], (1, 1, -1))), 1)
+        self.register_buffer("slots", slots)
+
+    def extract_slots_for_oats(self):
+
+        oats_slot_idx = [
+            13, 12, 50, 6, 3,
+            55, 1, 0, 5, 10,
+            8, 51, 9, 53, 2,
+            4, 48, 59, 52, 61,
+            63, 49, 60, 7, 30, 
+            11, 57, 22, 62, 58,
+            18, 54, 29, 17, 25
+            ]
+        slots = torch.cat(( torch.reshape(self.slots[:, idx, :], (1, 1, -1)) for idx in oats_slot_idx), 1)
+        self.register_buffer("slots", slots)
     def get_3d_slot(self, slots, inputs):
         b, l, h, w, d = inputs.shape
         inputs = self.pe(inputs)
@@ -130,6 +151,10 @@ class ACTION_SLOT(nn.Module):
         self.num_ego_class = num_ego_class
         self.ego_c = 128
         self.num_slots = num_slots
+        if args.dataset == 'nuscenes' and args.pretrain == 'oats':
+            self.num_slots = 35
+        if args.dataset == 'oats' and args.pretrain == 'taco':
+            self.num_slots = 64
         self.resnet = i3d_r50(True)
         self.args = args
         # self.resnet = self.resnet.blocks[:2]
@@ -179,7 +204,7 @@ class ACTION_SLOT(nn.Module):
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 192
             
-            if args.dataset == 'oats':
+            if args.dataset == 'oats' or args.pretrain == 'oats':
                 self.resolution = (7, 7)
                 self.resolution3d = (16, 7, 7)
             else:
@@ -215,12 +240,12 @@ class ACTION_SLOT(nn.Module):
             self.resnet = self.resnet.blocks[:-2]
             self.path_pool = nn.AdaptiveAvgPool3d((4, 8, 24))
             self.in_c = 2304
-            if args.dataset == 'taco':
-                self.resolution = (8, 24)
-                self.resolution3d = (4, 8, 24)
-            elif args.dataset == 'oats':
+            if args.dataset == 'oats':
                 self.resolution = (7, 7)
                 self.resolution3d = (4, 7, 7)
+            else:
+                self.resolution = (8, 24)
+                self.resolution3d = (4, 8, 24)
             
         if args.allocated_slot:
             self.head = Instance_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)
@@ -257,7 +282,7 @@ class ACTION_SLOT(nn.Module):
 
         if args.bg_slot:
             self.slot_attention = SlotAttention(
-                num_slots=num_slots+1,
+                num_slots=self.num_slots+1,
                 dim=self.slot_dim,
                 eps = 1e-8,
                 input_dim=self.hidden_dim2,
@@ -266,7 +291,7 @@ class ACTION_SLOT(nn.Module):
                 ) 
         else:
             self.slot_attention = SlotAttention(
-                num_slots=num_slots,
+                num_slots=self.num_slots,
                 dim=self.slot_dim,
                 eps = 1e-8,
                 input_dim=self.hidden_dim2,

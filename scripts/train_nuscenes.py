@@ -510,8 +510,10 @@ if __name__ == '__main__':
             checkpoint = torch.load(model_path)
             checkpoint = {k: v for k, v in checkpoint.items() if (k in checkpoint and 'fc' not in k)}
             model.load_state_dict(checkpoint, strict=False)
-            if 'slot' in args.model_name:
+            if args.model_name == 'action_slot':
                 model.slot_attention.extend_slots()
+            elif args.model_name == 'slot_vps':
+                model.extend_slots()
         # else:
     if 'mvit' == args.model_name:
         params = set_lr(model)#

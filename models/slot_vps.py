@@ -46,6 +46,7 @@ class SlotAttention(nn.Module):
         updates = updates.reshape(b, -1, d)
         return updates, attn_ori
 
+
     def forward(self, in_slots, inputs):
         b, nf, n, d = inputs.shape
         slots_out = []
@@ -186,6 +187,11 @@ class SLOT_VPS(nn.Module):
         self.num_slots = num_slots
         self.resnet = i3d_r50(True)
 
+        if args.dataset == 'nuscenes' and args.pretrain == 'oats':
+            self.num_slots = 35
+        if args.dataset == 'oats' and args.pretrain == 'taco':
+            self.num_slots = 64
+
         if args.backbone == 'inception':
             self.resnet = inception.INCEPTION()
             self.in_c = 2048
@@ -217,15 +223,17 @@ class SLOT_VPS(nn.Module):
             self.resolution3d = (4, 8, 24)
 
         elif args.backbone == 'x3d-2':
-            self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
+            self.resnet = torch.hub.load('facebookresearch/pytorchvideo:main', 'x3d_m', pretrained=True)
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 192
-            if args.dataset == 'oats':
+
+            if args.dataset == 'oats' or args.pretrain == 'oats':
                 self.resolution = (7, 7)
                 self.resolution3d = (16, 7, 7)
             else:
                 self.resolution = (8, 24)
                 self.resolution3d = (16, 8, 24)
+
         
 
         if args.allocated_slot:
@@ -276,6 +284,29 @@ class SLOT_VPS(nn.Module):
         self.drop = nn.Dropout(p=0.5)         
         self.pool = nn.AdaptiveAvgPool3d(output_size=1)
 
+    def extend_slots(self):
+        mu = self.slots_mu.expand(1, 29, -1)
+        sigma = self.slots_sigma.expand(1, 29, -1)
+        slots = torch.normal(mu, sigma)
+        slots = slots.contiguous()
+
+        slots = torch.cat((self.slots[:, :-1, :], slots[:, :, :], torch.reshape(self.slots[:, -1, :], (1, 1, -1))), 1)
+        self.register_buffer("slots", slots)
+
+    def extract_slots_for_oats(self):
+
+        oats_slot_idx = [
+            13, 12, 50, 6, 3,
+            55, 1, 0, 5, 10,
+            8, 51, 9, 53, 2,
+            4, 48, 59, 52, 61,
+            63, 49, 60, 7, 30, 
+            11, 57, 22, 62, 58,
+            18, 54, 29, 17, 25
+            ]
+        slots = torch.cat(( torch.reshape(self.slots[:, idx, :], (1, 1, -1)) for idx in oats_slot_idx), 1)
+        self.register_buffer("slots", slots)
+        
     def forward(self, x):
         seq_len = len(x)
         batch_size = x[0].shape[0]

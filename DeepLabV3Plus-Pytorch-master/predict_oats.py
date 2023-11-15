@@ -72,12 +72,17 @@ def main():
     print("Device: %s" % device)
 
     if os.path.isdir(opts.input):
-        video_list = [os.path.join(opts.input, scenario) for scenario in os.listdir(opts.input)]
+        video_list = [os.path.join(str(opts.input), scenario) for scenario in os.listdir(str(opts.input))]
     for scenario in video_list:
+        if 'segmentation' in scenario:
+            continue 
         print('--------------------------------------')
         print(scenario)
         folder_path = os.path.join(opts.input, scenario)
-        save_path = os.path.join(opts.save_val_results_to, scenario+'_segmentation_28x28')
+
+        # save_path = os.path.join(opts.save_val_results_to, scenario+'_segmentation_28x28')
+        save_path = os.path.join(opts.save_val_results_to, scenario+'_segmentation_32x96')
+
         # Setup dataloader
         image_files = []
         if os.path.isdir(folder_path):
@@ -127,7 +132,8 @@ def main():
                 pred = model(img).max(1)[1].cpu().numpy()[0] # HW
                 colorized_preds = decode_fn(pred).astype('uint8')
                 colorized_preds = Image.fromarray(colorized_preds)
-                colorized_preds = colorized_preds.resize((28, 28), Image.NEAREST)
+                # colorized_preds = colorized_preds.resize((28, 28), Image.NEAREST)
+                colorized_preds = colorized_preds.resize((96, 32), Image.NEAREST)
                 if opts.save_val_results_to:
                     colorized_preds.save(os.path.join(save_path, img_name+'.png'))
 

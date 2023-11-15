@@ -24,7 +24,7 @@ def get_argparser():
     parser = argparse.ArgumentParser()
 
     # Datset Options         /media/user/data/nuscenes/trainval/samples           /media/hcis-s20/SRL/nuscenes/trainval/samples
-    parser.add_argument("--input", type=str, default='/media/user/data/nuscenes/trainval/samples',
+    parser.add_argument("--input", type=str, default='//media/user/data/nuscenes/trainval/samples',
                         help="path to a single image or image directory")
     parser.add_argument("--dataset", type=str, default='cityscapes',
                         choices=['voc', 'cityscapes'], help='Name of training set')
@@ -112,8 +112,8 @@ def main():
                     start_frame = os.path.join(opts.input, 'CAM_FRONT', start_frame)
                     start_frame_idx = all_imgs.index(start_frame)
                     image_files = all_imgs[start_frame_idx-1:start_frame_idx-1+16]
-
-                    save_path = os.path.join(opts.input, 'segmentation_32x96')
+                    save_path = os.path.join(opts.input, 'segmentation_28x28')
+                    # save_path = os.path.join(opts.input, 'segmentation_32x96')
                     # Setup dataloader
         
                     
@@ -132,7 +132,8 @@ def main():
                             pred = model(img).max(1)[1].cpu().numpy()[0] # HW
                             colorized_preds = decode_fn(pred).astype('uint8')
                             colorized_preds = Image.fromarray(colorized_preds)
-                            colorized_preds = colorized_preds.resize((96, 32), Image.NEAREST)
+                            colorized_preds = colorized_preds.resize((28, 28), Image.NEAREST)
+                            # colorized_preds = colorized_preds.resize((96, 32), Image.NEAREST)
                             if opts.save_val_results_to:
                                 colorized_preds.save(os.path.join(save_path, img_name+'.png'))
 

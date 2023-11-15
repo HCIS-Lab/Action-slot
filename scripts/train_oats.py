@@ -57,7 +57,7 @@ from utils import *
 from torchvision import models
 import matplotlib.image
 import matplotlib.pyplot as plt
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 from scipy.optimize import linear_sum_assignment
 from parser import get_parser
 import math
@@ -193,13 +193,18 @@ class Engine(object):
 			else:
 				actor = torch.FloatTensor(data['actor']).to(args.device)
 			
+			if args.pretrain == 'taco':
+					ds_size = (32,96)
+				else:
+					ds_size = (28,28)
+					
 			optimizer.zero_grad()
 			if args.bg_mask:
 				h, w = bg_seg[0].shape[-2], bg_seg[0].shape[-1]
 				bg_seg = torch.stack(bg_seg, 0)
 				bg_seg = torch.permute(bg_seg, (1, 0, 2, 3)) #[batch, len, h, w]
 				b, l, h, w = bg_seg.shape
-				ds_size = (model.resolution[0]*args.bg_upsample, model.resolution[1]*args.bg_upsample)
+				
 				bg_seg = torch.reshape(bg_seg, (b*l, 1, h, w))
 				bg_seg = F.interpolate(bg_seg, size=ds_size)
 				bg_seg = torch.reshape(bg_seg, (b, l, ds_size[0], ds_size[1]))
@@ -292,7 +297,7 @@ class Engine(object):
 
 					attn_loss_epoch += float(attn_loss.item())
 					action_attn_loss_epoch += float(action_attn_loss.item())
-				if args.obj_mask:
+				elif args.obj_mask:
 					obj_bce = nn.BCELoss()
 					loss_mask = 0.0
 					b, l, n, h, w = attn.shape
@@ -348,23 +353,22 @@ class Engine(object):
 					attn_loss_epoch += float(attn_loss.item())
 					action_attn_loss_epoch += float(action_attn_loss.item())
 					bg_attn_loss_epoch += float(bg_attn_loss.item())
-				elif not args.bg_slot and args.bg_mask and args.bg_attn_weight>0.:
-						b, l, n, h, w = attn.shape
+				elif args.bg_slot and args.bg_mask and args.bg_attn_weight>0. and args.action_attn_weight ==0 :
+					b, l, n, h, w = attn.shape
+					if args.bg_upsample != 1:
+						attn = attn.reshape(-1, 1, h, w)
+						attn = F.interpolate(attn, size=ds_size, mode='bilinear')
+						_, _, h, w = attn.shape
+						attn = attn.reshape(b, l, n, h, w)
 
-						if args.bg_upsample != 1:
-							attn = attn.reshape(-1, 1, h, w)
-							attn = F.interpolate(attn, size=ds_size, mode='bilinear')
-							_, _, h, w = attn.shape
-							attn = attn.reshape(b, l, n, h, w)
+					bg_attn = attn[:, ::args.mask_every_frame, -1, :, :].reshape(b, l//args.mask_every_frame, h, w)
 
-						bg_attn = attn[:, ::args.mask_every_frame, -1, :, :].reshape(b, l//args.mask_every_frame, h, w)
+					bg_bce = nn.BCELoss()
+					bg_attn_loss = bg_bce(bg_attn, bg_seg)
+					attn_loss = args.bg_attn_weight*bg_attn_loss
 
-						bg_bce = nn.BCELoss()
-						bg_attn_loss = bg_bce(bg_attn, bg_seg)
-						attn_loss = args.bg_attn_weight*bg_attn_loss
-
-						attn_loss_epoch += float(attn_loss.item())
-						bg_attn_loss_epoch += float(bg_attn_loss.item())
+					attn_loss_epoch += float(attn_loss.item())
+					bg_attn_loss_epoch += float(bg_attn_loss.item())
 
 			else:
 				bce = nn.BCEWithLogitsLoss(reduction='mean', pos_weight=pos_weight).cuda()
@@ -524,13 +528,16 @@ class Engine(object):
 					actor = data['actor'].to(args.device)
 				else:
 					actor = torch.FloatTensor(data['actor']).to(args.device)
-
+				if args.pretrain == 'taco':
+					ds_size = (32,96)
+				else:
+					ds_size = (28,28)
 				if args.bg_mask:
 					h, w = bg_seg[0].shape[-2], bg_seg[0].shape[-1]
 					bg_seg = torch.stack(bg_seg, 0)
 					bg_seg = torch.permute(bg_seg, (1, 0, 2, 3)) #[batch, len, h, w]
 					b, l, h, w = bg_seg.shape
-					ds_size = (model.resolution[0]*args.bg_upsample, model.resolution[1]*args.bg_upsample)
+					# ds_size = (model.resolution[0]*args.bg_upsample, model.resolution[1]*args.bg_upsample)
 					bg_seg = torch.reshape(bg_seg, (b*l, 1, h, w))
 					bg_seg = F.interpolate(bg_seg, size=ds_size)
 					bg_seg = torch.reshape(bg_seg, (b, l, ds_size[0], ds_size[1]))
@@ -626,7 +633,7 @@ class Engine(object):
 						attn_loss_epoch += float(attn_loss.item())
 						action_attn_loss_epoch += float(action_attn_loss.item())
 						bg_attn_loss_epoch += float(bg_attn_loss.item())
-					elif not args.bg_slot and args.bg_mask and args.bg_attn_weight>0.:
+					elif args.bg_slot and args.bg_mask and args.bg_attn_weight>0. and args.action_attn_weight == 0:
 						b, l, n, h, w = attn.shape
 
 						if args.bg_upsample != 1:
@@ -878,7 +885,7 @@ if args.pretrain != '' :
             model.load_state_dict(checkpoint, strict=False)
             if 'slot' in args.model_name:
                 model.slot_attention.extract_slots_for_oats()
-                
+
 if 'mvit' == args.model_name:
 	params = set_lr(model)#
 else:

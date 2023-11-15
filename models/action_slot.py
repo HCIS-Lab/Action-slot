@@ -72,7 +72,8 @@ class SlotAttention(nn.Module):
             11, 57, 22, 62, 58,
             18, 54, 29, 17, 25
             ]
-        slots = torch.cat(( torch.reshape(self.slots[:, idx, :], (1, 1, -1)) for idx in oats_slot_idx), 1)
+        slots = tuple([torch.reshape(self.slots[:, idx, :], (1, 1, -1)) for idx in oats_slot_idx])
+        slots = torch.cat(slots, 1)
         self.register_buffer("slots", slots)
     def get_3d_slot(self, slots, inputs):
         b, l, h, w, d = inputs.shape
@@ -204,7 +205,7 @@ class ACTION_SLOT(nn.Module):
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 192
             
-            if args.dataset == 'oats' or args.pretrain == 'oats':
+            if (args.dataset == 'oats' or args.pretrain == 'oats') and args.pretrain != 'taco':
                 self.resolution = (7, 7)
                 self.resolution3d = (16, 7, 7)
             else:

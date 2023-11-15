@@ -197,7 +197,7 @@ class Engine(object):
 				ds_size = (32,96)
 			else:
 				ds_size = (28,28)
-					
+
 			optimizer.zero_grad()
 			if args.bg_mask:
 				h, w = bg_seg[0].shape[-2], bg_seg[0].shape[-1]
@@ -271,6 +271,7 @@ class Engine(object):
 					attn_loss = loss_mask
 
 			elif 'slot' in args.model_name and args.allocated_slot:
+				pred_actor = pred_actor [1]
 				actor_loss = bce(pred_actor, actor)
 				if args.bg_slot and not args.bg_mask and args.action_attn_weight>0:
 					b, l, n, h, w = attn.shape
@@ -571,6 +572,7 @@ class Engine(object):
 					actor_loss = instance_ce(pred_actor.transpose(1, 2), target_classes)
 
 				elif 'slot' in args.model_name and args.allocated_slot:
+					pred_actor = pred_actor[1]
 					actor_loss = bce(pred_actor, actor)
 					if args.bg_slot and not args.bg_mask and args.action_attn_weight >0:
 						b, l, n, h, w = attn.shape
@@ -879,7 +881,7 @@ dataloader_val = DataLoader(val_set, batch_size=1, shuffle=False, num_workers=ar
 model = generate_model(args, num_ego_class, num_actor_class).cuda()
 if args.pretrain != '' :
         model_path = os.path.join(args.cp)
-        if args.pretrain == 'oats':
+        if args.pretrain == 'taco':
             checkpoint = torch.load(model_path)
             checkpoint = {k: v for k, v in checkpoint.items() if (k in checkpoint and 'fc' not in k)}
             model.load_state_dict(checkpoint, strict=False)
@@ -900,24 +902,9 @@ else:
 # -----------	
 trainer = Engine(args)
 
-# Create logdir
-# model_index = 1
-# while(1):
-# 	if not os.path.isdir(logdir):
-# 		os.makedirs(logdir)
-# 		break
-# 	else:
-# 		if not os.path.isdir(logdir + '\n' + 'idx: ' + str(model_index)):
-# 			logdir = logdir + '\n' + 'idx: ' + str(model_index)
-# 			os.makedirs(logdir)
-# 			break
-# 		else:
-# 			model_index += 1
-
 result_list = []
 if not args.test:
 	for epoch in range(trainer.cur_epoch, args.epochs): 
-		
 		trainer.train(model, optimizer, epoch, scheduler=scheduler)
 		if (epoch % args.val_every == 0 or epoch == args.epochs-1): 
 				is_best, res = trainer.validate(model, dataloader_val, None)

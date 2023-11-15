@@ -248,7 +248,7 @@ class OATS(Dataset):
                 min_frame_a_video = num_frame
             total_frame += num_frame
             total_videos += 1
-        if False:
+        if self.args.box:
             self.parse_tracklets_detection() 
         print('c_stat:')
         print(label_stat[0])

@@ -7,6 +7,7 @@ sys.path.append('/media/hcis-s16/hank/Action-Slot/models')
 sys.path.append('/media/hcis-s20/SRL/action-slot/models')
 sys.path.append('/media/hankung/ssd/Action-Slot/models')
 sys.path.append('/media/hcis-s19/DATA/Action-Slot/models')
+sys.path.append('//media/user/data/Action-Slot/models')
 
 
 import vivit
@@ -196,8 +197,8 @@ def generate_model(args, num_ego_class, num_actor_class):
                 t.requires_grad=True
 
 
-    elif model_name == 'action_slot' and args.backbone == 'i3d_inception': 
-        model = action_slot.ACTION_SLOT(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
+    # elif model_name == 'action_slot' and args.backbone == 'i3d_inception': 
+    #     model = action_slot.ACTION_SLOT(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
         
 
     # elif model_name == 'slot_seg':	

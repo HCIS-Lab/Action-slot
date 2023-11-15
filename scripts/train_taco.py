@@ -194,7 +194,7 @@ class Engine(object):
                 map_batch_new_pred_actor.append(map_new_pred)
             map_batch_new_pred_actor = np.array(map_batch_new_pred_actor)
             self.map_pred_actor_list.append(map_batch_new_pred_actor)
-            self.label_actor_list.append(batch['slot_eval_gt'])
+            self.label_actor_list.append(batch['slot_eval_gt'].cpu().numpy())
         else:
             pred_actor = torch.sigmoid(pred_actor)
             self.map_pred_actor_list.append(pred_actor.detach().cpu().numpy())

@@ -125,7 +125,7 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
                     actor_str += actor_table[i] 
                     actor_str += '                          TN'
             actor_str +='\n'
-        if num_pos != num_tp:
+        if num_pos != num_tp and model_name == 'action_slot':
             return
         with open(os.path.join(path, "label_result.txt"), "w") as text_file:
             text_file.write(actor_str)
@@ -267,9 +267,9 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
             # if num_pos != num_tp:
             #     return
 
-            alpha_1 = 0.5
-            alpha_2 = 0.5
-            alpha_3 = 0.5
+            alpha_1 = 0.2
+            alpha_2 = 0.2
+            alpha_3 = 0.2
 
             color_1 = np.array([1.0, 0.0, 0.0])  # Red
             color_2 = np.array([0.0, 1.0, 0.0])  # Green

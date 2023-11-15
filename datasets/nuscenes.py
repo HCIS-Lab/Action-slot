@@ -433,7 +433,7 @@ def get_labels(args, label_stat, ego_gt, gt_list, num_slots=64):
 
     ego_table = {'1': 0, '2': 1, '3':2, '4': 3}
 
-    actor_table = { 'c12': 0, 'c13':1, 'c14':2,
+    taco_actor_table = { 'c12': 0, 'c13':1, 'c14':2,
                     'c21': 3, 'c23': 4, 'c24': 5,
                     'c31': 6, 'c32': 7, 'c34': 8,
                     'c41': 9, 'c42': 10, 'c43': 11,

@@ -176,7 +176,8 @@ class NUSCENES(Dataset):
         print(label_stat[6])
 
         self.label_stat = label_stat
-        self._parse_tracklet(training)
+        if args.box:
+            self._parse_tracklet(training)
     
     def _save_as_txt(self,training):
         osp = os.path.join

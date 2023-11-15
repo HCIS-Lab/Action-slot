@@ -143,7 +143,7 @@ def plot_slot(attn, model_name, scenario, raw, actor, pred_actor, logdir, thresh
     attn = attn.detach()
     m_l, m_n, m_h, m_w = attn.shape[1], attn.shape[2], attn.shape[3], attn.shape[4]
     attn = torch.reshape(attn, (-1, 1, m_h, m_w))
-    attn = F.interpolate(attn, (1200,1920), mode='bilinear')
+    attn = F.interpolate(attn, (1920,1200), mode='bilinear')
     attn = torch.reshape(attn, (1, m_l, m_n, 1200, 1920))
 
     raw = raw.permute(0, 2, 1, 3, 4)

@@ -194,9 +194,9 @@ class Engine(object):
 				actor = torch.FloatTensor(data['actor']).to(args.device)
 			
 			if args.pretrain == 'taco':
-					ds_size = (32,96)
-				else:
-					ds_size = (28,28)
+				ds_size = (32,96)
+			else:
+				ds_size = (28,28)
 					
 			optimizer.zero_grad()
 			if args.bg_mask:

@@ -23,7 +23,7 @@ def produce_box(root, types ,write_video=False,save_bbox=False):
     instance_mode = True
     W,H = 768,256
     
-    def get_ids(mask,ver,area_threshold=75):
+    def get_ids(mask, ver, area_threshold=75):
         """
             Args:
                 mask: instance image
@@ -56,8 +56,8 @@ def produce_box(root, types ,write_video=False,save_bbox=False):
             background_mask += mask_2[0]==25
             background_mask += mask_2[0]==1
             background_mask += mask_2[0]==2
-            background_mask += mask_2[0]==7
-            background_mask += mask_2[0]==8
+            # background_mask += mask_2[0]==7
+            # background_mask += mask_2[0]==8
         background_mask = ~background_mask
 
         obj_ids = torch.unique(mask_2[1,condition])
@@ -159,8 +159,8 @@ def produce_box(root, types ,write_video=False,save_bbox=False):
                     instance = instance.to("cuda:0")[None].to(float)
                     instance = torch.nn.functional.interpolate(instance,size=(H//2,W//2)).to(int)[0]
                     if instance_mode:
-                        bboxs, obj_ids, obj_mask, background_mask = get_ids(instance,ver)
-                        for box, actor_id in zip(bboxs,obj_ids):
+                        bboxs, obj_ids, obj_mask, background_mask = get_ids(instance, ver)
+                        for box, actor_id in zip(bboxs, obj_ids):
                             box = [int(b) for b in box.astype(int)]
                             # if actor_id == ego_id:
                             #     continue

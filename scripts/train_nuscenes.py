@@ -321,8 +321,8 @@ class Engine(object):
             label_actor_list = np.array(label_actor_list)
 
             mAP = average_precision_score(
-                    label_actor_list,
-                    map_pred_actor_list.astype(np.float32),
+                    np.concatenate([label_actor_list[:, :36], label_actor_list[:, -16:]], axis=1),
+                    np.concatenate([map_pred_actor_list[:, :36], map_pred_actor_list[:, -16:]], axis=1).astype(np.float32),
                     )
             c_mAP = average_precision_score(
                     label_actor_list[:, :12],
@@ -506,14 +506,16 @@ if __name__ == '__main__':
 
     if args.pretrain != '' :
         model_path = os.path.join(args.cp)
+        checkpoint = torch.load(model_path)
         if args.pretrain == 'oats':
-            checkpoint = torch.load(model_path)
             checkpoint = {k: v for k, v in checkpoint.items() if (k in checkpoint and 'fc' not in k)}
             model.load_state_dict(checkpoint, strict=False)
             if args.model_name == 'action_slot':
                 model.slot_attention.extend_slots()
             elif args.model_name == 'slot_vps':
                 model.extend_slots()
+        else:
+            model.load_state_dict(checkpoint, strict=False)
         # else:
     if 'mvit' == args.model_name:
         params = set_lr(model)#

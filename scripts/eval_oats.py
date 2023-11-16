@@ -128,7 +128,7 @@ def plot_slot(attn, model_name, scenario, raw, actor, pred_actor, logdir, thresh
                     actor_str += class_map[i] 
                     actor_str += '                          TN'
             actor_str +='\n'
-        if num_pos != num_tp:
+        if num_pos != num_tp and model_name =='action_slot':
             return
         path = os.path.join(path, str(scenario))
         if not os.path.exists(path):

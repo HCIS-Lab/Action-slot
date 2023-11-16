@@ -34,13 +34,14 @@ def get_eval_parser():
     parser.add_argument('--cp', type=str, default='best_model.pth')
     parser.add_argument('--plot', help="", action="store_true")
     parser.add_argument('--plot_threshold', type=float, default=0, help='')
-    parser.add_argument('--plot_mode', type=str, default='both')
+    parser.add_argument('--plot_mode', type=str, default='')
     parser.add_argument('--val_confusion', help="", action="store_true")
     parser.add_argument('--scale', type=float, default=-1.0)
     parser.add_argument('--ego_motion', type=int, default=-1)
     # others
     parser.add_argument('--test', help="", action="store_true")
     parser.add_argument('--gt', help="", action="store_true")
+    parser.add_argument('--num_obj', type=int, default=-1)
 
 
     args = parser.parse_args()

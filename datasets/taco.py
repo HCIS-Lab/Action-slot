@@ -306,7 +306,7 @@ class TACO(Dataset):
                                     idx_temp.append(i-start_frame)
                                 if os.path.isfile(v+"/mask/background/"+segname):
                                     seg_temp.append(v+"/mask/background/"+segname)
-                                if os.path.isfile(v+"/seg_mask/"+objname):
+                                if os.path.isfile(v+"/mask/object"+objname):
                                     obj_temp.append(v+"/seg_mask/"+objname)
                                 # if self.box:
                                 #     if os.path.isfile(v+"/bbox/front/"+boxname):
@@ -395,6 +395,9 @@ class TACO(Dataset):
                             min_frame_a_video = num_frame
                         total_frame += num_frame
                         total_videos += 1
+        if args.plot and args.plot_mode == '':
+            self.tracklet_counter()
+
         if args.box:
             if args.gt:
                 self.parse_tracklets() 
@@ -548,7 +551,44 @@ class TACO(Dataset):
                 #     temp.append(track)
                 #     f.close()
                 # parse_tracklet(temp,root,i)
-        
+
+    def tracklet_counter(self):
+        """
+            tracklet (List[List[Dict]]):
+                T , boxes per_frame , key: obj_id
+            return:
+                T x N x 4
+        """
+
+        for data in tqdm(self.videos_list):
+            num_samples = len(data)
+            root = data[samples//2][0].split('/')
+            root = root[:-3]
+            root = '/'+os.path.join(*root)
+            if not os.path.isdir(os.path.join(root,'tracks')):
+                os.mkdir(os.path.join(root,'tracks'))
+            if not os.path.isdir(os.path.join(root,'tracks','gt')):
+                os.mkdir(os.path.join(root,'tracks','gt'))
+            if not os.path.isdir(os.path.join(root,'tracks','pred')):
+                os.mkdir(os.path.join(root,'tracks','pred'))
+            # read bbox.json
+            f = open(os.path.join(root,'bbox.json'))
+            bboxs = json.load(f)
+            f.close()
+            obj_id_dict = {}
+            count = 0
+            sample = data[num_samples//2]
+            for j,frame_idx in enumerate(sample):
+                frame_idx = frame_idx.split('/')[-1][:-4]
+                for obj_id, box in bboxs[frame_idx].items():
+                    if obj_id not in obj_id_dict:
+                        count += 1
+                    if self.args.num_objects == 10 and count > 10:
+                        self.videos_list.remove(data)
+                    if self.args.num_objects == 20 and count < 10 and count > 20:
+                        self.videos_list.remove(data)
+                    if self.args.num_objects == 21 and count < 20:
+                        self.videos_list.remove(data)
 
     def __len__(self):
         """Returns the length of the dataset. """

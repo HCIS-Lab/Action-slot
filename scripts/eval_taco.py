@@ -585,7 +585,7 @@ class Engine(object):
                         #     plot_mask(seg_front, args.id, id, v, logdir)
                         # elif args.plot:
 
-                        if args.plot:
+                        if args.plot and args.plot_mode != '':
                             channel_idx = [-1]
                             if ('mvit' in args.model_name):
                                 for j,(attn,thw) in enumerate(attn):

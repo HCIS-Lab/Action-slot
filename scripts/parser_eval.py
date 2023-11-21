@@ -66,7 +66,7 @@ def get_eval_parser():
             +'obj_mask: ' + str(args.obj_mask) 
             )
     else:
-        based_log = logdir
+        logdir = based_log
 
     if args.model_index != -1:
         logdir = logdir + '\n' + 'idx: ' + str(args.model_index)

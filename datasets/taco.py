@@ -402,8 +402,8 @@ class TACO(Dataset):
                 self.parse_tracklets() 
             else:
                 self.parse_tracklets_detection()
-        if args.plot:
-            self.parse_tracklets()
+        # if args.plot:
+        self.parse_tracklets()
         print('num_videos: ' + str(len(self.variants)))
         print('c_stat:')
         print(label_stat[0])
@@ -621,8 +621,8 @@ class TACO(Dataset):
         data['videos'] = []
         data['bg_seg'] = []
         data['obj_masks'] = []
-        if self.args.plot and self.args.plot_mode == '':
-            data['max_num_obj'] = self.max_num_obj[index]
+        # if self.args.plot and self.args.plot_mode == '':
+        data['max_num_obj'] = self.max_num_obj[index]
         # data['box'] = []
         data['raw'] = []
         data['ego'] = self.gt_ego[index]
@@ -630,8 +630,8 @@ class TACO(Dataset):
         data['id'] = self.id[index]
         data['variants'] = self.variants[index]
 
-        if self.args.plot_mode == '':
-            data['map'] = self.maps[index]
+        # if self.args.plot_mode == '':
+        data['map'] = self.maps[index]
         if ('slot' in self.args.model_name and not self.args.allocated_slot) or self.args.box:
             data['slot_eval_gt'] = self.slot_eval_gt[index]
 
@@ -665,12 +665,13 @@ class TACO(Dataset):
             data['videos'].append(x)
             if self.args.plot:
                 data['raw'].append(x)
-            if self.args.bg_mask:
-                if self.args.bg_mask and i %self.args.mask_every_frame == 0:
-                    data['bg_seg'].append(Image.open(seq_seg[i]).convert('L'))
-            if self.args.obj_mask:
-                if self.args.obj_mask and i %self.args.mask_every_frame == 0 or (self.args.plot and self.args.plot_mode==''):
-                    data['obj_masks'].append(get_obj_mask(obj_masks_list[i]))
+            if self.training:
+                if self.args.bg_mask:
+                    if self.args.bg_mask and i %self.args.mask_every_frame == 0:
+                        data['bg_seg'].append(Image.open(seq_seg[i]).convert('L'))
+                if self.args.obj_mask:
+                    if self.args.obj_mask and i %self.args.mask_every_frame == 0 or (self.args.plot and self.args.plot_mode==''):
+                        data['obj_masks'].append(get_obj_mask(obj_masks_list[i]))
         if self.args.plot:
             data['raw'] = to_np_no_norm(data['raw'])
             

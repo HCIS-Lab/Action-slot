@@ -110,7 +110,11 @@ class NUSCENES(Dataset):
 
 
 
-
+        seg_folder = ['segmentation_28x28', 'segmentation_32x96']
+        if args.pretrain == 'oats':
+            seg_folder = seg_folder[0]
+        else:
+            seg_folder = seg_folder[1]
         all_imgs = [os.path.join(root, 'CAM_FRONT',img) for img in os.listdir(os.path.join(root, 'CAM_FRONT')) if os.path.isfile(os.path.join(root, 'CAM_FRONT',img))]
         all_imgs.sort()
 
@@ -137,7 +141,8 @@ class NUSCENES(Dataset):
                     start_frame = os.path.join(root, 'CAM_FRONT', start_frame)
                     start_frame_idx = all_imgs.index(start_frame)
                     video = all_imgs[start_frame_idx-1:start_frame_idx-1+16]
-                    seg = [os.path.join(root, 'segmentation_32x96', os.path.basename(img)[:-4]+'.png') for img in video]
+
+                    seg = [os.path.join(root, seg_folder, os.path.basename(img)[:-4]+'.png') for img in video]
                     # ------------statistics-------------
                     if torch.count_nonzero(gt_actor) > max_num_label_a_video:
                         max_num_label_a_video = torch.count_nonzero(gt_actor)

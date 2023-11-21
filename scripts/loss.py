@@ -95,32 +95,35 @@ class ActionSlotLoss(nn.Module):
         if self.attn_loss_type == 1:
             obj_mask_list = []
             obj_mask = label['obj_masks']
-            for i in range(self.args.seq_len):
-                if i%self.args.mask_every_frame==0 or self.args.mask_every_frame==1:
-                    obj_mask_list.append(obj_mask[i//self.args.mask_every_frame].to(self.args.device, dtype=torch.float32))
+            for i in range(self.args.seq_len//self.args.mask_every_frame):
+                obj_mask_list.append(obj_mask[i].to(self.args.device, dtype=torch.float32))
             obj_mask_list = torch.stack(obj_mask_list, 0)
             obj_mask_list = torch.permute(obj_mask_list, (1, 0, 2, 3, 4)) #[batch, len, n, h, w]
             b, l, n, h, w = obj_mask_list.shape
 
             attn_loss = 0.0
+            # 8, 16, 64, 8, 24
             b, l, n, h, w = attn.shape
             attn = torch.reshape(attn, (-1, 1 ,8, 24))
             attn = F.interpolate(attn, size=(32, 96))
             attn = torch.reshape(attn, (b, l , n, 32, 96))
-            sup_idx = [1,3,5,7,9,11,13,15]
-            attn = attn[:,sup_idx,:,:,:].reshape((b,8,n,32,96))
+
+            # sup_idx = [1,3,5,7,9,11,13,15]
+            # attn = attn[:,sup_idx,:,:,:].reshape((b,8,n,32,96))
+            attn = attn[:, ::self.args.mask_every_frame, :, :, :].reshape(b, -1, n, 32, 96)
+
             b, seq, n_obj, h, w = obj_mask_list.shape
             mask_detach = attn.detach().flatten(3,4)
             mask_detach = mask_detach.cpu().numpy()
             mask_gt_np = obj_mask_list.flatten(3,4)
             mask_gt_np = mask_gt_np.detach().cpu().numpy()
-            scores = np.zeros((b, 8, n, n_obj))
+            scores = np.zeros((b, 4, n, n_obj))
             for i in range(b):
-                for j in range(8):
+                for j in range(4):
                     cross_entropy_cur = np.matmul(np.log( mask_detach[i,j]), mask_gt_np[i,j].T) + np.matmul(np.log(1 - mask_detach[i,j]), (1 - mask_gt_np[i,j]).T)
                     scores[i,j] += cross_entropy_cur
             for i in range(b):
-                for j in range(8):
+                for j in range(4):
                     matches = linear_sum_assignment(-scores[i,j])
                     id_slot, id_gt = matches 
                     attn_loss += self.obj_bce(attn[i,j,id_slot,:,:], obj_mask_list[i,j,id_gt,:,:])

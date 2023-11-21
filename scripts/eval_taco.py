@@ -89,13 +89,6 @@ actor_table = ['c:z1-z2', 'c:z1-z3', 'c:z1-z4',
                 'bg'] 
                         
 def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, threshold, mode):
-    path = os.path.join(logdir, 'plot_'+ mode +'_'+str(threshold))
-    if not os.path.exists(path):
-        os.makedirs(path)
-    
-    path = os.path.join(path, map+'_'+id + '_' + v)
-    if not os.path.exists(path):
-        os.makedirs(path)
 
 
     num_pos = 0
@@ -125,8 +118,17 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
                     actor_str += actor_table[i] 
                     actor_str += '                          TN'
             actor_str +='\n'
-        if num_pos != num_tp and model_name == 'action_slot':
+        if num_pos > num_tp and model_name == 'action_slot':
             return
+
+        path = os.path.join(logdir, 'plot_'+ mode +'_'+str(threshold))
+        if not os.path.exists(path):
+            os.makedirs(path)
+        
+        path = os.path.join(path, map+'_'+id + '_' + v)
+        if not os.path.exists(path):
+            os.makedirs(path)
+
         with open(os.path.join(path, "label_result.txt"), "w") as text_file:
             text_file.write(actor_str)
 
@@ -271,12 +273,19 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
             alpha_2 = 0.2
             alpha_3 = 0.2
 
-            color_1 = np.array([1.0, 0.0, 0.0])  # Red
-            color_2 = np.array([0.0, 1.0, 0.0])  # Green
-            color_3 = np.array([0.0, 0.0, 1.0])  # Blue
-            color_4 = np.array([1.0, 1.0, 0.0])  # Yellow
-            color_5 = np.array([1.0, 0.0, 1.0])  # Magenta
-            colors = [color_1, color_2, color_3, color_4, color_5]
+            color_1 = np.array([1.0, 0.0, 0.0])    # Red
+            color_2 = np.array([0.0, 1.0, 0.0])    # Green
+            color_3 = np.array([0.0, 0.0, 1.0])    # Blue
+            color_4 = np.array([1.0, 1.0, 0.0])    # Yellow
+            color_5 = np.array([1.0, 0.0, 1.0])    # Magenta
+            color_6 = np.array([0.5, 0.5, 0.0])   # Olive
+            color_7 = np.array([0.0, 1.0, 1.0])    # Cyan
+            color_8 = np.array([1.0, 0.5, 0.0])   # Orange
+
+            color_9 = np.array([0.2, 0.5, 1.0])   # Steel Blue
+            color_10 = np.array([0.5, 0.0, 0.5])   # Purple
+
+            colors = [color_1, color_2, color_3, color_4, color_5, color_6, color_7, color_8, color_9, color_10]
             # Overlay the masks on raw_j with opacity
             bool_mask_list = []
             attn_mask_list = []
@@ -534,9 +543,28 @@ class Engine(object):
             label_actor_list = []
             map_pred_actor_list = []
 
+            num_selected_sample = 0
             for batch_num, data in enumerate(tqdm(dataloader)):
+                if args.plot_mode == '':
+                    max_num_obj = data['max_num_obj']
+                    if self.args.num_objects == 5 and max_num_obj > 5:
+                        print('skip')
+                        num_selected_sample +=1
+                        continue
+                    if self.args.num_objects == 15 and (max_num_obj > 15 or max_num_obj <6):
+                        print('skip')
+                        num_selected_sample +=1
+                        continue
+                    if self.args.num_objects == 16 and max_num_obj < 16:
+                        print('skip')
+                        num_selected_sample +=1
+                        continue
+                    # if self.args.num_objects == 21 and max_num_obj < 21:
+                    #     print('skip')
+                    #     num_selected_sample +=1
+                    #     continue
+
                 map = data['map'][0]
-                print(map)
                 id = data['id'][0]
                 v = data['variants'][0]
                 video_in = data['videos']
@@ -693,7 +721,8 @@ class Engine(object):
             print(f'(val) mAP of the p+: {group_p_mAP}')
 
             print(f'acc of the ego: {correct_ego/total_ego}')
-
+            print('**********************')
+            print(num_selected_sample)
 
             
 torch.cuda.empty_cache() 

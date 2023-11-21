@@ -30,6 +30,7 @@ def get_eval_parser():
     
     parser.add_argument('--num_workers', type=int, default=2, help='Number of train epochs.')    
     # eval
+    parser.add_argument('--pretrain', type=str, default='', choices=['taco', 'oats'])
     parser.add_argument('--model_index', type=int, default=-1)
     parser.add_argument('--cp', type=str, default='best_model.pth')
     parser.add_argument('--plot', help="", action="store_true")
@@ -41,7 +42,7 @@ def get_eval_parser():
     # others
     parser.add_argument('--test', help="", action="store_true")
     parser.add_argument('--gt', help="", action="store_true")
-    parser.add_argument('--num_obj', type=int, default=-1)
+    parser.add_argument('--num_objects', type=int, default=-1)
 
 
     args = parser.parse_args()

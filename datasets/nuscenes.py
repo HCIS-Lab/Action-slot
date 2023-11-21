@@ -41,7 +41,7 @@ class NUSCENES(Dataset):
         self.seq_len = 16
 
         self.city = []
-        self.scenarios = []
+        self.scenario = []
         self.args =args
 
         self.video_list = []
@@ -144,6 +144,7 @@ class NUSCENES(Dataset):
                     total_label += torch.count_nonzero(gt_actor)
 
                     self.city.append(label_file)
+                    self.scenario.append(os.path.basename(video[0])[:-4])
                     self.video_list.append(video)
                     self.seg_list.append(seg)
                     # self.obj_seg_list.append(obj_f)
@@ -263,13 +264,14 @@ class NUSCENES(Dataset):
     def __getitem__(self, index):
         """Returns the item at index idx. """
         data = dict()
+        data['city'] = self.city[index]
+        data['scenario'] = self.scenario[index]
         data['videos'] = []
         data['bg_seg'] = []
         data['obj_masks'] = []
-        # data['box'] = []
         data['ego'] = self.gt_ego[index]
         data['actor'] = self.gt_actor[index]
-
+        data['raw'] = []
 
         if ('slot' in self.args.model_name and not self.args.allocated_slot) or self.args.box:
             data['slot_eval_gt'] = self.slot_eval_gt[index]
@@ -290,11 +292,15 @@ class NUSCENES(Dataset):
             x = Image.open(seq_videos[i]).convert('RGB')
             x = scale(x, self.args.model_name, self.args.pretrain)
             data['videos'].append(x)
+            if self.args.plot:
+                data['raw'].append(x)
 
             if self.args.bg_mask and i %self.args.mask_every_frame == 0:
                 data['bg_seg'].append(self.get_stuff_mask(seq_seg[i]))
 
         data['videos'] = to_np(data['videos'], self.args.model_name, self.args.backbone)
+        if self.args.plot:
+            data['raw'] = to_np_no_norm(data['raw'])
         return data
 
     def get_stuff_mask(self, seg_path):

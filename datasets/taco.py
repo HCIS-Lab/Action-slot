@@ -48,6 +48,7 @@ class TACO(Dataset):
         self.model_name = args.model_name
         self.seq_len = args.seq_len
 
+        self.maps = []
         self.id = []
         self.variants = []
         self.args =args
@@ -66,7 +67,7 @@ class TACO(Dataset):
         self.step = []
         self.start_idx = []
         self.num_class = 64
-        
+        self.max_num_obj = []
         
         self.Max_N = Max_N
 
@@ -300,18 +301,18 @@ class TACO(Dataset):
                                 imgname = f"{str(i).zfill(8)}.jpg"
                                 segname = f"{str(i).zfill(8)}.png"
                                 boxname = f"{str(i).zfill(8)}.json"
-                                objname = f"{str(i).zfill(8)}.npz"
+                                objname = f"{str(i).zfill(8)}.npy"
                                 if os.path.isfile(v+"/rgb/"+video_folder+imgname):
                                     videos_temp.append(v+"/rgb/"+video_folder +imgname)
                                     idx_temp.append(i-start_frame)
                                 if os.path.isfile(v+"/mask/background/"+segname):
                                     seg_temp.append(v+"/mask/background/"+segname)
-                                if os.path.isfile(v+"/mask/object"+objname):
-                                    obj_temp.append(v+"/seg_mask/"+objname)
+                                if os.path.isfile(v+"/mask/object/"+objname):
+                                    obj_temp.append(v+"/mask/object/"+objname)
                                 # if self.box:
                                 #     if os.path.isfile(v+"/bbox/front/"+boxname):
                                 #         box_temp.append(v+"/bbox/front/"+boxname)
-                                if len(videos_temp) == self.seq_len and len(seg_temp) == self.seq_len:
+                                if len(videos_temp) == self.seq_len and len(seg_temp) == self.seq_len and len(obj_temp) == self.seq_len:
                                     break
                                 # elif self.box:
                                 #     if len(front_temp) == seq_len and len(box_temp) == seq_len:
@@ -331,13 +332,11 @@ class TACO(Dataset):
 
 
                         # if len(videos) == 0 or len(segs) ==0 or len(obj_f) ==0:
-                        if len(videos) == 0 or len(segs) ==0:
+                        if len(videos) == 0 or len(segs) ==0 or len(obj_f)==0:
                             continue
 
                         if len(segs)!=len(videos):
                             continue
-
-
 
 
                         # -----
@@ -369,7 +368,7 @@ class TACO(Dataset):
 
                         label_stat[6][ego_class] +=1
 
-
+                        self.maps.append(type)
                         self.id.append(s.split('/')[-1])
                         self.variants.append(v.split('/')[-1])
 
@@ -395,15 +394,16 @@ class TACO(Dataset):
                             min_frame_a_video = num_frame
                         total_frame += num_frame
                         total_videos += 1
-        if args.plot and args.plot_mode == '':
-            self.tracklet_counter()
+        # if args.plot and args.plot_mode == '':
+        #     self.tracklet_counter()
 
         if args.box:
             if args.gt:
                 self.parse_tracklets() 
             else:
                 self.parse_tracklets_detection()
-                
+        if args.plot:
+            self.parse_tracklets()
         print('num_videos: ' + str(len(self.variants)))
         print('c_stat:')
         print(label_stat[0])
@@ -551,7 +551,7 @@ class TACO(Dataset):
                 #     temp.append(track)
                 #     f.close()
                 # parse_tracklet(temp,root,i)
-
+            self.max_num_obj.append(count)
     def tracklet_counter(self):
         """
             tracklet (List[List[Dict]]):
@@ -560,9 +560,9 @@ class TACO(Dataset):
                 T x N x 4
         """
 
-        for data in tqdm(self.videos_list):
+        for idx, data in enumerate(self.videos_list):
             num_samples = len(data)
-            root = data[samples//2][0].split('/')
+            root = data[num_samples//2][0].split('/')
             root = root[:-3]
             root = '/'+os.path.join(*root)
             if not os.path.isdir(os.path.join(root,'tracks')):
@@ -577,18 +577,39 @@ class TACO(Dataset):
             f.close()
             obj_id_dict = {}
             count = 0
+            remove_data_list = []
             sample = data[num_samples//2]
             for j,frame_idx in enumerate(sample):
                 frame_idx = frame_idx.split('/')[-1][:-4]
                 for obj_id, box in bboxs[frame_idx].items():
                     if obj_id not in obj_id_dict:
+                        obj_id_dict[obj_id] = count
                         count += 1
-                    if self.args.num_objects == 10 and count > 10:
-                        self.videos_list.remove(data)
-                    if self.args.num_objects == 20 and count < 10 and count > 20:
-                        self.videos_list.remove(data)
-                    if self.args.num_objects == 21 and count < 20:
-                        self.videos_list.remove(data)
+
+                if self.args.num_objects == 10 and count > 10:
+                    remove_data_list.append(data)
+                    break
+                if self.args.num_objects == 20 and count < 10 and count > 20:
+                    # self.videos_list.remove(data)
+                    # del self.videos_list[idx]
+                    remove_data_list.append(data)
+                    break
+                if self.args.num_objects == 21 and count < 20:
+                    # self.videos_list.remove(data)
+                    # del self.videos_list[idx]
+                    remove_data_list.append(data)
+                    break
+        for video in self.videos_list:
+            remove = False
+            for remove_data in remove_data_list:
+                print(video)
+                print(remove_data)
+                if remove_data == video:
+                    remove = True
+                    break
+            if remove:
+                self.videos_list.remove(video)
+
 
     def __len__(self):
         """Returns the length of the dataset. """
@@ -600,6 +621,8 @@ class TACO(Dataset):
         data['videos'] = []
         data['bg_seg'] = []
         data['obj_masks'] = []
+        if self.args.plot and self.args.plot_mode == '':
+            data['max_num_obj'] = self.max_num_obj[index]
         # data['box'] = []
         data['raw'] = []
         data['ego'] = self.gt_ego[index]
@@ -607,7 +630,8 @@ class TACO(Dataset):
         data['id'] = self.id[index]
         data['variants'] = self.variants[index]
 
-
+        if self.args.plot_mode == '':
+            data['map'] = self.maps[index]
         if ('slot' in self.args.model_name and not self.args.allocated_slot) or self.args.box:
             data['slot_eval_gt'] = self.slot_eval_gt[index]
 
@@ -619,7 +643,7 @@ class TACO(Dataset):
         seq_videos = self.videos_list[index][sample_idx]
         if self.args.bg_mask:
             seq_seg = self.seg_list[index][sample_idx]
-        if self.args.obj_mask:
+        if self.args.obj_mask or (self.args.plot and self.args.plot_mode==''):
             obj_masks_list = self.obj_seg_list[index][sample_idx]
         # if self.box:
         #     seq_box = self.box_list[index][sample_idx]
@@ -641,10 +665,11 @@ class TACO(Dataset):
             data['videos'].append(x)
             if self.args.plot:
                 data['raw'].append(x)
-            if self.args.bg_mask and i %self.args.mask_every_frame == 0:
-                data['bg_seg'].append(Image.open(seq_seg[i]).convert('L'))
-            if self.args.obj_mask and i % self.mask_every_frame == 0:
-                data['obj_masks'].append(get_obj_mask(obj_masks_list[i]))
+            if self.training:
+                if self.args.bg_mask and i %self.args.mask_every_frame == 0:
+                    data['bg_seg'].append(Image.open(seq_seg[i]).convert('L'))
+                if self.args.obj_mask and i %self.args.mask_every_frame == 0 or (self.args.plot and self.args.plot_mode==''):
+                    data['obj_masks'].append(get_obj_mask(obj_masks_list[i]))
         if self.args.plot:
             data['raw'] = to_np_no_norm(data['raw'])
             
@@ -691,15 +716,15 @@ class TACO(Dataset):
 #     return condition
 
 def get_obj_mask(obj_path):
-    seg_dict = np.load(obj_path)
-    obj_masks = list(seg_dict.values())
-    if len(obj_masks) == 0:
-        obj_masks = torch.zeros([40, 32, 96], dtype=torch.int32)
+    obj_masks = np.load(obj_path)
+    # obj_masks = list(seg_dict.values())
+    if obj_masks.shape[0] == 0:
+        obj_masks = torch.zeros([64, 32, 96], dtype=torch.int32)
     else:
         obj_masks = torch.from_numpy(np.stack(obj_masks, 0))
     # img = torch.flip(torch.from_numpy(img).type(torch.int).permute(2,0,1),[0])
     obj_masks = obj_masks.type(torch.int)
-    pad_num = 40 - obj_masks.shape[0]
+    pad_num = 64 - obj_masks.shape[0]
     obj_masks = torch.cat((obj_masks, torch.zeros([pad_num, 32, 96], dtype=torch.int32)), dim=0)
     obj_masks = obj_masks.type(torch.float32)
     # obj_masks = torch.reshape(obj_masks, (-1, 1, 32, 96))

@@ -97,9 +97,7 @@ class_map=[
         'C+:Z3-Z1', 'P:C4-C1', 'K:Z2-Z4', 'C+:Z2-Z4', 'K:Z1-Z3'
         ]
 def plot_slot(attn, model_name, scenario, raw, actor, pred_actor, logdir, threshold, mode):
-    path = os.path.join(logdir, 'plot_'+ mode +'_'+str(threshold))
-    if not os.path.exists(path):
-        os.makedirs(path)
+    
     
     num_pos = 0
     num_tp = 0
@@ -130,6 +128,9 @@ def plot_slot(attn, model_name, scenario, raw, actor, pred_actor, logdir, thresh
             actor_str +='\n'
         if num_pos != num_tp and model_name =='action_slot':
             return
+        path = os.path.join(logdir, 'plot_'+ mode +'_'+str(threshold))
+        if not os.path.exists(path):
+            os.makedirs(path)
         path = os.path.join(path, str(scenario))
         if not os.path.exists(path):
             os.makedirs(path)
@@ -138,24 +139,27 @@ def plot_slot(attn, model_name, scenario, raw, actor, pred_actor, logdir, thresh
 
 
     raw = torch.stack(raw, dim=0)
-    raw = torch.permute(raw, (1,2,0,3,4))
+    # 16, 1, 3, h, w
+    # raw = torch.permute(raw, (1,2,0,3,4))
     seq_len = 16
     attn = attn.detach()
     m_l, m_n, m_h, m_w = attn.shape[1], attn.shape[2], attn.shape[3], attn.shape[4]
     attn = torch.reshape(attn, (-1, 1, m_h, m_w))
-    attn = F.interpolate(attn, (1920,1200), mode='bilinear')
+    attn = F.interpolate(attn, (1200,1920), mode='bilinear')
     attn = torch.reshape(attn, (1, m_l, m_n, 1200, 1920))
+    attn = attn.permute(0, 1, 2, 4, 3)
 
-    raw = raw.permute(0, 2, 1, 3, 4)
-    # cur_image = F.interpolate(image, (3, 128,384))
+    raw = raw.permute(1, 0, 2, 3, 4)
     cur_raw = F.interpolate(raw, (3, 1200,1920))
+
     attn = attn[0]
     # cur_image = cur_image[0]
     cur_raw = cur_raw[0]
     
     for j in range(seq_len):
         # image_j = cur_image[j].permute(1,2,0).cpu().numpy()
-        raw_j = cur_raw[j].permute(1,2,0).cpu().numpy()
+
+        raw_j = cur_raw[j].permute(2,1,0).cpu().numpy()
         # image_j = image_j * 0.5 + 0.5
         masks_j = attn[j]
         tk = args.num_slots
@@ -168,24 +172,29 @@ def plot_slot(attn, model_name, scenario, raw, actor, pred_actor, logdir, thresh
             alpha_2 = 0.2
             alpha_3 = 0.2
 
-            color_1 = np.array([1.0, 0.0, 0.0])  # Red
-            color_2 = np.array([0.0, 1.0, 0.0])  # Green
-            color_3 = np.array([0.0, 0.0, 1.0])  # Blue
-            color_4 = np.array([1.0, 1.0, 0.0])  # Yellow
-            color_5 = np.array([1.0, 0.0, 1.0])  # Magenta
-            colors = [color_1, color_2, color_3, color_4, color_5]
+            color_1 = np.array([1.0, 0.0, 0.0])    # Red
+            color_2 = np.array([0.0, 1.0, 0.0])    # Green
+            color_3 = np.array([0.0, 0.0, 1.0])    # Blue
+            color_4 = np.array([1.0, 1.0, 0.0])    # Yellow
+            color_5 = np.array([1.0, 0.0, 1.0])    # Magenta
+            color_6 = np.array([0.5, 0.5, 0.0])   # Olive
+            color_7 = np.array([0.0, 1.0, 1.0])    # Cyan
+            color_8 = np.array([1.0, 0.5, 0.0])   # Orange
+
+            color_9 = np.array([0.2, 0.5, 1.0])   # Steel Blue
+            color_10 = np.array([0.5, 0.0, 0.5])   # Purple
+            colors = [color_1, color_2, color_3, color_4, color_5, color_6, color_7, color_8, color_9, color_10]
             # Overlay the masks on raw_j with opacity
             bool_mask_list = []
             attn_mask_list = []
             for i, a in enumerate(actor):
                 if a.data == 1.0:
                     bool_mask_list.append(masks_j[i] > threshold)
-                    attn_mask_list.append((masks_j[i] > threshold).astype('uint8').reshape((1200,1920)))
+                    attn_mask_list.append((masks_j[i] > threshold).astype('uint8'))
 
             for num_gt in range(len(bool_mask_list)):
                 raw_j[bool_mask_list[num_gt], :3] = attn_mask_list[num_gt][bool_mask_list[num_gt]][:, np.newaxis] * colors[num_gt] * alpha_1 + raw_j[bool_mask_list[num_gt], :3] * (1 - alpha_1)
-
-
+            raw_j = np.transpose(raw_j, (1, 0, 2))
 
             plt.imshow(raw_j, cmap='gist_rainbow')
             plt.axis('off')

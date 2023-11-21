@@ -65,6 +65,8 @@ def get_eval_parser():
             'num_slots: ' + str(args.num_slots) + '\n'
             +'obj_mask: ' + str(args.obj_mask) 
             )
+    else:
+        based_log = logdir
 
     if args.model_index != -1:
         logdir = logdir + '\n' + 'idx: ' + str(args.model_index)

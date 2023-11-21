@@ -255,43 +255,18 @@ class Engine(object):
 
             num_selected_sample = 0
             for batch_num, data in enumerate(tqdm(dataloader)):
-                if args.plot_mode == '':
-                    max_num_obj = data['max_num_obj']
-                    if self.args.num_objects == 5 and max_num_obj > 5:
-                        print('skip')
-                        num_selected_sample +=1
-                        continue
-                    if self.args.num_objects == 15 and (max_num_obj > 15 or max_num_obj <6):
-                        print('skip')
-                        num_selected_sample +=1
-                        continue
-                    if self.args.num_objects == 16 and max_num_obj < 16:
-                        print('skip')
-                        num_selected_sample +=1
-                        continue
-                    # if self.args.num_objects == 21 and max_num_obj < 21:
-                    #     print('skip')
-                    #     num_selected_sample +=1
-                    #     continue
 
-                # map = data['map'][0]
-                city = data['city'][0]
+                city = data['city'][0].split('_')[1]
                 scenario = data['scenario'][0]
                 video_in = data['videos']
                 raw = data['raw']
-                if args.val_confusion:
-                    confusion_label = data['confusion_label']
                 scenario = city + '_'+scenario
-                # plot_list = []
-                # plot_list = ['ap_Town10HD_t6_9080']
-                # plot_list = ['i1_901', '10_t1-7_1_p_c_r_1_0_1']
-                # plot_list = ['t2_221', 't2_251']
-                # plot_list = ['t2_157']
-                # plot_list = ['t2_102', 't2_82', 't2_61', 't2_31']
-                # plot_list = ['t6_616', 't7_172', 'i1_105', 'i1_600',
-                #  'i1_391', 't1_1213', 't6_619', 't7_638', 'i1_42',
-                #   't1_1192', 't1_1223', 'i1_134', 't6_414', 't7_467',
-                  # '10_i-1_1_c_f_f_1_rl_6', '10_i-1_1_c_f_f_1_rl_8', 'i1_19', 'i1_151', 'i1_155','i1_901']
+
+                # print(city)
+                if args.nuscenes_test_split == 'boston' and city != 'boston':
+                    continue
+                elif args.nuscenes_test_split == 'singapore' and city != 'singapore':
+                    continue
 
                 if args.box:
                     box_in = data['box']

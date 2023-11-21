@@ -665,9 +665,10 @@ class TACO(Dataset):
             data['videos'].append(x)
             if self.args.plot:
                 data['raw'].append(x)
-            if self.training:
+            if self.args.bg_mask:
                 if self.args.bg_mask and i %self.args.mask_every_frame == 0:
                     data['bg_seg'].append(Image.open(seq_seg[i]).convert('L'))
+            if self.args.obj_mask:
                 if self.args.obj_mask and i %self.args.mask_every_frame == 0 or (self.args.plot and self.args.plot_mode==''):
                     data['obj_masks'].append(get_obj_mask(obj_masks_list[i]))
         if self.args.plot:

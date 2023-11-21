@@ -8,6 +8,7 @@ def get_eval_parser():
     parser.add_argument('--dataset', type=str, default='taco', choices=['taco', 'oats', 'nuscenes'])
     parser.add_argument('--oats_test_split', type=str, default='0', choices=['s1', 's2', 's3'])
     parser.add_argument('--root', type=str, help='dataset path')
+    parser.add_argument('--nuscenes_test_split', type=str, default='0', choices=['boston', 'singapore'])
 
     
     # model

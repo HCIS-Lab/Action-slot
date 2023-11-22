@@ -129,8 +129,8 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
                     actor_str += actor_table[i] 
                     actor_str += '                          TN'
             actor_str +='\n'
-        if num_pos > num_tp and model_name == 'action_slot':
-            return
+        # if num_pos > num_tp and model_name == 'action_slot':
+        #     return
 
         path = os.path.join(logdir, 'plot_'+ mode +'_'+str(threshold))
         if not os.path.exists(path):
@@ -200,10 +200,15 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
                 if a.data == 0.0 and pred_actor[i].data == True:
                     bool_mask_list.append(masks_j[i] > threshold)
                     attn_mask_list.append((masks_j[i] > threshold).astype('uint8').reshape((128,384)))
-
             for num_gt in range(len(bool_mask_list)):
                 raw_j[bool_mask_list[num_gt], :3] = attn_mask_list[num_gt][bool_mask_list[num_gt]][:, np.newaxis] * colors[0] * alpha_1 + raw_j[bool_mask_list[num_gt], :3] * (1 - alpha_1)
 
+            for i, a in enumerate(actor):
+                if a.data == 1.0 and pred_actor[i].data == True:
+                    bool_mask_list.append(masks_j[i] > threshold)
+                    attn_mask_list.append((masks_j[i] > threshold).astype('uint8').reshape((128,384)))
+            for num_gt in range(len(bool_mask_list)):
+                raw_j[bool_mask_list[num_gt], :3] = attn_mask_list[num_gt][bool_mask_list[num_gt]][:, np.newaxis] * colors[1] * alpha_1 + raw_j[bool_mask_list[num_gt], :3] * (1 - alpha_1)
             # raw_j[t_masks_3, 0] = masks_3[t_masks_3] * alpha_3 + raw_j[t_masks_3, 0] * (1 - alpha_3)
             # raw_j[t_masks_6, 1] = masks_6[t_masks_6] * alpha_6 + raw_j[t_masks_6, 1] * (1 - alpha_6)
             # raw_j[t_masks_6, 1] = masks_6[t_masks_6] * alpha_6 + raw_j[t_masks_6, 1] * (1 - alpha_6)

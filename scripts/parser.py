@@ -77,7 +77,14 @@ def get_parser():
         else:
             based_log = args.dataset + '_log'
     else:
-        based_log = args.dataset + '_pretrained_' + args.pretrain 
+        if args.dataset == 'oats':
+            if args.oats_test_split == '0':
+                return
+            else:
+                based_log = args.dataset + '_' + '_pretrained_' + args.pretrain 
+                + args.oats_test_split + '_log'
+        else:
+            based_log = args.dataset + '_pretrained_' + args.pretrain 
     if not os.path.isdir(based_log):
         os.makedirs(based_log)
     based_log = os.path.join(based_log, args.model_name)

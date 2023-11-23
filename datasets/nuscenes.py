@@ -512,7 +512,7 @@ def get_labels(args, label_stat, ego_gt, gt_list, num_slots=64):
             label_stat[4][gt]+=1
         elif 'c' == gt[0]:
             label_stat[0][gt]+=1
-        elif 'k:' == gt[0]:
+        elif 'k' == gt[0]:
             label_stat[1][gt]+=1
 
             

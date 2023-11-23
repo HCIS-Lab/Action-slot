@@ -221,6 +221,33 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
             plt.savefig(img_path, bbox_inches='tight', pad_inches=0.0)
             plt.close()
 
+        elif mode == 'occlusion':
+
+            alpha_1 = 0.2
+            alpha_2 = 0.2
+            alpha_3 = 0.2
+
+            color_1 = np.array([1.0, 0.0, 0.0])    # Red
+            color_2 = np.array([0.0, 1.0, 0.0])    # Green
+
+
+            colors = [color_1, color_2]
+            # Overlay the masks on raw_j with opacity
+            bool_mask_list = []
+            attn_mask_list = []
+            bool_mask_list.append(masks_j[48] > threshold)
+            bool_mask_list.append(masks_j[50] > threshold)
+            attn_mask_list.append((masks_j[48] > threshold).astype('uint8').reshape((128,384)))
+            attn_mask_list.append((masks_j[50] > threshold).astype('uint8').reshape((128,384)))
+
+            raw_j[bool_mask_list[0], :3] = attn_mask_list[0][bool_mask_list[0]][:, np.newaxis] * colors[0] * alpha_1 + raw_j[bool_mask_list[0], :3] * (1 - alpha_1) 
+            raw_j[bool_mask_list[1], :3] = attn_mask_list[1][bool_mask_list[1]][:, np.newaxis] * colors[1] * alpha_1 + raw_j[bool_mask_list[1], :3] * (1 - alpha_1) 
+            plt.imshow(raw_j, cmap='gist_rainbow')
+            plt.axis('off')
+
+            img_path = os.path.join(path,'frame'+str(j) +'.jpg') 
+            plt.savefig(img_path, bbox_inches='tight', pad_inches=0.0)
+            plt.close()
 
         else:
 
@@ -250,12 +277,7 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
                     attn_mask_list.append((masks_j[i] > threshold).astype('uint8').reshape((128,384)))
 
             for num_gt in range(len(bool_mask_list)):
-                raw_j[bool_mask_list[num_gt], :3] = attn_mask_list[num_gt][bool_mask_list[num_gt]][:, np.newaxis] * colors[num_gt] * alpha_1 + raw_j[bool_mask_list[num_gt], :3] * (1 - alpha_1)
-
-            # raw_j[t_masks_3, 0] = masks_3[t_masks_3] * alpha_3 + raw_j[t_masks_3, 0] * (1 - alpha_3)
-            # raw_j[t_masks_6, 1] = masks_6[t_masks_6] * alpha_6 + raw_j[t_masks_6, 1] * (1 - alpha_6)
-            # raw_j[t_masks_6, 1] = masks_6[t_masks_6] * alpha_6 + raw_j[t_masks_6, 1] * (1 - alpha_6)
-            
+                raw_j[bool_mask_list[num_gt], :3] = attn_mask_list[num_gt][bool_mask_list[num_gt]][:, np.newaxis] * colors[num_gt] * alpha_1 + raw_j[bool_mask_list[num_gt], :3] * (1 - alpha_1) 
 
             plt.imshow(raw_j, cmap='gist_rainbow')
             plt.axis('off')
@@ -635,16 +657,16 @@ class Engine(object):
                     map_pred_actor_list[:, :12].astype(np.float32)
                     )
             b_mAP = average_precision_score(
-                    label_actor_list[:, 12:24],
-                    map_pred_actor_list[:, 12:24].astype(np.float32)
+                    label_actor_list[:, 24:36],
+                    map_pred_actor_list[:, 24:36].astype(np.float32)
                     )
             p_mAP = average_precision_score(
                     label_actor_list[:, 48:56],
                     map_pred_actor_list[:, 48:56].astype(np.float32),
                     )
             group_c_mAP = average_precision_score(
-                    label_actor_list[:, 24:36],
-                    map_pred_actor_list[:, 24:36].astype(np.float32)
+                    label_actor_list[:, 12:24],
+                    map_pred_actor_list[:, 12:24].astype(np.float32)
                     )
             group_b_mAP = average_precision_score(
                     label_actor_list[:, 36:48],
@@ -659,7 +681,8 @@ class Engine(object):
                     map_pred_actor_list.astype(np.float32), 
                     average=None)
 
-
+            for i, ap in enumerate(mAP_per_class):
+                mAP_per_class[i] = np.round(ap, 3)
             print(f'(val) mAP of the actor: {mAP}')
             print(f'(val) mAP of the c: {c_mAP}')
             print(f'(val) mAP of the b: {b_mAP}')
@@ -667,6 +690,15 @@ class Engine(object):
             print(f'(val) mAP of the c+: {group_c_mAP}')
             print(f'(val) mAP of the b+: {group_b_mAP}')
             print(f'(val) mAP of the p+: {group_p_mAP}')
+
+            print(f'(val) AP of the c: {mAP_per_class[:12]}')
+            print(f'(val) AP of the c+: {mAP_per_class[12:24]}')
+            print(f'(val) AP of the k: {mAP_per_class[24:36]}')
+            print(f'(val) AP of the k+: {mAP_per_class[36:48]}')
+            print(f'(val) AP of the p: {mAP_per_class[48:56]}')
+            print(f'(val) AP of the p+: {mAP_per_class[56:64]}')
+
+
             print('**********************')
             print('precision: ')
             print(precision)

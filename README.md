@@ -29,3 +29,6 @@ This repository contains code for training and evaluating baselines presented in
 }
 ```
 
+### Acknowledgement
+* Slot attention is adapted from [Discovering Object that Can Move](https://github.com/zpbao/Discovery_Obj_Move)
+* DeepLabV3+ is adapted from [DeepLabV3Plus-Pytorch](https://github.com/VainF/DeepLabV3Plus-Pytorch)

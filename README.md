@@ -47,6 +47,26 @@ python train_oats.py --dataset oats --oats_test_split s1 --model_name action_slo
 python eval_oats.py --cp [path_to_checkpoint] --dataset oats --oats_test_split s3  --root [path_to_dataset]\
     --model_name action_slot --allocated_slot --backbone x3d-2 --num_slots 35 --bg_slot 
 ```
+
+## 🌐 Train & Evaluation on nuScenes
+```
+# train from scratch
+python train_nuscenes.py --dataset nuscenes --root [path]/nuscenes/trainval/samples\
+   --model_name action_slot --num_slots 64 --bg_slot --bg_mask --action_attn_weight 1\
+ --allocated_slot --bg_attn_weight 0.5 --bce_pos_weight 7
+
+# transfer learning: TACO -> nuScenes
+python train_nuscenes.py --pretrain taco --root [path]/nuscenes/trainval/samples --cp [path_to_checkpoint] --dataset nuscenes\
+   --model_name action_slot --num_slots 64 --bg_slot --bg_mask --action_attn_weight 1\
+   --allocated_slot --bg_attn_weight 0.5 --bce_pos_weight 20 --root /media/hcis-s20/SRL/nuscenes/trainval/samples
+
+
+# transfer learning: OATS -> nuScenes
+python train_nuscenes.py --pretrain oats --root [path]/nuscenes/trainval/samples --cp [path_to_checkpoint] --dataset nuscenes\
+   --model_name action_slot--num_slots 64 --bg_slot --bg_mask --action_attn_weight 1 --allocated_slot --bg_attn_weight 0.5\
+   --bce_pos_weight 15  
+```
+
 ## Citation
 ```
 @article{kung2023action,

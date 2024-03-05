@@ -6,7 +6,9 @@
 
 <sup>1</sup>National Yang Ming Chioa Tung University,  <sup>2</sup>Google
 
-[Project Page](https://arxiv.org/pdf/2307.09955.pdf](https://hcis-lab.github.io/Action-slot/))
+[arxiv](https://arxiv.org/abs/2311.17948))
+
+[Project Page](https://hcis-lab.github.io/Action-slot/))
 
 This repository contains code for training and evaluating baselines presented in the paper.
 

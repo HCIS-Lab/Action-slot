@@ -73,6 +73,7 @@ python train_nuscenes.py --pretrain oats --root [path]/nuscenes/trainval/samples
 ```
 
 ## 📊 Attention Visualization
+![image](https://github.com/HCIS-Lab/Action-slot/blob/main/img/taco_attn.gif)
 ```
 python eval_taco.py --cp [path_to_checkpoint] --plot --dataset taco --root [path]/nuscenes/trainval/samples\
     --model_name action_slot --num_slots 64 --bg_slot --allocated_slot --plot_threshold 0.5 

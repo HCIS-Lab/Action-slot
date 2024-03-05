@@ -9,3 +9,19 @@
 [Project Page](https://arxiv.org/pdf/2307.09955.pdf](https://hcis-lab.github.io/Action-slot/))
 
 This repository contains code for training and evaluating baselines presented in the paper.
+
+
+## 🚀 Installation
+
+## 📦 Datasets Download
+
+## 🌐 Train & Evaluation
+
+
+@article{kung2023action,
+  title={Action-slot: Visual Action-centric Representations for Multi-label Atomic Activity Recognition in Traffic Scenes},
+  author={Kung, Chi-Hsi and Lu, Shu-Wei and Tsai, Yi-Hsuan and Chen, Yi-Ting},
+  journal={IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year={2024}
+}
+

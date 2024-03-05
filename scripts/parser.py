@@ -12,7 +12,7 @@ def get_parser():
     
     # model
     parser.add_argument('--model_name', type=str, help='Unique experiment identifier.')
-    parser.add_argument('--backbone', type=str, help="x3d-2")
+    parser.add_argument('--backbone', type=str, help="x3d")
     parser.add_argument('--num_slots', type=int, default=64, help='')
     parser.add_argument('--seq_len', type=int, default=16, help='')
     parser.add_argument('--allocated_slot', help="", action="store_true")
@@ -25,24 +25,24 @@ def get_parser():
     parser.add_argument('--action_attn_weight', type=float, default=0., help='')
     parser.add_argument('--bg_attn_weight', type=float, default=0., help='')
     parser.add_argument('--bg_mask', help="", action="store_true")
-    parser.add_argument('--mask_every_frame', type=int, default=2, help='')
-    parser.add_argument('--bg_upsample', type=int, default=1, help='')
+    parser.add_argument('--mask_every_frame', type=int, default=4, help='')
+    parser.add_argument('--bg_upsample', type=int, default=4, help='')
     parser.add_argument('--obj_mask', help="", action="store_true")
 
     # action loss
-    parser.add_argument('--bce_pos_weight', type=float, default=5, help='')
+    parser.add_argument('--bce_pos_weight', type=float, default=10, help='')
     parser.add_argument('--ce_pos_weight', type=float, default=1, help='')
     parser.add_argument('--ce_neg_weight', type=float, default=0.05, help='')
-    
+    parser.add_argument('--ego_loss_weight', type=float, default=0.03, help='')
+
     
     # training
     parser.add_argument('--device', type=str, default='cuda', help='Device to use')
     parser.add_argument('--pretrain', type=str, default='', choices=['taco', 'oats'])
     parser.add_argument('--epochs', type=int, default=100, help='Number of train epochs.')
-    parser.add_argument('--wd', type=float, default=0.1, help='')
+    parser.add_argument('--wd', type=float, default=0.07, help='')
     parser.add_argument('--lr', type=float, default=5e-4, help='Learning rate.')
     parser.add_argument('--scheduler', help="", action="store_true")
-    parser.add_argument('--ego_loss_weight', type=float, default=0.05, help='')
     
     parser.add_argument('--val_every', type=int, default=10, help='Validation frequency (epochs).')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size')

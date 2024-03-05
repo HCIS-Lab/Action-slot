@@ -13,10 +13,7 @@
 This repository contains code for training and evaluating baselines presented in the paper.
 
 ## 🚀 Installation
-
-Follow these steps to install `XSkill`:
-
-1. Create and activate the conda environment:
+Create and activate the conda environment:
    ```
    pip install -e . 
    ```

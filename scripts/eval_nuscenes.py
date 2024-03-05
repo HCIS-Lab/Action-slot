@@ -294,6 +294,7 @@ class Engine(object):
                         pred_ego, pred_actor = model(inputs, boxes)
                     else:
                         pred_ego, pred_actor, attn = model(inputs)
+
                         # if args.plot_mode == 'mask':
                         #     plot_mask(seg_front, args.id, id, v, logdir)
                         # elif args.plot:
@@ -312,6 +313,7 @@ class Engine(object):
                                 plot_slot(attn, args.model_name, city, scenario, raw, actor, pred_actor, logdir, args.plot_threshold, args.plot_mode)
 
                 else:
+
                     pred_ego, pred_actor = model(inputs)
 
 
@@ -336,8 +338,16 @@ class Engine(object):
                     map_pred_actor_list.append(map_batch_new_pred_actor)
                     label_actor_list.append(data['slot_eval_gt'])
                 else:
+
                     pred_actor = torch.sigmoid(pred_actor)
-                    map_pred_actor_list.append(pred_actor.detach().cpu().numpy())
+                    if args.dataset == 'nuscenes' and args.pretrain == 'oats' and not 'nuscenes'in args.cp:
+                        dummy_classes = np.zeros((1,29), dtype=float)
+                        map_pred_actor_list.append(
+                            np.concatenate(
+                                (pred_actor.detach().cpu().numpy(), dummy_classes), axis=1)
+                            )
+                    else:
+                        map_pred_actor_list.append(pred_actor.detach().cpu().numpy())
                     label_actor_list.append(actor.detach().cpu().numpy())
 
                 if args.val_confusion:
@@ -433,6 +443,16 @@ trainer = Engine(args)
 # model.load_state_dict(torch.load(os.path.join(args.logdir, 'model_100.pth')))
 
 model_path = os.path.join(args.cp)
-model.load_state_dict(torch.load(model_path))
+
+if not 'nuscenes' in args.cp and args.pretrain == 'oats':
+    checkpoint = torch.load(model_path)
+    checkpoint = {k: v for k, v in checkpoint.items() if (k in checkpoint and 'ego' not in k)}
+    model.load_state_dict(checkpoint, strict=False)
+    if 'slot' in args.model_name:
+        model.slot_attention.extend_slots()
+else:
+    model.load_state_dict(torch.load(model_path))
+
+
 
 trainer.validate(model, dataloader_val, None)

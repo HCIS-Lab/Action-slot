@@ -192,16 +192,7 @@ class SLOT_VPS(nn.Module):
         if args.dataset == 'oats' and args.pretrain == 'taco':
             self.num_slots = 64
 
-        if args.backbone == 'inception':
-            self.resnet = inception.INCEPTION()
-            self.in_c = 2048
-            if args.dataset == 'taco':
-                self.resolution = (8, 24)
-                self.resolution3d = (args.seq_len, 5, 5)
-            elif args.dataset == 'oats':
-                self.resolution = (5, 5)
-                self.resolution3d = (args.seq_len, 5, 5)
-        elif args.backbone == 'r50':
+        if args.backbone == 'r50':
             self.resnet = r50.R50()
             self.in_c = 2048
             if args.dataset == 'taco':
@@ -211,18 +202,13 @@ class SLOT_VPS(nn.Module):
                 self.resolution = (7, 7)
                 self.resolution3d = (args.seq_len, 7, 7)
 
-        elif args.backbone == 'i3d-2':
-            self.resnet = self.resnet.blocks[:-2]
-            self.resolution = (16, 48)
-            self.resolution3d = (4, 16, 48)
-            self.in_c = 1024
-        elif args.backbone == 'i3d-1':
+        elif args.backbone == 'i3d':
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 2048
             self.resolution = (8, 24)
             self.resolution3d = (4, 8, 24)
 
-        elif args.backbone == 'x3d-2':
+        elif args.backbone == 'x3d':
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo:main', 'x3d_m', pretrained=True)
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 192
@@ -233,8 +219,6 @@ class SLOT_VPS(nn.Module):
             else:
                 self.resolution = (8, 24)
                 self.resolution3d = (16, 8, 24)
-
-        
 
         if args.allocated_slot:
             self.head = Instance_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)
@@ -353,8 +337,6 @@ class SLOT_VPS(nn.Module):
         # [bs, n, h*w, c]
         x = x.view(batch_size, new_seq_len, -1, self.hidden_dim2)
 
-        # slots = self.slots.expand(batch_size,-1,-1)
-        # slots = torch.unsqueeze(slots, 1)
         slots = self.slots.expand(batch_size, new_seq_len, -1, -1)
 
         slots, _ = self.pr(slots, x)
@@ -371,9 +353,6 @@ class SLOT_VPS(nn.Module):
         slots = self.vr6(slots)
         slots = torch.sum(slots, dim=1)
         slots = self.drop(slots)
-
-        
-
 
         b, l, n, thw = attn_masks.shape
         attn_masks = attn_masks.reshape(b*seq_len, n, -1)

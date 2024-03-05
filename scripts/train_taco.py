@@ -362,6 +362,9 @@ class Engine(object):
             print(f'(val) mAP of the b+: {group_b_mAP}')
             print(f'(val) mAP of the p+: {group_p_mAP}')
 
+
+           
+
             print(f'acc of the ego: {self.correct_ego/self.total_ego}')
             writer.add_scalar('ego', self.correct_ego/self.total_ego, self.cur_epoch)
             if mAP > self.best_mAP:

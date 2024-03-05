@@ -27,9 +27,9 @@ class INCEPTION(nn.Module):
         self.blocks.append(self.model.Mixed_6c)
         self.blocks.append(self.model.Mixed_6d)
         self.blocks.append(self.model.Mixed_6e)
-        self.blocks.append(self.model.Mixed_7a)
-        self.blocks.append(self.model.Mixed_7b)
-        self.blocks.append(self.model.Mixed_7c)
+        # self.blocks.append(self.model.Mixed_7a)
+        # self.blocks.append(self.model.Mixed_7b)
+        # self.blocks.append(self.model.Mixed_7c)
 
     def forward(self, x):
         for block in self.blocks:

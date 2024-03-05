@@ -91,7 +91,7 @@ def get_parser():
     if not os.path.isdir(based_log):
         os.makedirs(based_log)
 
-    if args.model_name in ['action_slot', 'slot_savi', 'slot_mo', 'slot_vps']:
+    if args.model_name in ['action_slot', 'slot_savi', 'slot_mo', 'slot_vps', 'action_slot_query']:
         logdir = os.path.join(
             based_log,
             'num_slots: ' + str(args.num_slots) + '\n'

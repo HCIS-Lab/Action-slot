@@ -70,8 +70,7 @@ class SlotAttention(nn.Module):
             4, 48, 59, 52, 61,
             63, 49, 60, 7, 30, 
             11, 57, 22, 62, 58,
-            18, 54, 29, 17, 25,
-            64
+            18, 54, 29, 17, 25
             ]
         slots = tuple([torch.reshape(self.slots[:, idx, :], (1, 1, -1)) for idx in oats_slot_idx])
         slots = torch.cat(slots, 1)
@@ -98,7 +97,7 @@ class SlotAttention(nn.Module):
         q = self.to_q(slots)
 
         dots = torch.einsum('bid,bjd->bij', q, k) * self.scale
-        attn_ori = dots.softmax(dim=1) + self.eps
+        attn_ori = dots.softmax(dim=-1) + self.eps
         attn = attn_ori / attn_ori.sum(dim=-1, keepdim=True)
 
         # updates = torch.einsum('bjd,bij->bid', v, attn)
@@ -148,17 +147,15 @@ class SoftPositionEmbed3D(nn.Module):
         grid = self.embedding(self.grid)
         return inputs + grid
 
-class ACTION_SLOT(nn.Module):
+class ACTION_SLOT_QUERY(nn.Module):
     def __init__(self, args, num_ego_class, num_actor_class, num_slots=21, box=False, videomae=None):
-        super(ACTION_SLOT, self).__init__()
+        super(ACTION_SLOT_QUERY, self).__init__()
         self.hidden_dim = args.channel
         self.hidden_dim2 = args.channel
         self.slot_dim, self.temp_dim = args.channel, args.channel
         self.num_ego_class = num_ego_class
         self.ego_c = 128
         self.num_slots = num_slots
-        if args.dataset == 'nuscenes' and args.pretrain == 'oats' and not 'nuscenes'in args.cp:
-            num_actor_class = 35
         if args.dataset == 'nuscenes' and args.pretrain == 'oats':
             self.num_slots = 35
         if args.dataset == 'oats' and args.pretrain == 'taco':
@@ -167,7 +164,17 @@ class ACTION_SLOT(nn.Module):
         #     self.num_slots = 93
         self.resnet = i3d_r50(True)
         self.args = args
+        # self.resnet = self.resnet.blocks[:2]
 
+        # if args.backbone == 'inception':
+        #     self.resnet = inception.INCEPTION()
+        #     self.in_c = 768
+        #     if args.dataset == 'taco':
+        #         self.resolution = (8, 24)
+        #         self.resolution3d = (args.seq_len, 5, 5)
+        #     elif args.dataset == 'oats':
+        #         self.resolution = (12, 12)
+        #         self.resolution3d = (args.seq_len, 12, 12)
 
         if args.backbone == 'r50':
             self.resnet = r50.R50()
@@ -179,7 +186,17 @@ class ACTION_SLOT(nn.Module):
                 self.resolution = (7, 7)
                 self.resolution3d = (args.seq_len, 7, 7)
 
-        elif args.backbone == 'i3d':
+        # elif args.backbone == 'i3d-2':
+        #     self.resnet = self.resnet.blocks[:-2]
+        #     self.in_c = 1024
+        #     if args.dataset == 'taco':
+        #         self.resolution = (16, 48)
+        #         self.resolution3d = (4, 16, 48)
+        #     elif args.dataset == 'oats':
+        #         self.resolution = (14, 14)
+        #         self.resolution3d = (4, 14, 14)
+
+        elif args.backbone == 'i3d-1':
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 2048
             if args.dataset == 'taco':
@@ -189,7 +206,7 @@ class ACTION_SLOT(nn.Module):
                 self.resolution = (7, 7)
                 self.resolution3d = (4, 7, 7)
 
-        elif args.backbone == 'x3d':
+        elif args.backbone == 'x3d-2':
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo:main', 'x3d_m', pretrained=True)
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 192
@@ -201,6 +218,30 @@ class ACTION_SLOT(nn.Module):
                 self.resolution = (8, 24)
                 self.resolution3d = (16, 8, 24)
             
+        # elif args.backbone == 'videomae':
+        #     self.model = videomae
+        #     self.in_c = 768
+        #     if args.dataset == 'taco':
+        #         self.resolution = (14, 14)
+        #         self.resolution3d = (8, 14, 14)
+            
+        # elif args.backbone == 'mvit':
+        #     self.model = mvit_base_16x4(True)
+        #     self.in_c = 768
+        #     self.resolution = (7, 7)
+        #     self.resolution3d = (8, 7, 7)
+
+        # elif args.backbone == 'csn':
+        #     self.resnet = csn_r101(True)
+        #     self.resnet = self.resnet.blocks[:-1]
+        #     self.in_c = 2048
+        #     if args.dataset == 'taco':
+        #         self.resolution = (8, 24)
+        #         self.resolution3d = (4, 8, 24)
+        #     elif args.dataset == 'oats':
+        #         self.resolution = (7, 7)
+        #         self.resolution3d = (4, 7, 7)
+
         elif args.backbone == 'slowfast':
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo:main', 'slowfast_r50', pretrained=True)
             self.resnet = self.resnet.blocks[:-2]
@@ -274,16 +315,20 @@ class ACTION_SLOT(nn.Module):
         batch_size = x[0].shape[0]
         height, width = x[0].shape[2], x[0].shape[3]
 
-        if self.args.backbone == 'r50':
+        
+        if self.args.backbone == 'inception' or self.args.backbone == 'r50':
             if isinstance(x, list):
                 x = torch.stack(x, dim=0) #[T, b, C, h, w]
                 x = torch.reshape(x, (seq_len*batch_size, 3, height, width))
-                x = self.resnet(x)
-                _, c, h, w  = x.shape
-                x = torch.reshape(x, (self.args.seq_len, batch_size, c, h, w))
-                x = x.permute(1, 2, 0, 3, 4)
 
-        elif self.args.backbone == 'slowfast':
+        elif self.args.backbone != 'slowfast':
+            if isinstance(x, list):
+                x = torch.stack(x, dim=0) #[T, b, C, h, w]
+                # l, b, c, h, w
+                x = torch.permute(x, (1,2,0,3,4)) #[b, C, T, h, w]
+        
+        # ---- backbone forward ----
+        if self.args.backbone == 'slowfast':
             slow_x = []
             for i in range(0, seq_len, 4):
                 slow_x.append(x[i])
@@ -291,8 +336,8 @@ class ACTION_SLOT(nn.Module):
                 x = torch.stack(x, dim=0) #[v, b, 2048, h, w]
                 slow_x = torch.stack(slow_x, dim=0)
                 # l, b, c, h, w
-                x = x.permute((1,2,0,3,4)) #[b, v, 2048, h, w]
-                slow_x = slow_x.permute((1,2,0,3,4))
+                x = torch.permute(x, (1,2,0,3,4)) #[b, v, 2048, h, w]
+                slow_x = torch.permute(slow_x, (1,2,0,3,4))
                 x = [slow_x, x]
 
                 for i in range(len(self.resnet)):
@@ -300,14 +345,31 @@ class ACTION_SLOT(nn.Module):
                 x[1] = self.path_pool(x[1])
                 x = torch.cat((x[0], x[1]), dim=1)
 
+        elif self.args.backbone == 'mvit':
+            x = self.model.patch_embed(x) # torch.Size([8, 25088, 96])
+            # x = self.model.cls_positional_encoding(x) # torch.Size([8, 25089, 96])
+            # x = self.model.pos_drop(x)
+            x = self.model.cls_positional_encoding(x)
+            thw = self.model.cls_positional_encoding.patch_embed_shape
+            for blk in self.model.blocks:
+                x, thw = blk(x, thw) # B, D_index, N, N (N = *thw+1)
+            x = self.model.norm_embed(x)[:,1:]
+            x = x.reshape(batch_size,self.resolution3d[0],self.resolution3d[1],self.resolution3d[2],-1) # B,T,H,W,C
+            x = x.permute(0,4,1,2,3) # B,C,T,H,W
+            
+        elif self.args.backbone == 'videomae':
+            x = self.model.forward_features(x,pretrained=True) # B,TxHxW,C
+            x = x.reshape(batch_size,self.resolution3d[0],self.resolution3d[1],self.resolution3d[2],-1) # B,T,H,W,C
+            x = x.permute(0,4,1,2,3) # B,C,T,H,W
+        elif self.args.backbone == 'inception' or self.args.backbone == 'r50':
+            x = self.resnet(x)
+            _, c, h, w  = x.shape
+            x = torch.reshape(x, (self.args.seq_len, batch_size, c, h, w))
+            x = x.permute(1, 2, 0, 3, 4)
         else:
-            if isinstance(x, list):
-                x = torch.stack(x, dim=0) #[T, b, C, h, w]
-                # l, b, c, h, w
-                x = x.permute((1,2,0,3,4)) #[b, C, T, h, w]
             for i in range(len(self.resnet)):
+                # x = self.resnet.blocks[i](x)
                 x = self.resnet[i](x)
-
         # b,c,t,h,w
         x = self.drop(x)
         if self.num_ego_class != 0:
@@ -320,12 +382,41 @@ class ACTION_SLOT(nn.Module):
 
         # # [b, c, n , w, h]
         x = self.conv3d(x)
+
         
-        x = x.permute((0, 2, 3, 4, 1))
+        x = torch.permute(x, (0, 2, 3, 4, 1))
         # [bs, n, w, h, c]
         x = torch.reshape(x, (batch_size, new_seq_len, new_h, new_w, -1))
+
+        # flops latency
+
+        # macs, _ = get_model_complexity_info(self.slot_attention, (16, 8, 24, 128), as_strings=True, print_per_layer_stat=False, verbose=True)
+        # print(macs)
+
+        # starter, ender = torch.cuda.Event(enable_timing=True), torch.cuda.Event(enable_timing=True)
+        # repetitions = 300
+        # timings=np.zeros((repetitions,1))
+        # #GPU-WARM-UP
+        # for _ in range(10):
+        #     _ = self.slot_attention(x)
+        # MEASURE PERFORMANCE
+        # with torch.no_grad():
+        #     for rep in range(repetitions):
+        #         starter.record()
+        #         _, _ = self.slot_attention(x)
+        #         ender.record()
+        #         # WAIT FOR GPU SYNC
+        #         torch.cuda.synchronize()
+        #         curr_time = starter.elapsed_time(ender)
+        #         timings[rep] = curr_time
+
+        # mean_syn = np.sum(timings) / repetitions
+        # std_syn = np.std(timings)
+        # print(mean_syn)
         
         x, attn_masks = self.slot_attention(x)
+
+        
 
         # no pool, 3d slot
         b, n, thw = attn_masks.shape
@@ -345,8 +436,10 @@ class ACTION_SLOT(nn.Module):
             attn_masks = F.interpolate(attn_masks, size=(seq_len, new_h, new_w), mode='trilinear')
         # b, l, n, h, w
         attn_masks = torch.reshape(attn_masks, (b, n, seq_len, new_h, new_w))
-        attn_masks = attn_masks.permute((0, 2, 1, 3, 4))
+        attn_masks = torch.permute(attn_masks, (0, 2, 1, 3, 4))
 
+
+        # x = torch.sum(x, 1)
         x = self.drop(x)
         if self.num_ego_class != 0:
             ego_x = self.drop(ego_x)

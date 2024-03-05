@@ -130,47 +130,13 @@ class SLOT_SAVI(nn.Module):
                 self.resolution = (5, 5)
                 self.resolution3d = (args.seq_len, 5, 5)
 
-        elif args.backbone == 'i3d-2':
-            self.resnet = self.resnet.blocks[:-2]
-            self.resolution = (16, 48)
-            self.resolution3d = (4, 16, 48)
-            self.in_c = 1024
-        elif args.backbone == 'i3d-1':
+        elif args.backbone == 'i3d':
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 2048
             self.resolution = (8, 24)
             self.resolution3d = (4, 8, 24)
-        elif args.backbone == 'x3d-1':
-            self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
-            # self.projection = nn.Sequential(
-            #     nn.Conv3d(192, 432, kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-            #     nn.BatchNorm3d(432, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            #     nn.ReLU(),
-            #     nn.AvgPool3d(kernel_size=(1, 3, 3), stride=1, padding=0),
-            #     nn.Conv3d(432, 2048, kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-            #     )
-            # self.projection = nn.Sequential(
-            #     nn.Conv3d(192, 192, kernel_size=(3, 3, 3), dilation=(3, 2, 2), stride=(1, 1, 1), padding='same', bias=False),
-            #     nn.BatchNorm3d(192, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            #     nn.ReLU(),
-            #     nn.Conv3d(192, 432, kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-            #     nn.BatchNorm3d(432, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            #     nn.ReLU(),
-            #     nn.Conv3d(432, 512 , kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-            #     )
-            self.projection = nn.Sequential(
-                nn.Conv3d(192, 256, kernel_size=(1, 1, 1), stride=(1, 1, 1), bias=False),
-                nn.BatchNorm3d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-                nn.ReLU(),
-                nn.Conv3d(256, 256, kernel_size=(3, 3, 3), dilation=(3, 1, 1), stride=(1, 1, 1), padding='same', bias=False),
-                nn.BatchNorm3d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-                )
-            self.resnet.blocks[-1] = self.projection
-            self.resnet = self.resnet.blocks
-            self.in_c = 256
-            self.resolution = (8, 24)
-            self.resolution3d = (16, 8, 24)
-        elif args.backbone == 'x3d-2':
+
+        elif args.backbone == 'x3d':
             self.resnet = torch.hub.load('facebookresearch/pytorchvideo', 'x3d_m', pretrained=True)
             self.resnet = self.resnet.blocks[:-1]
             self.in_c = 192

@@ -6,7 +6,8 @@ def scale(image_path, scale=2.0):
 
     image = Image.open(image_path).convert('RGB')
     # (width, height) = (int(image.width // scale), int(image.height // scale))
-    (width, height) = (224, 224)
+    (width, height) = (768, 256)
+    # (width, height) = (224, 224)
     im_resized = image.resize((width, height), Image.ANTIALIAS)
 
     return im_resized
@@ -18,7 +19,8 @@ def thread(img_path):
     #     im1 = im1.convert('RGB')
 
     # folder = 'downsampled'
-    folder = 'downsampled_224'
+    # folder = 'downsampled_224'
+    folder = 'downsampled_256x768'
     new_img_path = img_path.replace("images", folder)
     
     if not os.path.isdir(new_img_path[:-7]):
@@ -33,8 +35,10 @@ def thread(img_path):
 
 def main():
     shpfiles = []
-    if not os.path.isdir("./downsampled_224"):
-        os.makedirs("./downsampled_224")
+    # if not os.path.isdir("./downsampled_224"):
+        # os.makedirs("./downsampled_224")
+    if not os.path.isdir("./downsampled_256x768"):
+        os.makedirs("./downsampled_256x768")
     for dirpath, subdirs, files in os.walk("./images"):
         for x in files:
             if x.endswith(".jpg"):

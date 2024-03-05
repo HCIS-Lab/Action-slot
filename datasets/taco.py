@@ -15,11 +15,7 @@ import random
 import torchvision.transforms as transforms
 # from torchvideotransforms import video_transforms, volume_transforms
 
-# from pytorchvideo.transforms import (
-#     Normalize,
-#     NormalizeVideo,
-#     ToTensorVideo
-# )
+
 
 def parse_file_name(file_name):
     name = file_name.split('/')
@@ -79,8 +75,12 @@ class TACO(Dataset):
         total_frame = 0
         total_videos = 0
 
-        type_list = ['interactive', 'non-interactive', 'ap_Town01',
-        'ap_Town02','ap_Town03', 'ap_Town04', 'ap_Town05', 'ap_Town06', 'ap_Town07', 'ap_Town10HD', 
+        type_list = [
+        # scenarios from RikBench
+        'interactive', 'non-interactive', 
+        # scenarios collected by auto-pilot
+        'ap_Town01','ap_Town02','ap_Town03', 'ap_Town04', 'ap_Town05', 'ap_Town06', 'ap_Town07', 'ap_Town10HD', 
+        # scenarios collected by scenario-runner
         'runner_Town03','runner_Town05', 'runner_Town10HD']
         n=0
 
@@ -134,19 +134,16 @@ class TACO(Dataset):
                         if scenario_id.split('_')[0] == '10':
                             continue
                     else:
-
                         if type == 'ap_Town10HD' or type == 'runner_Town10HD':
                             continue
                 else:
                     if type == 'interactive' or type == 'non-interactive':
                         if scenario_id.split('_')[0] != '10':
                             continue
-
                     else:
                         testing_set = ['ap_Town10HD', 'runner_Town10HD']
                         if not type in testing_set:
                             continue
-
 
                 variants_path = os.path.join(s, 'variant_scenario')
                 if os.path.isdir(variants_path):
@@ -158,57 +155,21 @@ class TACO(Dataset):
                         if 'DS' in v_id:
                             continue
 
-                        # c_label = False
-                        # other_label = False
+                        
                         if os.path.isfile(v+'/retrieve_gt.txt'):
                             with open(v+'/retrieve_gt.txt') as f:
-                                gt = []
-
-                                c_p = False
-                                c_pp = False
-                                c_c = False
-                                c_cp = False
-                                c_b = False
-                                c_bp = False
-
-                                for line in f:
-                                    line = line.replace('\n', '')
-                                    if line != '\n':
-                                        gt.append(line)
-                                        if 'p:' in line:
-                                            c_p=True
-                                        if 'p+:' in line:
-                                            c_pp=True
-                                        if 'c:' in line:
-                                            c_c=True
-                                        if 'c+:' in line:
-                                            c_cp=True
-                                        if 'b:' in line:
-                                            c_b=True
-                                        if 'b+:' in line:
-                                            c_bp=True
-                                gt = list(set(gt))
-                                if 'None' in gt:
-                                    gt.remove('None')
-                                if not 'x' in gt:
-                                    if not 'n' in gt:
-                                        print('no x')
-                                        print(v)
-                                    continue
-                                else:
-                                    gt.remove('x')
-                                # if c_p and c_pp and c_c and c_cp:
-                                #     print(v)
-
                         else:
                             continue
+
+                        # for object-aware methods
                         if self.args.box:
                             proposal_train_label, gt_ego, gt_actor = get_labels(args, gt, scenario_id, v_id, num_slots=self.Max_N)
+                        # for non-allocated slot-based methods
                         elif 'slot' in args.model_name and not args.allocated_slot:
                             proposal_train_label, gt_ego, gt_actor = get_labels(args, gt, scenario_id, v_id, num_slots=args.num_slots)
+                        # for allocated slot-based and video-level methods
                         else:
                             gt_ego, gt_actor = get_labels(args, gt, scenario_id, v_id, num_slots=args.num_slots)
-                        
 
                         # ------------statistics-------------
                         if torch.count_nonzero(gt_actor) > max_num_label_a_video:
@@ -217,7 +178,6 @@ class TACO(Dataset):
 
                         # remove those data with no traffic pattern
                         if not torch.count_nonzero(gt_actor):
-                            print(111)
                             continue
                         
                         if args.ego_motion != -1:
@@ -273,6 +233,7 @@ class TACO(Dataset):
                             check_data.sort()
                         else:
                             continue
+
                         if len(check_data) < 50:
                             continue
 
@@ -287,7 +248,6 @@ class TACO(Dataset):
                         step = num_frame // self.seq_len
 
                         max_num = 50
-                        # step = ((end_frame-start + 1) // (seq_len+1)) -1
                         for m in range(max_num):
                             start = start_frame + m
                             # step = ((end_frame-start + 1) // (seq_len+1)) -1
@@ -314,12 +274,6 @@ class TACO(Dataset):
                                 #         box_temp.append(v+"/bbox/front/"+boxname)
                                 if len(videos_temp) == self.seq_len and len(seg_temp) == self.seq_len and len(obj_temp) == self.seq_len:
                                     break
-                                # elif self.box:
-                                #     if len(front_temp) == seq_len and len(box_temp) == seq_len:
-                                #         break
-                                # else:
-                                #     if len(front_temp) == seq_len:
-                                #         break
 
                             if len(videos_temp) == self.seq_len:
                                 videos.append(videos_temp)
@@ -331,13 +285,11 @@ class TACO(Dataset):
                                 #     boxes.append(box_temp)
 
 
-                        # if len(videos) == 0 or len(segs) ==0 or len(obj_f) ==0:
                         if len(videos) == 0 or len(segs) ==0 or len(obj_f)==0:
                             continue
 
                         if len(segs)!=len(videos):
                             continue
-
 
                         # -----
                         ego_class = 'e:z1-z1'
@@ -394,8 +346,6 @@ class TACO(Dataset):
                             min_frame_a_video = num_frame
                         total_frame += num_frame
                         total_videos += 1
-        # if args.plot and args.plot_mode == '':
-        #     self.tracklet_counter()
 
         if args.box:
             if args.gt:
@@ -552,6 +502,7 @@ class TACO(Dataset):
                 #     f.close()
                 # parse_tracklet(temp,root,i)
             self.max_num_obj.append(count)
+
     def tracklet_counter(self):
         """
             tracklet (List[List[Dict]]):
@@ -630,7 +581,6 @@ class TACO(Dataset):
         data['id'] = self.id[index]
         data['variants'] = self.variants[index]
 
-        # if self.args.plot_mode == '':
         data['map'] = self.maps[index]
         if ('slot' in self.args.model_name and not self.args.allocated_slot) or self.args.box:
             data['slot_eval_gt'] = self.slot_eval_gt[index]
@@ -674,20 +624,9 @@ class TACO(Dataset):
                         data['obj_masks'].append(get_obj_mask(obj_masks_list[i]))
         if self.args.plot:
             data['raw'] = to_np_no_norm(data['raw'])
-            
-        # fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        # out = cv2.VideoWriter(os.path.join('/home/hcis-s19/Desktop/debug',f"{index}.mp4"), fourcc, 12.0, (768,  256))
-        # for img, boxs in zip(data['videos'],data['box']):
-        #     img = np.array(img)
-        #     for box in boxs:
-        #         cv2.rectangle(img, (int(box[0]),int(box[1])), (int(box[2]),int(box[3])), (255,0,0, 255), 1)  
-        #     out.write(img)
-        # out.release()
-        # raise BaseException
     
         data['videos'] = to_np(data['videos'], self.args.model_name, self.args.backbone)
         data['bg_seg'] = to_np_no_norm(data['bg_seg'])
-
 
         if self.args.val_confusion:
             data['confusion_label'] = self.confusion_label_list[index]

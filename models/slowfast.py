@@ -19,9 +19,7 @@ class SlowFast(nn.Module):
         super(SlowFast, self).__init__()
         self.num_ego_class = num_ego_class
         self.model = torch.hub.load('facebookresearch/pytorchvideo', 'slowfast_r50', pretrained=True)
-        # for i, b in enumerate(self.model.blocks):
-        #     print(i)
-        #     print(b)
+
 
         self.head = Head(2304, num_ego_class, num_actor_class)
         self.model.blocks[-1] = nn.Sequential(
@@ -45,13 +43,7 @@ class SlowFast(nn.Module):
             x = torch.permute(x, (1,2,0,3,4)) #[b, v, 2048, h, w]
             slow_x = torch.permute(slow_x, (1,2,0,3,4))
         num_block = len(self.model.blocks)
-        # # print(x.shape)
-        # for i in range(num_block-1):
-        #     x = self.model.blocks[i](x)
-        #     # print(x.shape)
-        # x = self.pool(x)
-        # x = torch.reshape(x, (batch_size, 2048))
-        # _, x = self.model.blocks[-1](x)
+
         x = [slow_x, x]
         for i in range(num_block-1):
             x = self.model.blocks[i](x)

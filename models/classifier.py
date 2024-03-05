@@ -64,7 +64,7 @@ class Instance_Head(nn.Module):
 		for i in range(self.num_actor_classes):
 			y_actor.append(self.fc_actor[i](x[:, i, :]))
 		y_actor = torch.stack(y_actor, dim=0)
-		y_actor = torch.permute(y_actor, (1, 0, 2))
+		y_actor = y_actor.permute((1, 0, 2))
 		y_actor = torch.reshape(y_actor, (b, n))
 		# x = torch.reshape(x, (b, n))
 		if self.num_ego_classes != 0:

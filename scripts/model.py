@@ -7,7 +7,7 @@ sys.path.append('/media/hcis-s16/hank/Action-Slot/models')
 sys.path.append('/media/hcis-s20/SRL/action-slot/models')
 sys.path.append('/media/hankung/ssd/Action-Slot/models')
 sys.path.append('/media/hcis-s19/DATA/Action-Slot/models')
-sys.path.append('//media/user/data/Action-Slot/models')
+sys.path.append('/media/user/data/Action-Slot/models')
 
 
 import vivit
@@ -25,29 +25,17 @@ import slot_mo
 import slot_savi
 import ARG
 import ORN
-
+import action_slot_query
 import segment
 from classifier import Head, Instance_Head
 
 from timm.models import create_model
 from collections import OrderedDict
 import videomae.utils as utils
+
 # for registering timm create_model
 import modeling_finetune
 
-def load_pretrained_model(model, num_ego_class, num_actor_class, \
-    pretrain_path='/media/hankung/ssd/retrieval/models/r3d50_K_200ep.pth'):
-    if pretrain_path:
-        print('loading pretrained model {}'.format(pretrain_path))
-        pretrain = torch.load(pretrain_path, map_location='cpu')
-
-        model.load_state_dict(pretrain['state_dict'], strict=False)
-        tmp_model = model
-
-        tmp_model.head = Head(tmp_model.head_in_c,
-                                     num_ego_class, num_actor_class)
-
-    return model
 
 def generate_model(args, num_ego_class, num_actor_class):
     model_name = args.model_name
@@ -63,34 +51,7 @@ def generate_model(args, num_ego_class, num_actor_class):
             t.requires_grad=True
         for t in model.layer4.parameters():
             t.requires_grad=True
-    # elif model_name =='i3d_inception':
-    #     model = i3d.InceptionI3d(num_ego_class, num_actor_class, in_channels=3)
-    #     model.load_state_dict(torch.load('/media/hankung/ssd/retrieval/models/rgb_charades.pt'), strict=False)
-    #     model.replace_logits()
-    #     for t in model.parameters():
-    #           t.requires_grad=False
-    #     for t in model.end_points['Mixed_3b'].parameters():
-    #         t.requires_grad=True
-    #     for t in model.end_points['Mixed_3c'].parameters():
-    #         t.requires_grad=True
-    #     for t in model.end_points['Mixed_4b'].parameters():
-    #         t.requires_grad=True
-    #     for t in model.end_points['Mixed_4c'].parameters():
-    #         t.requires_grad=True
-    #     for t in model.end_points['Mixed_4d'].parameters():
-    #         t.requires_grad=True
-    #     for t in model.end_points['Mixed_4e'].parameters():
-    #         t.requires_grad=True
-    #     for t in model.end_points['Mixed_4f'].parameters():
-    #         t.requires_grad=True
-    #     for t in model.end_points['Mixed_5b'].parameters():
-    #         t.requires_grad=True
-    #     for t in model.end_points['Mixed_5b'].parameters():
-    #         t.requires_grad=True
-    #     for t in model.end_points['Mixed_5c'].parameters():
-    #         t.requires_grad=True
-    #     for t in model.logits.parameters():
-    #         t.requires_grad=True
+
     elif model_name == 'i3d':
         model = i3d_kinetics.I3D_KINETICS(num_ego_class, num_actor_class)
         for t in model.model.parameters():
@@ -103,7 +64,7 @@ def generate_model(args, num_ego_class, num_actor_class):
             t.requires_grad=True
 
     elif model_name == 'x3d':
-        model = x3d.X3D(num_ego_class, num_actor_class)
+        model = x3d.X3D(num_ego_class, num_actor_class, args)
         for t in model.model.parameters():
             t.requires_grad=False
 
@@ -157,15 +118,6 @@ def generate_model(args, num_ego_class, num_actor_class):
             for t in model.model.blocks[idx].parameters():
                 t.requires_grad=True
 
-    elif model_name == 'segment':
-        model = segment.SEGMENT(args, num_ego_class, num_actor_class)
-        for t in model.parameters():
-            t.requires_grad=True
-        for t in model.resnet.parameters():
-            t.requires_grad=False
-        for t in model.resnet[-1].parameters():
-            t.requires_grad=True
-
     elif model_name == 'action_slot': 
         model = action_slot.ACTION_SLOT(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
         for t in model.parameters():
@@ -196,21 +148,16 @@ def generate_model(args, num_ego_class, num_actor_class):
             for t in model.resnet[-2].parameters():
                 t.requires_grad=True
 
-
-    # elif model_name == 'action_slot' and args.backbone == 'i3d_inception': 
-    #     model = action_slot.ACTION_SLOT(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
-        
-
-    # elif model_name == 'slot_seg':	
-    #     model = slot_seg.SLOT_SEG(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
-    #     for t in model.parameters():
-    #         t.requires_grad=True
-    #     for t in model.resnet.parameters():
-    #         t.requires_grad=False
-    #     for t in model.resnet[-1].parameters():
-    #         t.requires_grad=True
-    #     for t in model.resnet[-2].parameters():
-    #         t.requires_grad=True
+    elif model_name == 'action_slot_query': 
+        model = action_slot_query.ACTION_SLOT_QUERY(args, num_ego_class, num_actor_class, args.num_slots, box=args.box)
+        for t in model.parameters():
+            t.requires_grad=True
+        for t in model.resnet.parameters():
+            t.requires_grad=False
+        for t in model.resnet[-1].parameters():
+            t.requires_grad=True
+        for t in model.resnet[-2].parameters():
+            t.requires_grad=True
 
     elif model_name == 'slot_vps':
         model = slot_vps.SLOT_VPS(args, num_ego_class, num_actor_class, args.num_slots)

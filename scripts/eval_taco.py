@@ -104,6 +104,7 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
 
     num_pos = 0
     num_tp = 0
+    num_fn = 0
     actor_str = ''
     actor = actor[0]
     pred_actor = pred_actor[0]
@@ -120,7 +121,7 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
                     num_tp +=1
                 else:
                     actor_str += '          FN'
-            
+                    num_fn +=1
             else:
                 if pred_actor[i].data == True:
                     actor_str += actor_table[i] 
@@ -129,9 +130,11 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
                     actor_str += actor_table[i] 
                     actor_str += '                          TN'
             actor_str +='\n'
-        # if num_pos > num_tp and model_name == 'action_slot':
+        # if num_pos < num_tp and model_name == 'action_slot':
         #     return
-
+        if num_fn == 0:
+            return
+            
         path = os.path.join(logdir, 'plot_'+ mode +'_'+str(threshold))
         if not os.path.exists(path):
             os.makedirs(path)
@@ -193,7 +196,6 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
 
 
             colors = [color_1, color_2, color_3]
-            # Overlay the masks on raw_j with opacity
             bool_mask_list = []
             attn_mask_list = []
             for i, a in enumerate(actor):
@@ -209,10 +211,6 @@ def plot_slot(attn, model_name, map, id, v, raw, actor, pred_actor, logdir, thre
                     attn_mask_list.append((masks_j[i] > threshold).astype('uint8').reshape((128,384)))
             for num_gt in range(len(bool_mask_list)):
                 raw_j[bool_mask_list[num_gt], :3] = attn_mask_list[num_gt][bool_mask_list[num_gt]][:, np.newaxis] * colors[1] * alpha_1 + raw_j[bool_mask_list[num_gt], :3] * (1 - alpha_1)
-            # raw_j[t_masks_3, 0] = masks_3[t_masks_3] * alpha_3 + raw_j[t_masks_3, 0] * (1 - alpha_3)
-            # raw_j[t_masks_6, 1] = masks_6[t_masks_6] * alpha_6 + raw_j[t_masks_6, 1] * (1 - alpha_6)
-            # raw_j[t_masks_6, 1] = masks_6[t_masks_6] * alpha_6 + raw_j[t_masks_6, 1] * (1 - alpha_6)
-            
 
             plt.imshow(raw_j, cmap='gist_rainbow')
             plt.axis('off')
@@ -682,7 +680,7 @@ class Engine(object):
                     average=None)
 
             for i, ap in enumerate(mAP_per_class):
-                mAP_per_class[i] = np.round(ap, 3)
+                mAP_per_class[i] = np.round(ap, 3)*100
             print(f'(val) mAP of the actor: {mAP}')
             print(f'(val) mAP of the c: {c_mAP}')
             print(f'(val) mAP of the b: {b_mAP}')

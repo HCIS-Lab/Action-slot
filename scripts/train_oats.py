@@ -271,7 +271,7 @@ class Engine(object):
 					attn_loss = loss_mask
 
 			elif 'slot' in args.model_name and args.allocated_slot:
-				pred_actor = pred_actor [1]
+				# pred_actor = pred_actor [1]
 				actor_loss = bce(pred_actor, actor)
 				if args.bg_slot and not args.bg_mask and args.action_attn_weight>0:
 					b, l, n, h, w = attn.shape
@@ -572,7 +572,7 @@ class Engine(object):
 					actor_loss = instance_ce(pred_actor.transpose(1, 2), target_classes)
 
 				elif 'slot' in args.model_name and args.allocated_slot:
-					pred_actor = pred_actor[1]
+					# pred_actor = pred_actor[1]
 					actor_loss = bce(pred_actor, actor)
 					if args.bg_slot and not args.bg_mask and args.action_attn_weight >0:
 						b, l, n, h, w = attn.shape

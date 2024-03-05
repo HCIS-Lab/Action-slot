@@ -4,7 +4,7 @@
 
 <sup>1</sup>[Chi-Hsi Kung](https://hankkung.github.io/website/),  <sup>1,</sup>[Shu-Wei Lu](),  <sup>2</sup>[Yi-Hsuan Tsai](https://sites.google.com/site/yihsuantsai/),  <sup>1</sup>[Yi-Ting Chen](https://sites.google.com/site/yitingchen0524)
 
-<sup>1</sup>National Yang Ming Chioa Tung University,  <sup>2</sup>Google
+<sup>1</sup>National Yang Ming Chiao Tung University,  <sup>2</sup>Google
 
 [[arxiv](https://arxiv.org/abs/2311.17948)] [[Project Page](https://hcis-lab.github.io/Action-slot/)]
 

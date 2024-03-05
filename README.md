@@ -12,10 +12,20 @@
 
 This repository contains code for training and evaluating baselines presented in the paper.
 
-
 ## 🚀 Installation
 
+Follow these steps to install `XSkill`:
+
+1. Create and activate the conda environment:
+   ```
+   pip install -e . 
+   ```
 ## 📦 Datasets Download
+
+**TACO** [One Drive](https://nycu1-my.sharepoint.com/personal/ychen_m365_nycu_edu_tw/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fychen%5Fm365%5Fnycu%5Fedu%5Ftw%2FDocuments%2FTACO&ga=1)
+
+**OATS** [Website](https://usa.honda-ri.com/oats)
+
 
 ## 🌐 Train & Evaluation
 

@@ -2,7 +2,7 @@
 
 **[CVPR 2024] Action-slot: Visual Action-centric Representations for Multi-label Atomic Activity Recognition in Traffic Scenes**
 
-<sup>1</sup>[Chi-Hsi Kung](https://hankkung.github.io/website/),  <sup>1,</sup>[Shu-Wei Lu](),  <sup>2</sup>[Yi-Hsuan Tsai](https://sites.google.com/site/yihsuantsai/),  <sup>1</sup>[Yi-Ting Chen](https://sites.google.com/site/yitingchen0524)
+<sup>1</sup>[Chi-Hsi Kung](https://hankkung.github.io/website/),  <sup>1,</sup>[Shu-Wei Lu](https://www.linkedin.com/in/shu-wei-lu/),  <sup>2</sup>[Yi-Hsuan Tsai](https://sites.google.com/site/yihsuantsai/),  <sup>1</sup>[Yi-Ting Chen](https://sites.google.com/site/yitingchen0524)
 
 <sup>1</sup>National Yang Ming Chiao Tung University,  <sup>2</sup>Google
 

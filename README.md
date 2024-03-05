@@ -6,9 +6,7 @@
 
 <sup>1</sup>National Yang Ming Chioa Tung University,  <sup>2</sup>Google
 
-[[arxiv](https://arxiv.org/abs/2311.17948)]
-
-[[Project Page](https://hcis-lab.github.io/Action-slot/)]
+[[arxiv](https://arxiv.org/abs/2311.17948)] [[Project Page](https://hcis-lab.github.io/Action-slot/)]
 
 This repository contains code for training and evaluating baselines presented in the paper.
 
@@ -19,13 +17,36 @@ Create and activate the conda environment:
    ```
 ## 📦 Datasets Download
 
-**TACO** [One Drive](https://nycu1-my.sharepoint.com/personal/ychen_m365_nycu_edu_tw/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fychen%5Fm365%5Fnycu%5Fedu%5Ftw%2FDocuments%2FTACO&ga=1)
+**TACO** [[One Drive](https://nycu1-my.sharepoint.com/personal/ychen_m365_nycu_edu_tw/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fychen%5Fm365%5Fnycu%5Fedu%5Ftw%2FDocuments%2FTACO&ga=1)]
 
-**OATS** [Website](https://usa.honda-ri.com/oats)
+**OATS** [[Website](https://usa.honda-ri.com/oats)]
 
 
-## 🌐 Train & Evaluation
+## 🌐 Train & Evaluation on TACO
+```
+# Action-slot
+python train_taco.py --dataset taco --root [path_to_TACO] --model_name action_slot --num_slots 64\
+ --bg_slot --bg_mask --action_attn_weight 1 --allocated_slot --bg_attn_weight 0.5
 
+python eval_taco.py --cp [path_to_checkpoint] --root [path_to_TACO] --dataset taco\
+ --model_name action_slot --num_slots 64 --bg_slot --allocated_slot
+
+# X3D
+python train_taco.py --dataset taco --root [path_to_TACO] --model_name x3d 
+
+python eval_taco.py --root [path_to_TACO] --cp [path_to_checkpoint] --dataset taco --model_name x3d 
+```
+
+## 🌐 Train & Evaluation on OATS
+```
+# Action-slot
+python train_oats.py --dataset oats --oats_test_split s1 --model_name action_slot --epochs 50\
+   --num_slots 35 --bg_slot --bg_mask --action_attn_weight 0.1 --allocated_slot\
+   --bg_attn_weight 0.1 --ego_loss_weight 0
+
+python eval_oats.py --cp [path_to_checkpoint] --dataset oats --oats_test_split s3  --root [path_to_dataset]\
+    --model_name action_slot --allocated_slot --backbone x3d-2 --num_slots 35 --bg_slot 
+```
 ## Citation
 ```
 @article{kung2023action,

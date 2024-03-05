@@ -23,17 +23,23 @@ Create and activate the conda environment:
 
 
 ## 🌐 Train & Evaluation on TACO
+Training
 ```
 # Action-slot
 python train_taco.py --dataset taco --root [path_to_TACO] --model_name action_slot --num_slots 64\
  --bg_slot --bg_mask --action_attn_weight 1 --allocated_slot --bg_attn_weight 0.5
 
+# X3D
+python train_taco.py --dataset taco --root [path_to_TACO] --model_name x3d 
+```
+
+Evaluation
+```
+# Action-slot
 python eval_taco.py --cp [path_to_checkpoint] --root [path_to_TACO] --dataset taco\
  --model_name action_slot --num_slots 64 --bg_slot --allocated_slot
 
 # X3D
-python train_taco.py --dataset taco --root [path_to_TACO] --model_name x3d 
-
 python eval_taco.py --root [path_to_TACO] --cp [path_to_checkpoint] --dataset taco --model_name x3d 
 ```
 
@@ -60,15 +66,20 @@ python train_nuscenes.py --pretrain taco --root [path]/nuscenes/trainval/samples
    --model_name action_slot --num_slots 64 --bg_slot --bg_mask --action_attn_weight 1\
    --allocated_slot --bg_attn_weight 0.5 --bce_pos_weight 20 --root /media/hcis-s20/SRL/nuscenes/trainval/samples
 
-
 # transfer learning: OATS -> nuScenes
 python train_nuscenes.py --pretrain oats --root [path]/nuscenes/trainval/samples --cp [path_to_checkpoint] --dataset nuscenes\
    --model_name action_slot--num_slots 64 --bg_slot --bg_mask --action_attn_weight 1 --allocated_slot --bg_attn_weight 0.5\
    --bce_pos_weight 15  
 ```
 
-## Citation
+## 📊 Attention Visualization
 ```
+python eval_taco.py --cp [path_to_checkpoint] --plot --dataset taco --root [path]/nuscenes/trainval/samples\
+    --model_name action_slot --num_slots 64 --bg_slot --allocated_slot --plot_threshold 0.5 
+```
+
+## Citation
+
 @article{kung2023action,
   title={Action-slot: Visual Action-centric Representations for Multi-label Atomic Activity Recognition in Traffic Scenes},
   author={Kung, Chi-Hsi and Lu, Shu-Wei and Tsai, Yi-Hsuan and Chen, Yi-Ting},

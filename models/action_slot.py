@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 import torch.nn.functional as F
-from classifier import Head, Instance_Head
+from classifier import Head, Allocated_Head
 from pytorchvideo.models.hub import i3d_r50
 from pytorchvideo.models.hub import csn_r101
 from pytorchvideo.models.hub import mvit_base_16x4
@@ -214,7 +214,7 @@ class ACTION_SLOT(nn.Module):
                 self.resolution3d = (4, 8, 24)
             
         if args.allocated_slot:
-            self.head = Instance_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)
+            self.head = Allocated_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)
         else:
             self.head = Head(self.slot_dim, num_ego_class, num_actor_class+1, self.ego_c)
 
@@ -224,7 +224,7 @@ class ACTION_SLOT(nn.Module):
                     nn.BatchNorm3d(self.in_c),
                     nn.Conv3d(self.in_c, self.ego_c, (1, 1, 1), stride=1),
                     )
-        if args.backbone == 'inception' or args.backbone == 'r50':
+        if args.backbone == 'r50':
             self.conv3d = nn.Sequential(
                     nn.ReLU(),
                     nn.BatchNorm3d(self.in_c),

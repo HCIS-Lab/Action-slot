@@ -1,14 +1,4 @@
 import torch
-
-
-# B, C, T, H, W = 2, 3, 8, 224, 224
-# input_tensor1 = torch.zeros(B, C, T, H, W)
-# B, C, T, H, W = 2, 3, 32, 224, 224
-# input_tensor2 = torch.zeros(B, C, T, H, W)
-# input_tensor = [input_tensor1, input_tensor2]
-# output = model(input_tensor)
-
-import torch
 import torch.nn as nn
 import torchvision.models as models
 import torch.nn.functional as F

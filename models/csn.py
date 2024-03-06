@@ -2,21 +2,10 @@ import pytorchvideo.models as models
 
 import torch
 import torch.nn as nn
-# import torchvision.models as models
 import torch.nn.functional as F
 from classifier import Head
 
 from pytorchvideo.models.hub import csn_r101
-
-# model = models.create_csn()
-
-
-# model.load_state_dict(torch.load(PATH))
-#         # self.model = torch.hub.load('facebookresearch/pytorchvideo', 'slowfast_r50', pretrained=True)
-# for i, b in enumerate(csn.blocks):
-#     print(i)
-#     print(b)
-
 
 class CSN(nn.Module):
     def __init__(self, num_ego_class, num_actor_class):

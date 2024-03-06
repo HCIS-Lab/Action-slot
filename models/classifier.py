@@ -31,7 +31,7 @@ class Head(nn.Module):
 				y_ego = self.fc_ego(x)
 		return y_ego, y_actor
 
-class Instance_Head(nn.Module):
+class Allocated_Head(nn.Module):
 	def __init__(self, in_channel, num_ego_classes, num_actor_classes, ego_channel=0):
 		super(Instance_Head, self).__init__()
 		self.num_ego_classes = num_ego_classes

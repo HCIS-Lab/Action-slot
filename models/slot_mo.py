@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 import torch.nn.functional as F
-from classifier import Head, Instance_Head
+from classifier import Head, Allocated_Head
 from pytorchvideo.models.hub import i3d_r50
 import inception
 
@@ -194,7 +194,7 @@ class SLOT_MO(nn.Module):
                 self.resolution3d = (16, 8, 24)
 
         if args.allocated_slot:
-            self.head = Instance_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)
+            self.head = Allocated_Head(self.slot_dim, num_ego_class, num_actor_class, self.ego_c)
         else:
             self.head = Head(self.slot_dim, num_ego_class, num_actor_class+1, self.ego_c)
 

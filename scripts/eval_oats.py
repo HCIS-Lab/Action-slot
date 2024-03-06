@@ -1,66 +1,39 @@
-import torch.nn as nn
-import numpy as np
-import torch
-import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
-import cv2
-import torch.nn.functional as F
-import os
-
-
 import argparse
 import json
 import os
-from tqdm import tqdm
+import sys
 
-import numpy as np
+import cv2
 import torch
+import torch.nn as nn
+import numpy as np
 import torch.optim as optim
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-import torch.nn.functional as F
-import torch.nn as nn
+from torchvision import models
+from sklearn.metrics import average_precision_score, precision_score, recall_score, accuracy_score, hamming_loss
+from PIL import Image, ImageDraw
+from matplotlib.patches import Polygon
+from tqdm import tqdm
+from scipy.optimize import linear_sum_assignment
+import matplotlib.pyplot as plt
+import matplotlib.image
 
-torch.backends.cudnn.benchmark = True
 
-import sys
-sys.path.append('/media/hankung/ssd/Action-Slot/datasets')
-sys.path.append('/media/hankung/ssd/Action-Slot/config')
-sys.path.append('/media/hankung/ssd/Action-Slot/models')
+import oats
+from model import generate_model
+from utils import *
+from parser_eval import get_eval_parser
 
-sys.path.append('/media/hcis-s19/DATA/Action-Slot/datasets')
-sys.path.append('/media/hcis-s19/DATA/Action-Slot/config')
-sys.path.append('/media/hcis-s19/DATA/Action-Slot/models')
 
-sys.path.append('/media/hcis-s20/SRL/Action-Slot/datasets')
-sys.path.append('/media/hcis-s20/SRL/Action-Slot/configs')
-sys.path.append('/media/hcis-s20/SRL/Action-Slot/models')
-
-sys.path.append('/media/hcis-s16/hank/Action-Slot/datasets')
-sys.path.append('/media/hcis-s16/hank/Action-Slot/configs')
-sys.path.append('/media/hcis-s16/hank/Action-Slot/models')
-
-sys.path.append('/media/user/data/Action-Slot/datasets')
-sys.path.append('/media/user/data/Action-Slot/configs')
-sys.path.append('/media/user/data/Action-Slot/models')
+sys.path.append('../datasets')
+sys.path.append('../configs')
+sys.path.append('../models')
 
 os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH")
 
-
-# from .configs.config import GlobalConfig
-import oats
-
-from sklearn.metrics import average_precision_score, precision_score, recall_score, accuracy_score, hamming_loss
-
-from PIL import Image, ImageDraw
-
-from model import generate_model
-from utils import *
-from torchvision import models
-import matplotlib.image
-from scipy.optimize import linear_sum_assignment
-from parser_eval import get_eval_parser
-
+torch.backends.cudnn.benchmark = True
 
 actor_table = ['c:z1-z2', 'c:z1-z3', 'c:z1-z4',
                 'c:z2-z1', 'c:z2-z3', 'c:z2-z4',

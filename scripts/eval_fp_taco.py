@@ -1,19 +1,8 @@
-import torch.nn as nn
-import numpy as np
-import torch
-import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
-import cv2
-import torch.nn.functional as F
-import os
-from hsluv import hsluv_to_rgb
-
-
 import argparse
 import json
 import os
-from tqdm import tqdm
 
+import cv2
 import numpy as np
 import torch
 import torch.optim as optim
@@ -21,28 +10,32 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import torch.nn.functional as F
 import torch.nn as nn
+from torchvision import models
+from tqdm import tqdm
+from hsluv import hsluv_to_rgb
+from matplotlib.patches import Polygon
+import matplotlib.pyplot as plt
+from PIL import Image, ImageDraw
+import matplotlib.image
+from scipy.optimize import linear_sum_assignment
 
-torch.backends.cudnn.benchmark = True
+
 
 import sys
-sys.path.append('/media/hankung/ssd/Action-Slot/datasets')
-sys.path.append('/media/hankung/ssd/Action-Slot/config')
-sys.path.append('/media/hankung/ssd/Action-Slot/models')
+
+
+import taco_fp
+from model import generate_model
+from utils import *
+from parser_eval import get_eval_parser
+
+sys.path.append('../datasets')
+sys.path.append('../configs')
+sys.path.append('../models')
 
 os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH")
 
-
-# from .configs.config import GlobalConfig
-import taco_fp
-
-from PIL import Image, ImageDraw
-
-from model import generate_model
-from utils import *
-from torchvision import models
-import matplotlib.image
-from scipy.optimize import linear_sum_assignment
-from parser_eval import get_eval_parser
+torch.backends.cudnn.benchmark = True
 
 
 actor_table = ['c:z1-z2', 'c:z1-z3', 'c:z1-z4',

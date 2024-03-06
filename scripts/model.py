@@ -3,16 +3,9 @@ from torch import nn
 import numpy as np
 
 import sys
-sys.path.append('/media/hcis-s16/hank/Action-Slot/models')
-sys.path.append('/media/hcis-s20/SRL/action-slot/models')
-sys.path.append('/media/hankung/ssd/Action-Slot/models')
-sys.path.append('/media/hcis-s19/DATA/Action-Slot/models')
-sys.path.append('/media/user/data/Action-Slot/models')
-
+sys.path.append('PATH_TO/Action-Slot/models')
 
 import vivit
-import res3d
-import i3d
 import i3d_kinetics
 import x3d
 import csn
@@ -20,14 +13,12 @@ import mvit
 import slowfast
 import action_slot
 import slot_vps
-import slot_seg
 import slot_mo
 import slot_savi
 import ARG
 import ORN
 import action_slot_query
-import segment
-from classifier import Head, Instance_Head
+from classifier import Head, Allocated_Head
 
 from timm.models import create_model
 from collections import OrderedDict
@@ -42,15 +33,6 @@ def generate_model(args, num_ego_class, num_actor_class):
     seq_len = args.seq_len
     if model_name == 'vivit':
         model = vivit.ViViT((256, 768), 16, seq_len, num_ego_class, num_actor_class)
-    elif model_name == '3dres':
-        model = res3d.ResNet3D(num_ego_class=num_ego_class, num_actor_class=num_actor_class)
-        model = load_pretrained_model(model, num_ego_class, num_actor_class)
-        for t in model.parameters():
-              t.requires_grad=False
-        for t in model.head.parameters():
-            t.requires_grad=True
-        for t in model.layer4.parameters():
-            t.requires_grad=True
 
     elif model_name == 'i3d':
         model = i3d_kinetics.I3D_KINETICS(num_ego_class, num_actor_class)
@@ -123,19 +105,7 @@ def generate_model(args, num_ego_class, num_actor_class):
         for t in model.parameters():
             t.requires_grad=True
 
-        if args.backbone == 'inception':
-            for t in model.resnet.parameters():
-                t.requires_grad=False
-            for t in model.resnet.blocks[-1].parameters():
-                t.requires_grad=True
-            for t in model.resnet.blocks[-2].parameters():
-                t.requires_grad=True
-            for t in model.resnet.blocks[-3].parameters():
-                t.requires_grad=True
-        elif args.backbone == 'i3d_inception':
-            for t in model.parameters():
-                t.requires_grad=True
-        elif args.backbone == 'r50':
+        if args.backbone == 'r50':
             for t in model.resnet.parameters():
                 t.requires_grad=False
             for t in model.resnet.blocks[-1].parameters():
@@ -164,37 +134,34 @@ def generate_model(args, num_ego_class, num_actor_class):
         for t in model.parameters():
             t.requires_grad=True
 
-        if args.backbone !='inception':
-            for t in model.resnet.parameters():
-                t.requires_grad=False
-            for t in model.resnet[-1].parameters():
-                t.requires_grad=True
-            for t in model.resnet[-2].parameters():
-                t.requires_grad=True
+        for t in model.resnet.parameters():
+            t.requires_grad=False
+        for t in model.resnet[-1].parameters():
+            t.requires_grad=True
+        for t in model.resnet[-2].parameters():
+            t.requires_grad=True
 
     elif model_name == 'slot_mo':
         model = slot_mo.SLOT_MO(args, num_ego_class, num_actor_class, args.num_slots)
         for t in model.parameters():
             t.requires_grad=True
-        if args.backbone != 'inception':
-            for t in model.resnet.parameters():
-                t.requires_grad=False
-            for t in model.resnet[-1].parameters():
-                t.requires_grad=True
-            for t in model.resnet[-2].parameters():
-                t.requires_grad=True
+        for t in model.resnet.parameters():
+            t.requires_grad=False
+        for t in model.resnet[-1].parameters():
+            t.requires_grad=True
+        for t in model.resnet[-2].parameters():
+            t.requires_grad=True
 
     elif model_name == 'slot_savi':
         model = slot_savi.SLOT_SAVI(args, num_ego_class, num_actor_class, args.num_slots)
         for t in model.parameters():
             t.requires_grad=True
-        if args.backbone !='inception':
-            for t in model.resnet.parameters():
-                t.requires_grad=False
-            for t in model.resnet[-1].parameters():
-                t.requires_grad=True
-            for t in model.resnet[-2].parameters():
-                t.requires_grad=True
+        for t in model.resnet.parameters():
+            t.requires_grad=False
+        for t in model.resnet[-1].parameters():
+            t.requires_grad=True
+        for t in model.resnet[-2].parameters():
+            t.requires_grad=True
 
     elif model_name == 'ARG' or model_name == 'ORN':
         if model_name == 'ARG':

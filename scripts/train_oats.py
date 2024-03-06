@@ -14,35 +14,10 @@ import torch.nn as nn
 torch.backends.cudnn.benchmark = True
 
 import sys
-# sys.path.append('/media/hankung/ssd/Action-Slot/datasets')
-# sys.path.append('/media/hankung/ssd/Action-Slot/config')
-# sys.path.append('/media/hankung/ssd/Action-Slot/models')
-
-# sys.path.append('/work/u8526971/retrieval/datasets')
-# sys.path.append('/work/u8526971/retrieval/config')
-# sys.path.append('/work/u8526971/retrieval/models')
-
-
-# sys.path.append('/media/hcis-s19/DATA/Action-Slot/datasets')
-# sys.path.append('/media/hcis-s19/DATA/Action-Slot/config')
-# sys.path.append('/media/hcis-s19/DATA/Action-Slot/models')
-
-# # sys.path.append('/home/hcis-s20/Desktop/retrieval/datasets')
-# # sys.path.append('/home/hcis-s20/Desktop/retrieval/config')
-# # sys.path.append('/home/hcis-s20/Desktop/retrieval/models')
-
-# sys.path.append('/media/hcis-s20/SRL/Action-Slot/datasets')
-# sys.path.append('/media/hcis-s20/SRL/Action-Slot/configs')
-# sys.path.append('/media/hcis-s20/SRL/Action-Slot/models')
-
-# sys.path.append('/media/hcis-s16/hank/Action-Slot/datasets')
-# sys.path.append('/media/hcis-s16/hank/Action-Slot/configs')
-# sys.path.append('/media/hcis-s16/hank/Action-Slot/models')
 
 sys.path.append('../datasets')
 sys.path.append('../configs')
 sys.path.append('../models')
-
 
 
 import oats

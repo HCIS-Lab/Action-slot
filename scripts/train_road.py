@@ -18,17 +18,7 @@ sys.path.append('/media/hankung/ssd/retrieval/datasets')
 sys.path.append('/media/hankung/ssd/retrieval/config')
 sys.path.append('/media/hankung/ssd/retrieval/models')
 
-sys.path.append('/work/u8526971/retrieval/datasets')
-sys.path.append('/work/u8526971/retrieval/config')
-sys.path.append('/work/u8526971/retrieval/models')
 
-sys.path.append('/home/hcis-s19/Desktop/retrieval/datasets')
-sys.path.append('/home/hcis-s19/Desktop/retrieval/config')
-sys.path.append('/home/hcis-s19/Desktop/retrieval/models')
-
-sys.path.append('/home/hcis-s20/Desktop/retrieval/datasets')
-sys.path.append('/home/hcis-s20/Desktop/retrieval/config')
-sys.path.append('/home/hcis-s20/Desktop/retrieval/models')
 
 import road_dataset
 

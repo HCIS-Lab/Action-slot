@@ -2,7 +2,7 @@
 
 **[CVPR 2024] Action-slot: Visual Action-centric Representations for Multi-label Atomic Activity Recognition in Traffic Scenes**
 
-<sup>1</sup>[Chi-Hsi Kung](https://hankkung.github.io/website/),  <sup>1,</sup>[Shu-Wei Lu](),  <sup>2</sup>[Yi-Hsuan Tsai](https://sites.google.com/site/yihsuantsai/),  <sup>1</sup>[Yi-Ting Chen](https://sites.google.com/site/yitingchen0524)
+<sup>1</sup>[Chi-Hsi Kung](https://hankkung.github.io/website/),  <sup>1,</sup>[Shu-Wei Lu](https://www.linkedin.com/in/shu-wei-lu/),  <sup>2</sup>[Yi-Hsuan Tsai](https://sites.google.com/site/yihsuantsai/),  <sup>1</sup>[Yi-Ting Chen](https://sites.google.com/site/yitingchen0524)
 
 <sup>1</sup>National Yang Ming Chiao Tung University,  <sup>2</sup>Google
 
@@ -51,7 +51,7 @@ python train_oats.py --dataset oats --oats_test_split s1 --model_name action_slo
    --bg_attn_weight 0.1 --ego_loss_weight 0
 
 python eval_oats.py --cp [path_to_checkpoint] --dataset oats --oats_test_split s3  --root [path_to_dataset]\
-    --model_name action_slot --allocated_slot --backbone x3d-2 --num_slots 35 --bg_slot 
+    --model_name action_slot --allocated_slot --backbone x3d --num_slots 35 --bg_slot 
 ```
 
 ## 🌐 Train & Evaluation on nuScenes
@@ -73,13 +73,14 @@ python train_nuscenes.py --pretrain oats --root [path]/nuscenes/trainval/samples
 ```
 
 ## 📊 Attention Visualization
+![image](https://github.com/HCIS-Lab/Action-slot/blob/main/img/taco_attn.gif)
 ```
 python eval_taco.py --cp [path_to_checkpoint] --plot --dataset taco --root [path]/nuscenes/trainval/samples\
     --model_name action_slot --num_slots 64 --bg_slot --allocated_slot --plot_threshold 0.5 
 ```
 
 ## Citation
-
+```
 @article{kung2023action,
   title={Action-slot: Visual Action-centric Representations for Multi-label Atomic Activity Recognition in Traffic Scenes},
   author={Kung, Chi-Hsi and Lu, Shu-Wei and Tsai, Yi-Hsuan and Chen, Yi-Ting},

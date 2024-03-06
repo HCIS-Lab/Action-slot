@@ -51,7 +51,7 @@ python train_oats.py --dataset oats --oats_test_split s1 --model_name action_slo
    --bg_attn_weight 0.1 --ego_loss_weight 0
 
 python eval_oats.py --cp [path_to_checkpoint] --dataset oats --oats_test_split s3  --root [path_to_dataset]\
-    --model_name action_slot --allocated_slot --backbone x3d-2 --num_slots 35 --bg_slot 
+    --model_name action_slot --allocated_slot --backbone x3d --num_slots 35 --bg_slot 
 ```
 
 ## 🌐 Train & Evaluation on nuScenes

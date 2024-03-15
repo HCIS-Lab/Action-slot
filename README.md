@@ -85,7 +85,7 @@ python eval_taco.py --cp [path_to_checkpoint] --plot --dataset taco --root [path
 
 ## Citation
 ```
-@article{kung2023action,
+@inproceedings{kung2023action,
   title={Action-slot: Visual Action-centric Representations for Multi-label Atomic Activity Recognition in Traffic Scenes},
   author={Kung, Chi-Hsi and Lu, Shu-Wei and Tsai, Yi-Hsuan and Chen, Yi-Ting},
   journal={IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},

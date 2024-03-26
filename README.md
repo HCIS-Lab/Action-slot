@@ -19,6 +19,10 @@ Create and activate the conda environment:
 
 **TACO** [[One Drive](https://nycu1-my.sharepoint.com/personal/ychen_m365_nycu_edu_tw/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fychen%5Fm365%5Fnycu%5Fedu%5Ftw%2FDocuments%2FTACO&ga=1)]
 
+The TACO dataset consists of 13 folders of videos (scenarios), which are separated based on different maps (e.g., Town01, Town02...) in the CARLA simulator and different collecting methods (i.e., autopilot (AP), scenario runner (runner), and manual collecting [1] (i.e., interactive & non-interactive)). Please refer to the supplementary material for more dataset details.
+
+[1] Kung et al., "RiskBench: A Scenario-based Benchmark for Risk Identification". ICRA 2024.
+
 **OATS** [[Website](https://usa.honda-ri.com/oats)]
 
 
@@ -75,13 +79,13 @@ python train_nuscenes.py --pretrain oats --root [path]/nuscenes/trainval/samples
 ## 📊 Attention Visualization
 ![image](https://github.com/HCIS-Lab/Action-slot/blob/main/img/taco_attn.gif)
 ```
-python eval_taco.py --cp [path_to_checkpoint] --plot --dataset taco --root [path]/nuscenes/trainval/samples\
-    --model_name action_slot --num_slots 64 --bg_slot --allocated_slot --plot_threshold 0.5 
+python eval_taco.py --cp [path_to_checkpoint] --plot --dataset taco --root [path_to_TACO]\
+    --model_name action_slot --num_slots 64 --bg_slot --allocated_slot --plot_threshold 0.2
 ```
 
 ## Citation
 ```
-@article{kung2023action,
+@inproceedings{kung2023action,
   title={Action-slot: Visual Action-centric Representations for Multi-label Atomic Activity Recognition in Traffic Scenes},
   author={Kung, Chi-Hsi and Lu, Shu-Wei and Tsai, Yi-Hsuan and Chen, Yi-Ting},
   journal={IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},

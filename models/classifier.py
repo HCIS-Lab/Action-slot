@@ -33,7 +33,7 @@ class Head(nn.Module):
 
 class Allocated_Head(nn.Module):
 	def __init__(self, in_channel, num_ego_classes, num_actor_classes, ego_channel=0):
-		super(Instance_Head, self).__init__()
+		super(Allocated_Head, self).__init__()
 		self.num_ego_classes = num_ego_classes
 		self.num_actor_classes = num_actor_classes
 		if self.num_ego_classes != 0:

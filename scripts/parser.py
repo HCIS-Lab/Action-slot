@@ -12,7 +12,7 @@ def get_parser():
     
     # model
     parser.add_argument('--model_name', type=str, help='Unique experiment identifier.')
-    parser.add_argument('--backbone', type=str, help="x3d")
+    parser.add_argument('--backbone', type=str, default="x3d")
     parser.add_argument('--num_slots', type=int, default=64, help='')
     parser.add_argument('--seq_len', type=int, default=16, help='')
     parser.add_argument('--allocated_slot', help="", action="store_true")
@@ -28,6 +28,7 @@ def get_parser():
     parser.add_argument('--mask_every_frame', type=int, default=4, help='')
     parser.add_argument('--bg_upsample', type=int, default=4, help='')
     parser.add_argument('--obj_mask', help="", action="store_true")
+    parser.add_argument('--flow', help="", action="store_true")
 
     # action loss
     parser.add_argument('--bce_pos_weight', type=float, default=10, help='')

@@ -6,7 +6,7 @@
 
 [[arxiv](https://arxiv.org/abs/2311.17948)] [[Project Page](https://hcis-lab.github.io/Action-slot/)]
 
-This repository contains code for training and evaluating baselines presented in the paper.
+This repository contains the official code for training and evaluating baselines presented in the paper.
 
 ## 🚀 Installation
 Create and activate the conda environment:

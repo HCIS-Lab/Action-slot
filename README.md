@@ -94,3 +94,4 @@ python eval_taco.py --cp [path_to_checkpoint] --plot --dataset taco --root [path
 ### Acknowledgement
 * Slot attention is adapted from [Discovering Object that Can Move](https://github.com/zpbao/Discovery_Obj_Move)
 * DeepLabV3+ is adapted from [DeepLabV3Plus-Pytorch](https://github.com/VainF/DeepLabV3Plus-Pytorch)
+* VideoMAE is adapted from [VideoMAE](https://github.com/MCG-NJU/VideoMAE?tab=readme-ov-file)

@@ -11,7 +11,6 @@ from tqdm import tqdm
 import sys
 import json 
 import random
-# from tool import get_rot
 import torchvision.transforms as transforms
 
 
@@ -30,13 +29,6 @@ class TACO(Dataset):
                 training=True,
                 root='/data/carla_dataset/data_collection',
                 Max_N=20):
-        # root = '/work/u8526971/data_collection'
-        # root = '/home/hcis-s19/Desktop/data_collection'
-        # root = '/home/hcis-s20/Desktop/data_collection'
-        # root = '/media/hankung/ssd/carla_13/CARLA_0.9.13/PythonAPI/examples/data_collection'
-        # root = '/media/hcis-s16/hank/taco'
-        # root = '/media/hcis-s20/SRL/taco'
-        # root = '/media/user/data/taco'
         root = args.root
 
         self.training = training
@@ -74,7 +66,7 @@ class TACO(Dataset):
         total_frame = 0
         total_videos = 0
 
-        type_list = [
+        folder_list = [
         # scenarios from RikBench
         'interactive', 'non-interactive', 
         # scenarios collected by auto-pilot
@@ -119,14 +111,29 @@ class TACO(Dataset):
 
         label_stat = [c_stat, b_stat, c_plus_stat, b_plus_stat, p_stat, p_plus_stat, ego_stat]
 
-        # ----------------------
-        for t, type in enumerate(type_list):
+        # ------------search dataset-------------
+        # The TACO dataset is construct with 3 different collection:
+        #   1. 'interactive' and 'non-interactive' from RiskBench
+        #   2. 'ap_Townxx' collected by auto-pilot
+        #   3. 'runner_Townxx' collected by the scenario runner
+
+        # - All data collections follow the hierarchy:
+        #       - parant folder (e.g., interactive, ap_Town10HD, or runner_Town05)
+        #           - basic scenario (e.g., 3_t1-2_0_m_f_l_1_0, or t2)
+        #               - various scenario (e.g., 1)
+
+        # - The folder 'interactive' and 'non-interactive' contained various maps, e.g., Town01, ... Town10HD.
+        # - We use Town10HD as the test set. 
+
+        # iterate parent folder
+        for t, type in enumerate(folder_list):
             basic_scenarios = [os.path.join(root, type, s) for s in os.listdir(os.path.join(root, type))]
 
-            # iterate scenarios
-            print('searching data')
+            # iterate basic scenarios
+            print('searching data from '+type+' folder')
             for s in tqdm(basic_scenarios, file=sys.stdout):
-                # a basic scenario
+
+                # extract scenarios for train/test set
                 scenario_id = s.split('/')[-1]
                 if training:
                     if type == 'interactive' or type == 'non-interactive':
@@ -143,18 +150,14 @@ class TACO(Dataset):
                         testing_set = ['ap_Town10HD', 'runner_Town10HD']
                         if not type in testing_set:
                             continue
-
+                # iterate various scenarios
                 variants_path = os.path.join(s, 'variant_scenario')
                 if os.path.isdir(variants_path):
                     variants = [os.path.join(variants_path, v) for v in os.listdir(variants_path)]
                     
                     for v in variants:
-                        # print(v)
                         v_id = v.split('/')[-1]
-                        if 'DS' in v_id:
-                            continue
-
-                        
+                        # extract ground-truth labels
                         if os.path.isfile(v+'/retrieve_gt.txt'):
                             with open(v+'/retrieve_gt.txt') as f:
                                 gt = []
@@ -176,6 +179,8 @@ class TACO(Dataset):
                         else:
                             continue
 
+
+                        # ------------get labels-------------
                         # for object-aware methods
                         if self.args.box:
                             proposal_train_label, gt_ego, gt_actor = get_labels(args, gt, scenario_id, v_id, num_slots=self.Max_N)
@@ -185,6 +190,7 @@ class TACO(Dataset):
                         # for allocated slot-based and video-level methods
                         else:
                             gt_ego, gt_actor = get_labels(args, gt, scenario_id, v_id, num_slots=args.num_slots)
+
 
                         # ------------statistics-------------
                         if torch.count_nonzero(gt_actor) > max_num_label_a_video:
@@ -200,43 +206,12 @@ class TACO(Dataset):
                                 continue
                             if args.ego_motion==4 and gt_ego.data == 0:
                                 continue
+                        
                         if args.val_confusion:
                             if not torch.count_nonzero(gt_actor[-8:]):
                                 continue
-                            confusion_label = {'c1-c2': '', 'c2-c3': '', 'c3-c4': '', 'c4-c1': ''}
-
-                            if gt_actor[12] or gt_actor[14]:
-                                if gt_actor[12] and not gt_actor[14]:
-                                    confusion_label['c1-c2'] = 0
-                                elif not gt_actor[12] and gt_actor[14]:
-                                    confusion_label['c1-c2'] = 1
-                                else:
-                                    confusion_label['c1-c2'] = 2
-
-                            if gt_actor[15] or gt_actor[16]:
-                                if gt_actor[15] and not gt_actor[16]:
-                                    confusion_label['c2-c3'] = 0
-                                elif not gt_actor[15] and gt_actor[16]:
-                                    confusion_label['c2-c3'] = 1
-                                else:
-                                    confusion_label['c2-c3'] = 2
-
-                            if gt_actor[17] or gt_actor[19]:
-                                if gt_actor[17] and not gt_actor[19]:
-                                    confusion_label['c3-c4'] = 0
-                                elif not gt_actor[17] and gt_actor[19]:
-                                    confusion_label['c3-c4'] = 1
-                                else:
-                                    confusion_label['c3-c4'] = 2
-
-                            if gt_actor[18] or gt_actor[13]:
-                                if gt_actor[18] and not gt_actor[13]:
-                                    confusion_label['c4-c1'] = 0
-                                elif not gt_actor[18] and gt_actor[13]:
-                                    confusion_label['c4-c1'] = 1
-                                else:
-                                    confusion_label['c4-c1'] = 2
-
+                            else:
+                                confusion_label = confusion_label_search(gt_actor)
 
                         video_folder = ['downsampled/', 'downsampled_224/']
                         if args.model_name == 'mvit' or args.model_name == 'videoMAE':
@@ -284,9 +259,7 @@ class TACO(Dataset):
                                     seg_temp.append(v+"/mask/background/"+segname)
                                 if os.path.isfile(v+"/mask/object/"+objname):
                                     obj_temp.append(v+"/mask/object/"+objname)
-                                # if self.box:
-                                #     if os.path.isfile(v+"/bbox/front/"+boxname):
-                                #         box_temp.append(v+"/bbox/front/"+boxname)
+
                                 if len(videos_temp) == self.seq_len and len(seg_temp) == self.seq_len and len(obj_temp) == self.seq_len:
                                     break
 
@@ -296,17 +269,13 @@ class TACO(Dataset):
                                 if len(seg_temp) == self.seq_len:
                                     segs.append(seg_temp)
                                     obj_f.append(obj_temp)
-                                # if len(box_temp) == seq_len:
-                                #     boxes.append(box_temp)
-
 
                         if len(videos) == 0 or len(segs) ==0 or len(obj_f)==0:
                             continue
-
                         if len(segs)!=len(videos):
                             continue
 
-                        # -----
+                        # ------------calculate dataset stat-------------
                         ego_class = 'e:z1-z1'
                         for g in gt:
                             g = g.lower()
@@ -334,20 +303,18 @@ class TACO(Dataset):
                                         return
 
                         label_stat[6][ego_class] +=1
+                        # -------------------------
 
                         self.maps.append(type)
                         self.id.append(s.split('/')[-1])
                         self.variants.append(v.split('/')[-1])
-                        print(s.split('/')[-1])
-                        print(v.split('/')[-1])
-                        print('---------')
                         self.videos_list.append(videos)
                         self.idx.append(idx)
                         self.seg_list.append(segs)
                         self.obj_seg_list.append(obj_f)
-
                         self.gt_ego.append(gt_ego)
                         
+
                         if ('slot' in args.model_name and not args.allocated_slot) or args.box:
                             self.gt_actor.append(proposal_train_label)
                             self.slot_eval_gt.append(gt_actor)
@@ -397,6 +364,42 @@ class TACO(Dataset):
         print('total_videos: '+ str(total_videos))
         
 
+    def confusion_label_search(self, gt_actor):
+        confusion_label = {'c1-c2': '', 'c2-c3': '', 'c3-c4': '', 'c4-c1': ''}
+
+        if gt_actor[12] or gt_actor[14]:
+            if gt_actor[12] and not gt_actor[14]:
+                confusion_label['c1-c2'] = 0
+            elif not gt_actor[12] and gt_actor[14]:
+                confusion_label['c1-c2'] = 1
+            else:
+                confusion_label['c1-c2'] = 2
+
+        if gt_actor[15] or gt_actor[16]:
+            if gt_actor[15] and not gt_actor[16]:
+                confusion_label['c2-c3'] = 0
+            elif not gt_actor[15] and gt_actor[16]:
+                confusion_label['c2-c3'] = 1
+            else:
+                confusion_label['c2-c3'] = 2
+
+        if gt_actor[17] or gt_actor[19]:
+            if gt_actor[17] and not gt_actor[19]:
+                confusion_label['c3-c4'] = 0
+            elif not gt_actor[17] and gt_actor[19]:
+                confusion_label['c3-c4'] = 1
+            else:
+                confusion_label['c3-c4'] = 2
+
+        if gt_actor[18] or gt_actor[13]:
+            if gt_actor[18] and not gt_actor[13]:
+                confusion_label['c4-c1'] = 0
+            elif not gt_actor[18] and gt_actor[13]:
+                confusion_label['c4-c1'] = 1
+            else:
+                confusion_label['c4-c1'] = 2
+        return confusion_label
+
     def parse_tracklets_detection(self):
         """
             read {scenario}/tracking_pred_2/tracks/front.txt
@@ -421,8 +424,6 @@ class TACO(Dataset):
             root = data[0][0].split('/')
             root = root[:-3]
             root = '/'+os.path.join(*root)
-            # if not os.path.isdir(os.path.join(root,'tracks_pred')):
-            #     os.mkdir(os.path.join(root,'tracks_pred'))
             f = open(os.path.join(root,'tracks','pred','downsampled.txt'))
             tracklet = f.readlines()
             # parse_tracklet
@@ -507,17 +508,6 @@ class TACO(Dataset):
                             count += 1
                         out[j][obj_id_dict[obj_id]] = box
                 np.save(os.path.join(root,'tracks','gt','%s' % (i)),out)
-            
-                # if not os.path.isdir(os.path.join(root,'tracks')):
-                #     os.mkdir(os.path.join(root,'tracks'))
-                # for img in sample:
-                #     # read bbox
-                #     box_path = parse_file_name(img)
-                #     f = open(box_path)
-                #     track = json.load(f)
-                #     temp.append(track)
-                #     f.close()
-                # parse_tracklet(temp,root,i)
             self.max_num_obj.append(count)
 
     def tracklet_counter(self):
@@ -649,29 +639,6 @@ class TACO(Dataset):
             data['confusion_label'] = self.confusion_label_list[index]
         return data
 
-# def get_stuff_mask(seg_path):
-#     img = cv2.imread(os.path.join(seg_path), cv2.IMREAD_COLOR)
-#     img = torch.flip(torch.from_numpy(img).type(torch.int).permute(2,0,1),[0])
-
-#     condition = img[0] == 4 
-#     condition += img[0] == 6
-#     condition += img[0] == 7
-#     condition += img[0] == 8
-#     condition += img[0] == 10
-#     condition += img[0] == 14
-#     condition = ~condition
-#     condition = condition.type(torch.int)
-#     condition = condition.type(torch.float32)
-
-    # return condition
-
-# def get_stuff_mask(seg_path):
-#     img = cv2.imread(os.path.join(seg_path), cv2.IMREAD_GRAYSCALE)
-#     img = torch.flip(torch.from_numpy(img).type(torch.int).permute(2,0,1),[0])
-
-#     condition = condition.type(torch.float32)
-
-#     return condition
 
 def get_obj_mask(obj_path):
     obj_masks = np.load(obj_path)
@@ -685,9 +652,6 @@ def get_obj_mask(obj_path):
     pad_num = 64 - obj_masks.shape[0]
     obj_masks = torch.cat((obj_masks, torch.zeros([pad_num, 32, 96], dtype=torch.int32)), dim=0)
     obj_masks = obj_masks.type(torch.float32)
-    # obj_masks = torch.reshape(obj_masks, (-1, 1, 32, 96))
-    # obj_masks = F.interpolate(obj_masks, size=(8,24))
-    # obj_masks = torch.reshape(obj_masks, (-1, 8, 24))
 
     return obj_masks
 
@@ -835,6 +799,6 @@ def get_labels(args, gt_list, s_id, v_id, num_slots=64):
         actor_class = torch.FloatTensor(actor_class)
         return proposal_train_label, ego_label, actor_class
     else:
-        # actor_class = torch.FloatTensor(actor_class)
+        actor_class = torch.FloatTensor(actor_class)
         return ego_label, actor_class
     

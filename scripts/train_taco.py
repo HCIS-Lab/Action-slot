@@ -473,9 +473,9 @@ if __name__ == '__main__':
     num_ego_class = 4
     num_actor_class = 64
 
-
-    # Data
+    print('initialize train set')
     train_set = TACO(args=args)
+    print('initialize test set')
     val_set = TACO(args=args, training=False)
     label_stat = []
     for i in range(7):
@@ -498,8 +498,8 @@ if __name__ == '__main__':
     print(label_stat[5])
     print('ego_stat')
     print(label_stat[6])
-        
-    dataloader_train = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)
+
+    dataloader_train = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)    
     dataloader_val = DataLoader(val_set, batch_size=1, shuffle=False, num_workers=args.num_workers, pin_memory=True, drop_last=True)
     # Model
     model = generate_model(args, num_ego_class, num_actor_class).cuda()

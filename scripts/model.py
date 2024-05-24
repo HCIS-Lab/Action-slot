@@ -3,7 +3,7 @@ from torch import nn
 import numpy as np
 
 import sys
-sys.path.append('PATH_TO/Action-Slot/models')
+sys.path.append('../models')
 
 import i3d_kinetics
 import x3d

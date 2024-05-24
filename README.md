@@ -11,8 +11,10 @@ This repository contains the official code for training and evaluating baselines
 ## 🚀 Installation
 Create and activate the conda environment:
    ```
-   pip install -e . 
+   conda create --name action_slot python=3.7
+   pip install -r requirements.txt
    ```
+
 ## 📦 Datasets Download
 
 **TACO** [[One Drive](https://nycu1-my.sharepoint.com/personal/ychen_m365_nycu_edu_tw/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fychen%5Fm365%5Fnycu%5Fedu%5Ftw%2FDocuments%2FTACO&ga=1)]

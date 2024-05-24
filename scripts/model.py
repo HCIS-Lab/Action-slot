@@ -5,7 +5,6 @@ import numpy as np
 import sys
 sys.path.append('PATH_TO/Action-Slot/models')
 
-import vivit
 import i3d_kinetics
 import x3d
 import csn

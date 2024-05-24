@@ -157,6 +157,22 @@ class TACO(Dataset):
                         
                         if os.path.isfile(v+'/retrieve_gt.txt'):
                             with open(v+'/retrieve_gt.txt') as f:
+                                gt = []
+                                for line in f:
+                                    line = line.replace('\n', '')
+                                    if line != '\n':
+                                        gt.append(line)
+
+                                gt = list(set(gt))
+                                if 'None' in gt:
+                                    gt.remove('None')
+                                if not 'x' in gt:
+                                    if not 'n' in gt:
+                                        print('no x')
+                                        print(v)
+                                    continue
+                                else:
+                                    gt.remove('x')
                         else:
                             continue
 
@@ -322,7 +338,9 @@ class TACO(Dataset):
                         self.maps.append(type)
                         self.id.append(s.split('/')[-1])
                         self.variants.append(v.split('/')[-1])
-
+                        print(s.split('/')[-1])
+                        print(v.split('/')[-1])
+                        print('---------')
                         self.videos_list.append(videos)
                         self.idx.append(idx)
                         self.seg_list.append(segs)
@@ -817,6 +835,6 @@ def get_labels(args, gt_list, s_id, v_id, num_slots=64):
         actor_class = torch.FloatTensor(actor_class)
         return proposal_train_label, ego_label, actor_class
     else:
-        actor_class = torch.FloatTensor(actor_class)
+        # actor_class = torch.FloatTensor(actor_class)
         return ego_label, actor_class
     

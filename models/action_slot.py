@@ -117,8 +117,6 @@ class SlotAttention(nn.Module):
 
     def forward(self, inputs, num_slots = None):
         b, nf, h, w, d = inputs.shape
-        slots_out = []
-        attns = []
         slots = self.slots.expand(b,-1,-1)
         slots_out, attns = self.get_3d_slot(slots, inputs)
         # b, n, c
@@ -268,7 +266,6 @@ class ACTION_SLOT(nn.Module):
         self.drop = nn.Dropout(p=0.5)         
         self.pool = nn.AdaptiveAvgPool3d(output_size=1)
 
-
     def forward(self, x, box=False):
         seq_len = len(x)
         batch_size = x[0].shape[0]
@@ -346,6 +343,8 @@ class ACTION_SLOT(nn.Module):
         # b, l, n, h, w
         attn_masks = torch.reshape(attn_masks, (b, n, seq_len, new_h, new_w))
         attn_masks = attn_masks.permute((0, 2, 1, 3, 4))
+
+
 
         x = self.drop(x)
         if self.num_ego_class != 0:

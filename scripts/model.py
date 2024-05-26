@@ -21,7 +21,7 @@ from classifier import Head, Allocated_Head
 
 from timm.models import create_model
 from collections import OrderedDict
-import videomae.utils as utils
+# import videomae.utils as utils
 
 # for registering timm create_model
 import modeling_finetune

@@ -474,9 +474,9 @@ if __name__ == '__main__':
     num_actor_class = 64
 
     print('initialize train set')
-    train_set = TACO(args=args)
+    train_set = TACO(args=args, split='train')
     print('initialize test set')
-    val_set = TACO(args=args, training=False)
+    val_set = TACO(args=args, split='val')
     label_stat = []
     for i in range(7):
         label_stat.append({})

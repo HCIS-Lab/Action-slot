@@ -13,25 +13,16 @@ import json
 import random
 import torchvision.transforms as transforms
 
-
-
-def parse_file_name(file_name):
-    name = file_name.split('/')
-    name[-1] = name[-1][:-3] + "json"
-    name[-3] = "bbox"
-    name = '/'+os.path.join(*name)
-    return name
-
 class TACO(Dataset):
 
     def __init__(self, 
                 args,
-                training=True,
+                split='val',
                 root='/data/carla_dataset/data_collection',
                 Max_N=20):
         root = args.root
 
-        self.training = training
+        self.split = split
         self.model_name = args.model_name
         self.seq_len = args.seq_len
 
@@ -126,30 +117,39 @@ class TACO(Dataset):
         # - We use Town10HD as the test set. 
 
         # iterate parent folder
-        for t, type in enumerate(folder_list):
-            basic_scenarios = [os.path.join(root, type, s) for s in os.listdir(os.path.join(root, type))]
+        for t, folder in enumerate(folder_list):
+            basic_scenarios = [os.path.join(root, folder, s) for s in os.listdir(os.path.join(root, folder))]
 
             # iterate basic scenarios
-            print('searching data from '+type+' folder')
+            print('searching data from '+folder+' folder')
             for s in tqdm(basic_scenarios, file=sys.stdout):
 
-                # extract scenarios for train/test set
+                # extract scenarios for train/val/test set
                 scenario_id = s.split('/')[-1]
-                if training:
-                    if type == 'interactive' or type == 'non-interactive':
-                        if scenario_id.split('_')[0] == '10':
+                if split == 'train':
+                    if folder == 'interactive' or folder == 'non-interactive':
+                        if scenario_id.split('_')[0] == '10' or scenario_id.split('_')[0] == '3': 
                             continue
                     else:
-                        if type == 'ap_Town10HD' or type == 'runner_Town10HD':
+                        if folder == 'ap_Town03' or folder == 'runner_Town03' or folder == 'ap_Town10HD' or folder == 'runner_Town10HD':
                             continue
-                else:
-                    if type == 'interactive' or type == 'non-interactive':
+                elif split == 'val':
+                    if folder == 'interactive' or folder == 'non-interactive':
+                        if scenario_id.split('_')[0] != '3':
+                            continue
+                    else:
+                        testing_set = ['ap_Town03', 'runner_Town03']
+                        if not folder in testing_set:
+                            continue
+                elif split == 'test':
+                    if folder == 'interactive' or folder == 'non-interactive':
                         if scenario_id.split('_')[0] != '10':
                             continue
                     else:
                         testing_set = ['ap_Town10HD', 'runner_Town10HD']
-                        if not type in testing_set:
+                        if not folder in testing_set:
                             continue
+
                 # iterate various scenarios
                 variants_path = os.path.join(s, 'variant_scenario')
                 if os.path.isdir(variants_path):
@@ -305,7 +305,7 @@ class TACO(Dataset):
                         label_stat[6][ego_class] +=1
                         # -------------------------
 
-                        self.maps.append(type)
+                        self.maps.append(folder)
                         self.id.append(s.split('/')[-1])
                         self.variants.append(v.split('/')[-1])
                         self.videos_list.append(videos)
@@ -592,7 +592,7 @@ class TACO(Dataset):
         if ('slot' in self.args.model_name and not self.args.allocated_slot) or self.args.box:
             data['slot_eval_gt'] = self.slot_eval_gt[index]
 
-        if self.training:
+        if self.split =='train':
             sample_idx = random.randint(0, len(self.videos_list[index])-1)
         else:
             sample_idx = len(self.videos_list[index])//2
@@ -622,7 +622,7 @@ class TACO(Dataset):
             data['videos'].append(x)
             if self.args.plot:
                 data['raw'].append(x)
-            if self.training:
+            if self.split =='train':
                 if self.args.bg_mask:
                     if self.args.bg_mask and i %self.args.mask_every_frame == 0:
                         data['bg_seg'].append(Image.open(seq_seg[i]).convert('L'))
@@ -654,19 +654,6 @@ def get_obj_mask(obj_path):
     obj_masks = obj_masks.type(torch.float32)
 
     return obj_masks
-
-def read_box(box_path):
-    f = open(box_path)
-    box = json.load(f)
-    box_list = []
-    for b in box:
-        v = list(b.values())[0]
-        norm_box = [v[0]/512, v[2]/512, v[1]/1536, v[3]/1536]
-        box_list.append(torch.FloatTensor(norm_box))
-    while (len(box_list)<35):
-        box_list.append(torch.FloatTensor([0, 0, 0, 0]))
-    box_list = torch.stack(box_list, dim=0)
-    return box_list
 
 
 def scale(image, scale=2.0, model_name=None):

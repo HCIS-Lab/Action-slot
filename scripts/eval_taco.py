@@ -22,6 +22,9 @@ from torch.utils.tensorboard import SummaryWriter
 from sklearn.metrics import average_precision_score, precision_score, recall_score, accuracy_score, hamming_loss
 from PIL import Image, ImageDraw
 
+sys.path.append('../datasets')
+sys.path.append('../configs')
+sys.path.append('../models')
 
 import taco
 from model import generate_model
@@ -30,9 +33,7 @@ from parser_eval import get_eval_parser
 
 torch.backends.cudnn.benchmark = True
 
-sys.path.append('../datasets')
-sys.path.append('../configs')
-sys.path.append('../models')
+
 os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH")
 
 
@@ -500,10 +501,7 @@ class Engine(object):
                         print('skip')
                         num_selected_sample +=1
                         continue
-                    # if self.args.num_objects == 21 and max_num_obj < 21:
-                    #     print('skip')
-                    #     num_selected_sample +=1
-                    #     continue
+
 
                 map = data['map'][0]
                 id = data['id'][0]
@@ -688,7 +686,7 @@ num_ego_class = 4
 num_actor_class = 64
 
 # Data
-val_set = taco.TACO(args=args, training=False)
+val_set = taco.TACO(args=args, split='val')
 dataloader_val = DataLoader(val_set, batch_size=1, shuffle=False, num_workers=4, pin_memory=True, drop_last=True)
 
 model = generate_model(args, num_ego_class, num_actor_class).cuda()

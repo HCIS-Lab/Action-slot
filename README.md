@@ -10,7 +10,7 @@ This repository contains the official code for training and evaluating baselines
 
 ## :fire: News
 - **`2024/05/26`**: **Code** for the **Atomic Activity Recognition Challenge** is released!
-- **`2024/04/12`**: [**Challenge for Atomic Activity Recognition**] (https://sites.google.com/view/road-eccv2024/home?authuser=0) got accepted by **ECCV 2024**!
+- **`2024/04/12`**: **[Challenge for Atomic Activity Recognition(https://sites.google.com/view/road-eccv2024/home?authuser=0)]**  got accepted by **ECCV 2024**!
 - **`2024/02/27`**: Action-slot got accepted by **CVPR 2024**!
 
 ## 🚀 Installation

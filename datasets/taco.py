@@ -622,7 +622,7 @@ class TACO(Dataset):
             data['videos'].append(x)
             if self.args.plot:
                 data['raw'].append(x)
-            if self.split =='train':
+            if self.split =='train' or self.split == 'val':
                 if self.args.bg_mask:
                     if self.args.bg_mask and i %self.args.mask_every_frame == 0:
                         data['bg_seg'].append(Image.open(seq_seg[i]).convert('L'))

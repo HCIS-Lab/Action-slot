@@ -25,10 +25,10 @@ class TACO(Dataset):
         self.split = split
         self.model_name = args.model_name
         self.seq_len = args.seq_len
-
         self.maps = []
         self.id = []
         self.variants = []
+        self.scenario_name = []
         self.args =args
 
         self.videos_list = []
@@ -39,7 +39,6 @@ class TACO(Dataset):
         self.gt_ego = []
         self.gt_actor = []
         self.slot_eval_gt = []
-        self.confusion_label_list = []
 
 
         self.step = []
@@ -57,13 +56,7 @@ class TACO(Dataset):
         total_frame = 0
         total_videos = 0
 
-        folder_list = [
-        # scenarios from RikBench
-        'interactive', 'non-interactive', 
-        # scenarios collected by auto-pilot
-        'ap_Town01','ap_Town02','ap_Town03', 'ap_Town04', 'ap_Town05', 'ap_Town06', 'ap_Town07', 'ap_Town10HD', 
-        # scenarios collected by scenario-runner
-        'runner_Town03','runner_Town05', 'runner_Town10HD']
+
         n=0
 
         # statistic
@@ -102,303 +95,113 @@ class TACO(Dataset):
 
         label_stat = [c_stat, b_stat, c_plus_stat, b_plus_stat, p_stat, p_plus_stat, ego_stat]
 
-        # ------------search dataset-------------
-        # The TACO dataset is construct with 3 different collection:
-        #   1. 'interactive' and 'non-interactive' from RiskBench
-        #   2. 'ap_Townxx' collected by auto-pilot
-        #   3. 'runner_Townxx' collected by the scenario runner
 
-        # - All data collections follow the hierarchy:
-        #       - parant folder (e.g., interactive, ap_Town10HD, or runner_Town05)
-        #           - basic scenario (e.g., 3_t1-2_0_m_f_l_1_0, or t2)
-        #               - various scenario (e.g., 1)
-
-        # - The folder 'interactive' and 'non-interactive' contained various maps, e.g., Town01, ... Town10HD.
-        # - We use Town10HD as the test set. 
-
-        # iterate parent folder
-        for t, folder in enumerate(folder_list):
-            basic_scenarios = [os.path.join(root, folder, s) for s in os.listdir(os.path.join(root, folder))]
-
-            # iterate basic scenarios
-            print('searching data from '+folder+' folder')
-            for s in tqdm(basic_scenarios, file=sys.stdout):
-
-                # extract scenarios for train/val/test set
-                scenario_id = s.split('/')[-1]
-                if split == 'train':
-                    if folder == 'interactive' or folder == 'non-interactive':
-                        if scenario_id.split('_')[0] == '10' or scenario_id.split('_')[0] == '3': 
-                            continue
-                    else:
-                        if folder == 'ap_Town03' or folder == 'runner_Town03' or folder == 'ap_Town10HD' or folder == 'runner_Town10HD':
-                            continue
-                elif split == 'val':
-                    if folder == 'interactive' or folder == 'non-interactive':
-                        if scenario_id.split('_')[0] != '3':
-                            continue
-                    else:
-                        testing_set = ['ap_Town03', 'runner_Town03']
-                        if not folder in testing_set:
-                            continue
-                elif split == 'test':
-                    if folder == 'interactive' or folder == 'non-interactive':
-                        if scenario_id.split('_')[0] != '10':
-                            continue
-                    else:
-                        testing_set = ['ap_Town10HD', 'runner_Town10HD']
-                        if not folder in testing_set:
-                            continue
-
-                # iterate various scenarios
-                variants_path = os.path.join(s, 'variant_scenario')
-                if os.path.isdir(variants_path):
-                    variants = [os.path.join(variants_path, v) for v in os.listdir(variants_path)]
+        f = open('../datasets/taco_'+split+'_data.json')
+        scenario_list = json.load(f)
+        f_label = open('../datasets/taco_'+split+'_label.json')
+        label_list = json.load(f_label)
+        for scenario in tqdm(scenario_list):
+            gt = label_list[scenario]
                     
-                    for v in variants:
-                        v_id = v.split('/')[-1]
-                        # extract ground-truth labels
-                        if os.path.isfile(v+'/retrieve_gt.txt'):
-                            with open(v+'/retrieve_gt.txt') as f:
-                                gt = []
-                                for line in f:
-                                    line = line.replace('\n', '')
-                                    if line != '\n':
-                                        gt.append(line)
 
-                                gt = list(set(gt))
-                                if 'None' in gt:
-                                    gt.remove('None')
-                                if not 'x' in gt:
-                                    if not 'n' in gt:
-                                        print('no x')
-                                        print(v)
-                                    continue
-                                else:
-                                    gt.remove('x')
-                        else:
-                            continue
+            # ------------get labels-------------
+            # get multi-instance multi-class labels for object-aware methods
+            if self.args.box:
+                proposal_train_label, gt_ego, gt_actor = get_labels(args, gt, num_slots=self.Max_N)
+            # get multi-instance multi-class labelsfor non-allocated slot-based methods
+            elif 'slot' in args.model_name and not args.allocated_slot:
+                proposal_train_label, gt_ego, gt_actor = get_labels(args, gt, num_slots=args.num_slots)
+            # get multi-label for allocated slot-based and video-level methods
+            else:
+                gt_ego, gt_actor = get_labels(args, gt, num_slots=args.num_slots)
 
 
-                        # ------------get labels-------------
-                        # for object-aware methods
-                        if self.args.box:
-                            proposal_train_label, gt_ego, gt_actor = get_labels(args, gt, scenario_id, v_id, num_slots=self.Max_N)
-                        # for non-allocated slot-based methods
-                        elif 'slot' in args.model_name and not args.allocated_slot:
-                            proposal_train_label, gt_ego, gt_actor = get_labels(args, gt, scenario_id, v_id, num_slots=args.num_slots)
-                        # for allocated slot-based and video-level methods
-                        else:
-                            gt_ego, gt_actor = get_labels(args, gt, scenario_id, v_id, num_slots=args.num_slots)
+            # ------------statistics-------------
+            if torch.count_nonzero(gt_actor) > max_num_label_a_video:
+                max_num_label_a_video = torch.count_nonzero(gt_actor)
+            total_label += torch.count_nonzero(gt_actor)
+                             
+            video_folder = ['downsampled/', 'downsampled_224/']
+            if args.model_name == 'mvit' or args.model_name == 'videoMAE':
+                video_folder = video_folder[1]
+            else:
+                video_folder = video_folder[0]
 
+            parent_folder, basic, variant = scenario.split('/')
+            scenario_path = os.path.join(root,parent_folder,basic,'variant_scenario',variant)
+            video_folder_path = os.path.join(scenario_path,'rgb',video_folder)
+            if os.path.isdir(video_folder_path):
+                check_data = [os.path.join(video_folder_path,img) for img in os.listdir(video_folder_path) if os.path.isfile(os.path.join(video_folder_path,img))]
+                check_data.sort()
+            else:
+                continue
 
-                        # ------------statistics-------------
-                        if torch.count_nonzero(gt_actor) > max_num_label_a_video:
-                            max_num_label_a_video = torch.count_nonzero(gt_actor)
-                        total_label += torch.count_nonzero(gt_actor)
+            if len(check_data) < 50:
+                continue
 
-                        # remove those data with no traffic pattern
-                        if not torch.count_nonzero(gt_actor):
-                            continue
-                        
-                        if args.ego_motion != -1:
-                            if args.ego_motion != gt_ego.data and args.ego_motion !=4:
-                                continue
-                            if args.ego_motion==4 and gt_ego.data == 0:
-                                continue
-                        
-                        if args.val_confusion:
-                            if not torch.count_nonzero(gt_actor[-8:]):
-                                continue
-                            else:
-                                confusion_label = confusion_label_search(gt_actor)
+            videos = []
+            segs = []
+            obj_f = []
+            idx = []
 
-                        video_folder = ['downsampled/', 'downsampled_224/']
-                        if args.model_name == 'mvit' or args.model_name == 'videoMAE':
-                            video_folder = video_folder[1]
-                        else:
-                            video_folder = video_folder[0]
-                        if os.path.isdir(v+"/rgb/" + video_folder):
-                            check_data = [v+"/rgb/"+video_folder+img for img in os.listdir(v+"/rgb/"+video_folder) if os.path.isfile(v+"/rgb/"+video_folder+ img)]
-                            check_data.sort()
-                        else:
-                            continue
+            start_frame = int(check_data[0].split('/')[-1].split('.')[0])
+            end_frame = int(check_data[-1].split('/')[-1].split('.')[0])
+            num_frame = end_frame - start_frame + 1
+            step = num_frame // self.seq_len
 
-                        if len(check_data) < 50:
-                            continue
+            max_num = 50
+            for m in range(max_num):
+                start = start_frame + m
+                if start_frame + (self.seq_len-1)*step > end_frame:
+                    break
+                videos_temp = []
+                seg_temp = []
+                idx_temp = []
+                obj_temp = []
+                for i in range(start, end_frame+1, step):
+                    imgname = f"{str(i).zfill(8)}.jpg"
+                    segname = f"{str(i).zfill(8)}.png"
+                    boxname = f"{str(i).zfill(8)}.json"
+                    objname = f"{str(i).zfill(8)}.npy"
+                    if os.path.isfile(os.path.join(video_folder_path,imgname)):
+                        videos_temp.append(os.path.join(video_folder_path,imgname))
+                        idx_temp.append(i-start_frame)
+                    if os.path.isfile(os.path.join(scenario_path,'mask','background',segname)):
+                        seg_temp.append(os.path.join(scenario_path,'mask','background',segname))
+                    if os.path.isfile(os.path.join(scenario_path,'mask','object',objname)):
+                        obj_temp.append(os.path.join(scenario_path,'mask','object',objname))
+                    if len(videos_temp) == self.seq_len:
+                        break
+                if len(videos_temp) == self.seq_len:
+                    videos.append(videos_temp)
+                    idx.append(idx_temp)
+                    segs.append(seg_temp)
+                    obj_f.append(obj_temp)
 
-                        videos = []
-                        segs = []
-                        obj_f = []
-                        idx = []
-
-                        start_frame = int(check_data[0].split('/')[-1].split('.')[0])
-                        end_frame = int(check_data[-1].split('/')[-1].split('.')[0])
-                        num_frame = end_frame - start_frame + 1
-                        step = num_frame // self.seq_len
-
-                        max_num = 50
-                        for m in range(max_num):
-                            start = start_frame + m
-                            # step = ((end_frame-start + 1) // (seq_len+1)) -1
-                            if start_frame + (self.seq_len-1)*step > end_frame:
-                                break
-                            videos_temp = []
-                            seg_temp = []
-                            idx_temp = []
-                            obj_temp = []
-                            for i in range(start, end_frame+1, step):
-                                imgname = f"{str(i).zfill(8)}.jpg"
-                                segname = f"{str(i).zfill(8)}.png"
-                                boxname = f"{str(i).zfill(8)}.json"
-                                objname = f"{str(i).zfill(8)}.npy"
-                                if os.path.isfile(v+"/rgb/"+video_folder+imgname):
-                                    videos_temp.append(v+"/rgb/"+video_folder +imgname)
-                                    idx_temp.append(i-start_frame)
-                                if os.path.isfile(v+"/mask/background/"+segname):
-                                    seg_temp.append(v+"/mask/background/"+segname)
-                                if os.path.isfile(v+"/mask/object/"+objname):
-                                    obj_temp.append(v+"/mask/object/"+objname)
-
-                                if len(videos_temp) == self.seq_len and len(seg_temp) == self.seq_len and len(obj_temp) == self.seq_len:
-                                    break
-
-                            if len(videos_temp) == self.seq_len:
-                                videos.append(videos_temp)
-                                idx.append(idx_temp)
-                                if len(seg_temp) == self.seq_len:
-                                    segs.append(seg_temp)
-                                    obj_f.append(obj_temp)
-
-                        if len(videos) == 0 or len(segs) ==0 or len(obj_f)==0:
-                            continue
-                        if len(segs)!=len(videos):
-                            continue
-
-                        # ------------calculate dataset stat-------------
-                        ego_class = 'e:z1-z1'
-                        for g in gt:
-                            g = g.lower()
-                            if g[0] != 'e':
-                                if g[:2] == 'c:':
-                                    label_stat[0][g]+=1
-                                elif g[:2] == 'b:':
-                                    label_stat[1][g]+=1
-                                elif g[:2] == 'c+':
-                                    label_stat[2][g]+=1
-                                elif g[:2] == 'b+':
-                                    label_stat[3][g]+=1
-                                elif g[:2] == 'p:':
-                                    label_stat[4][g]+=1
-                                elif g[:2] == 'p+':
-                                    label_stat[5][g]+=1
-
-                            elif g[0] == 'e':
-                                ego_class = g
-                            else:
-                                g = g[2:]
-                                if g != 'ne':
-                                    if not gt in actor_table.keys():
-                                        print(g)
-                                        return
-
-                        label_stat[6][ego_class] +=1
-                        # -------------------------
-
-                        self.maps.append(folder)
-                        self.id.append(s.split('/')[-1])
-                        self.variants.append(v.split('/')[-1])
-                        self.videos_list.append(videos)
-                        self.idx.append(idx)
-                        self.seg_list.append(segs)
-                        self.obj_seg_list.append(obj_f)
-                        self.gt_ego.append(gt_ego)
-                        
-
-                        if ('slot' in args.model_name and not args.allocated_slot) or args.box:
-                            self.gt_actor.append(proposal_train_label)
-                            self.slot_eval_gt.append(gt_actor)
-                        else:
-                            self.gt_actor.append(gt_actor)
-                        if self.args.val_confusion:
-                            self.confusion_label_list.append(confusion_label)
-
-                        # -----------statstics--------------
-                        if num_frame > max_frame_a_video:
-                            max_frame_a_video = num_frame
-                        if num_frame < min_frame_a_video:
-                            min_frame_a_video = num_frame
-                        total_frame += num_frame
-                        total_videos += 1
+            self.maps.append(parent_folder)
+            self.id.append(basic)
+            self.variants.append(scenario)
+            self.scenario_name.append(os.path.join(parent_folder, basic, variant))
+            self.videos_list.append(videos)
+            self.idx.append(idx)
+            self.seg_list.append(segs)
+            self.obj_seg_list.append(obj_f)
+            self.gt_ego.append(gt_ego)
+            
+            if ('slot' in args.model_name and not args.allocated_slot) or args.box:
+                self.gt_actor.append(proposal_train_label)
+                self.slot_eval_gt.append(gt_actor)
+            else:
+                self.gt_actor.append(gt_actor)
 
         if args.box:
             if args.gt:
                 self.parse_tracklets() 
             else:
                 self.parse_tracklets_detection()
-        # if args.plot:
-        self.parse_tracklets()
+
         print('num_videos: ' + str(len(self.variants)))
-        print('c_stat:')
-        print(label_stat[0])
-        print('b_stat:')
-        print(label_stat[1])
-        print('c+_stat:')
-        print(label_stat[2])
-        print('b+_stat:')
-        print(label_stat[3])
-        print('p_stat:')
-        print(label_stat[4])
-        print('p+_stat:')
-        print(label_stat[5])
-        print('ego_stat')
-        print(label_stat[6])
 
-        self.label_stat = label_stat
-        # -----------------
-        print('max_num_label_a_video: '+ str(max_num_label_a_video))
-        print('total_label: '+ str(total_label))
-        print('max_frame_a_video: '+ str(max_frame_a_video))
-        print('min_frame_a_video: '+ str(min_frame_a_video))
-        print('total_frame: '+ str(total_frame))
-        print('total_videos: '+ str(total_videos))
-        
-
-    def confusion_label_search(self, gt_actor):
-        confusion_label = {'c1-c2': '', 'c2-c3': '', 'c3-c4': '', 'c4-c1': ''}
-
-        if gt_actor[12] or gt_actor[14]:
-            if gt_actor[12] and not gt_actor[14]:
-                confusion_label['c1-c2'] = 0
-            elif not gt_actor[12] and gt_actor[14]:
-                confusion_label['c1-c2'] = 1
-            else:
-                confusion_label['c1-c2'] = 2
-
-        if gt_actor[15] or gt_actor[16]:
-            if gt_actor[15] and not gt_actor[16]:
-                confusion_label['c2-c3'] = 0
-            elif not gt_actor[15] and gt_actor[16]:
-                confusion_label['c2-c3'] = 1
-            else:
-                confusion_label['c2-c3'] = 2
-
-        if gt_actor[17] or gt_actor[19]:
-            if gt_actor[17] and not gt_actor[19]:
-                confusion_label['c3-c4'] = 0
-            elif not gt_actor[17] and gt_actor[19]:
-                confusion_label['c3-c4'] = 1
-            else:
-                confusion_label['c3-c4'] = 2
-
-        if gt_actor[18] or gt_actor[13]:
-            if gt_actor[18] and not gt_actor[13]:
-                confusion_label['c4-c1'] = 0
-            elif not gt_actor[18] and gt_actor[13]:
-                confusion_label['c4-c1'] = 1
-            else:
-                confusion_label['c4-c1'] = 2
-        return confusion_label
 
     def parse_tracklets_detection(self):
         """
@@ -451,65 +254,6 @@ class TACO(Dataset):
                         continue
                 np.save(os.path.join(root,'tracks','pred','%s' % (i)),out)
                         
-        
-
-    def parse_tracklets(self):
-        """
-            tracklet (List[List[Dict]]):
-                T , boxes per_frame , key: obj_id
-            return:
-                T x N x 4
-        """
-        def parse_tracklet(tracklet,root,index):
-            out = np.zeros((self.seq_len,self.Max_N,4))
-            obj_id_dict = {}
-            count = 0
-            for i,track in enumerate(tracklet):
-                for boxes in track:
-                    for obj in boxes:
-                        if obj not in obj_id_dict :
-                            if count == 20:
-                                continue
-                            obj_id_dict[obj] = count
-                            count += 1
-                        out[i][obj_id_dict[obj]] = boxes[obj]
-            np.save(os.path.join(root,'tracks','%s' % (index)),out)
-            # with open(os.path.join(root,'tracks','%s.json' % (index)), 'w') as f:
-            #     json.dump(out, f)
-                        
-            
-        # for each data
-        for data in tqdm(self.videos_list):
-            root = data[0][0].split('/')
-            root = root[:-3]
-            root = '/'+os.path.join(*root)
-            if not os.path.isdir(os.path.join(root,'tracks')):
-                os.mkdir(os.path.join(root,'tracks'))
-            if not os.path.isdir(os.path.join(root,'tracks','gt')):
-                os.mkdir(os.path.join(root,'tracks','gt'))
-            if not os.path.isdir(os.path.join(root,'tracks','pred')):
-                os.mkdir(os.path.join(root,'tracks','pred'))
-            # read bbox.json
-            f = open(os.path.join(root,'bbox.json'))
-            bboxs = json.load(f)
-            f.close()
-            for i,sample in enumerate(data):
-                out = np.zeros((self.seq_len,self.Max_N,4))
-                obj_id_dict = {}
-                count = 0
-                # iterate each imgs
-                for j,frame_idx in enumerate(sample):
-                    frame_idx = frame_idx.split('/')[-1][:-4]
-                    for obj_id, box in bboxs[frame_idx].items():
-                        if obj_id not in obj_id_dict:
-                            if count == 20:
-                                continue
-                            obj_id_dict[obj_id] = count
-                            count += 1
-                        out[j][obj_id_dict[obj_id]] = box
-                np.save(os.path.join(root,'tracks','gt','%s' % (i)),out)
-            self.max_num_obj.append(count)
-
     def tracklet_counter(self):
         """
             tracklet (List[List[Dict]]):
@@ -579,9 +323,6 @@ class TACO(Dataset):
         data['videos'] = []
         data['bg_seg'] = []
         data['obj_masks'] = []
-        # if self.args.plot and self.args.plot_mode == '':
-        data['max_num_obj'] = self.max_num_obj[index]
-        # data['box'] = []
         data['raw'] = []
         data['ego'] = self.gt_ego[index]
         data['actor'] = self.gt_actor[index]
@@ -602,8 +343,6 @@ class TACO(Dataset):
             seq_seg = self.seg_list[index][sample_idx]
         if self.args.obj_mask or (self.args.plot and self.args.plot_mode==''):
             obj_masks_list = self.obj_seg_list[index][sample_idx]
-        # if self.box:
-        #     seq_box = self.box_list[index][sample_idx]
 
         # add tracklets
         if self.args.box:
@@ -634,9 +373,6 @@ class TACO(Dataset):
     
         data['videos'] = to_np(data['videos'], self.args.model_name, self.args.backbone)
         data['bg_seg'] = to_np_no_norm(data['bg_seg'])
-
-        if self.args.val_confusion:
-            data['confusion_label'] = self.confusion_label_list[index]
         return data
 
 
@@ -690,12 +426,12 @@ def to_np_no_norm(v):
         v[i] = transform(v[i])
     return v
 
-def get_labels(args, gt_list, s_id, v_id, num_slots=64):   
+def get_labels(args, gt, num_slots=64):   
     num_class = 64
     model_name = args.model_name
     allocated_slot = args.allocated_slot
-
-    road_type = {'i-': 0, 't1': 1, "t2": 2, "t3": 3, 's-': 4, 'r-': 5, 'i': 0, 't': 0}
+    agent_label = gt['agents']
+    ego_label = gt['ego']
 
     ego_table = {'e:z1-z1': 0, 'e:z1-z2': 1, 'e:z1-z3':2, 'e:z1-z4': 3}
 
@@ -731,61 +467,17 @@ def get_labels(args, gt_list, s_id, v_id, num_slots=64):
                     'p+:c4-c1': 62, 'p+:c4-c3': 63 
                     }
 
-
-    ego_class = 'e:z1-z1'
-    # if ('slot' in model_name and not fix_slot) or 'ARG'in model_name or 'ORN'in model_name:
-    #     actor_class = [0]*(num_class+1)
-    # else:
     actor_class = [0]*64
-
+    ego_label = torch.tensor(ego_label)
+    agent_label = torch.FloatTensor(agent_label)
     proposal_train_label = []
-    for gt in gt_list:
-        gt = gt.lower()
-        if gt[0] != 'e':
-            # if gt[:2] == 'c:':
-            #     label_stat[0][gt]+=1
-            # elif gt[:2] == 'b:':
-            #     label_stat[1][gt]+=1
-            # elif gt[:2] == 'c+':
-            #     label_stat[2][gt]+=1
-            # elif gt[:2] == 'b+':
-            #     label_stat[3][gt]+=1
-            # elif gt[:2] == 'p:':
-            #     label_stat[4][gt]+=1
-            # elif gt[:2] == 'p+':
-            #     label_stat[5][gt]+=1
-
-            if ('slot' in model_name and not allocated_slot) or 'ARG'in model_name or 'ORN'in model_name:
-                if not actor_table[gt] in proposal_train_label:
-                    proposal_train_label.append(actor_table[gt])
-            actor_class[actor_table[gt]] = 1
-
-        elif gt[0] == 'e':
-            ego_class = ego_table[gt]
-            # label_stat[6][gt]+=1
-
-        else:
-            gt = gt[2:]
-            if gt != 'ne':
-                if not gt in actor_table.keys():
-                    print(gt)
-                    return
-    if ego_class == 'e:z1-z1':
-        # label_stat[6][ego_class] +=1
-        ego_class = 0
-
-        
-
-    ego_label = torch.tensor(ego_class)
-
-    if ('slot' in model_name and not allocated_slot) or 'ARG'in model_name or 'ORN'in model_name :
+    if ('slot' in model_name and not allocated_slot) or 'ARG'in model_name or 'ORN'in model_name:
+        proposal_train_label = matches = [x for x in agent_label if x > 0]
         while (len(proposal_train_label)!= num_slots):
             proposal_train_label.append(num_class)
         proposal_train_label = torch.LongTensor(proposal_train_label)
-        # actor_class = actor_class[:-1]
         actor_class = torch.FloatTensor(actor_class)
         return proposal_train_label, ego_label, actor_class
     else:
         actor_class = torch.FloatTensor(actor_class)
         return ego_label, actor_class
-    

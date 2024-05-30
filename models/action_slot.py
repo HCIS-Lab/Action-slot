@@ -91,22 +91,17 @@ class SlotAttention(nn.Module):
         inputs = self.FC2(inputs)
 
         slots_prev = slots
+
         b, n, d = inputs.shape
         inputs = self.norm_input(inputs)
         k, v = self.to_k(inputs), self.to_v(inputs)
         slots = self.norm_slots(slots)
         q = self.to_q(slots)
-
         dots = torch.einsum('bid,bjd->bij', q, k) * self.scale
         attn_ori = dots.softmax(dim=1) + self.eps
         attn = attn_ori / attn_ori.sum(dim=-1, keepdim=True)
-
-        # updates = torch.einsum('bjd,bij->bid', v, attn)
         slots = torch.einsum('bjd,bij->bid', v, attn)
-        # slots = self.gru(
-        #     updates.reshape(-1, d),
-        #     slots_prev.reshape(-1, d)
-        # )
+
         slots = slots.reshape(b, -1, d)
         if self.allocated_slot:
             slots = slots[:, :self.num_actor_class, :]

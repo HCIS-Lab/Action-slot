@@ -12,7 +12,7 @@ import math
 import matplotlib.pyplot as plt
 # matplotlib.use('TkAgg')
 
-from sklearn.metrics import average_precision_score, precision_score, f1_score, recall_score, accuracy_score, hamming_loss
+from sklearn.metrics import average_precision_score
 from scipy.optimize import linear_sum_assignment
 
 import torch
@@ -33,9 +33,9 @@ from utils import AverageMeter
 
 def plot_result(result,args):
     """
-        result : mAP, loss, f1
+        result : mAP, loss,
     """
-    # text = ["mAP", "loss", "f1"]
+    # text = ["mAP", "loss"]
     text = ["mAP", "loss"]
     x = [i+1 for i in range(0,args.epochs,args.val_every)]
     x = x if x[-1] == args.epochs else x+[args.epochs]
@@ -203,8 +203,6 @@ class Engine(object):
         actor_loss, ego_loss = actor_loss.mean(), ego_loss.mean()
         self.actor_loss_epoch += float(actor_loss.item())
         self.ego_loss_epoch += float(ego_loss.item())
-
-        # self.cur_iter += 1
         
         if mode == 'train':
             self.optimizer.zero_grad()
@@ -353,7 +351,6 @@ class Engine(object):
                     map_pred_actor_list.astype(np.float32),	
                     average=None)
 
-
             print(f'(val) mAP: {mAP}')
             print(f'(val) mAP of the c: {c_mAP}')
             print(f'(val) mAP of the b: {b_mAP}')
@@ -361,9 +358,6 @@ class Engine(object):
             print(f'(val) mAP of the c+: {group_c_mAP}')
             print(f'(val) mAP of the b+: {group_b_mAP}')
             print(f'(val) mAP of the p+: {group_p_mAP}')
-
-
-           
 
             print(f'acc of the ego: {self.correct_ego/self.total_ego}')
             writer.add_scalar('ego', self.correct_ego/self.total_ego, self.cur_epoch)
@@ -428,36 +422,16 @@ class Engine(object):
                 f.write('*'*15 + '\n')
 
             total_loss = self.loss_epoch / float(self.num_batches)
-            tqdm.write(f'Epoch {self.cur_epoch:03d} Loss: {total_loss:3.3f}')
-
-            # writer.add_scalar('val_loss', total_loss, self.cur_epoch)
-            
+            tqdm.write(f'Epoch {self.cur_epoch:03d} Loss: {total_loss:3.3f}')            
             self.val_loss.append(total_loss)
-        # return save_cp, [mAP, total_loss, mean_f1]
         return save_cp, [mAP, total_loss]
 
     def save(self, is_best):
-
         save_best = False
         if is_best:
             self.bestval = self.val_loss[-1]
             self.bestval_epoch = self.cur_epoch
             save_best = True
-        
-        # Create a dictionary of all data to save
-
-        # log_table = {
-        # 	'epoch': self.cur_epoch,
-        # 	'iter': self.cur_iter,
-        # 	'bestval': float(self.bestval.data),
-        # 	'bestval_epoch': self.bestval_epoch,
-        # 	'train_loss': self.train_loss,
-        # 	'val_loss': self.val_loss,
-        # }
-
-        # Save ckpt for every epoch
-        # torch.save(model.state_dict(), os.path.join(logdir, 'model_%d.pth'%self.cur_epoch))
-        # tqdm.write('====== Saved recent model ======>')
         
         if save_best:
             torch.save(model.state_dict(), os.path.join(logdir, 'best_model.pth'))
@@ -475,30 +449,9 @@ if __name__ == '__main__':
 
     print('initialize train set')
     train_set = TACO(args=args, split='train')
-    print('initialize test set')
+    print('initialize val set')
     val_set = TACO(args=args, split='val')
-    label_stat = []
-    for i in range(7):
-        label_stat.append({})
-        for k in train_set.label_stat[i].keys():
-            label_stat[i][k] = train_set.label_stat[i][k] + val_set.label_stat[i][k]
-    print('*'*20)
-    print('TACO Dataset')
-    print('c_stat:')
-    print(label_stat[0])
-    print('b_stat:')
-    print(label_stat[1])
-    print('c+_stat:')
-    print(label_stat[2])
-    print('b+_stat:')
-    print(label_stat[3])
-    print('p_stat:')
-    print(label_stat[4])
-    print('p+_stat:')
-    print(label_stat[5])
-    print('ego_stat')
-    print(label_stat[6])
-
+    
     dataloader_train = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=True, drop_last=True)    
     dataloader_val = DataLoader(val_set, batch_size=1, shuffle=False, num_workers=args.num_workers, pin_memory=True, drop_last=True)
     # Model
@@ -522,15 +475,13 @@ if __name__ == '__main__':
     print(f'Checkpoint path: {logdir}')
 
     result_list = []
-    if not args.test:
-        for epoch in range(trainer.cur_epoch, args.epochs): 
-            
-            trainer.train()
-            if (epoch % args.val_every == 0 or epoch == args.epochs-1): 
-                    is_best, res = trainer.validate(dataloader_val)
-                    # trainer.validate(dataloader_val_train, None)
-                    trainer.save(is_best)
-                    result_list.append(res)
+    for epoch in range(trainer.cur_epoch, args.epochs): 
+        trainer.train()
+        if (epoch % args.val_every == 0 or epoch == args.epochs-1): 
+                is_best, res = trainer.validate(dataloader_val)
+                # trainer.validate(dataloader_val_train, None)
+                trainer.save(is_best)
+                result_list.append(res)
     print('********** Best model **********')
     for s in trainer.best_log:
         print(s)

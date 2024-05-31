@@ -26,11 +26,11 @@ Create and activate the conda environment:
 
 The TACO dataset consists of 13 folders of videos (scenarios), which are separated based on different maps (e.g., Town01, Town02...) in the CARLA simulator and different collecting methods (i.e., autopilot (AP), scenario runner (runner), and manual collecting [1] (i.e., interactive & non-interactive)). Please refer to the supplementary material for more dataset details.
 
-[1] Kung et al., "RiskBench: A Scenario-based Benchmark for Risk Identification". ICRA 2024.
 
-**OATS** [[Website](https://usa.honda-ri.com/oats)]
+**OATS** [2] [[Website](https://usa.honda-ri.com/oats)]
 
-
+[1] Kung et al. "RiskBench: A Scenario-based Benchmark for Risk Identification". ICRA 2024.
+[2] Agarwal and Chen "Ordered Atomic Activity for Fine-grained Interactive Traffic Scenario Understanding". ICCV 2023
 ## 🌐 Train & Evaluation on TACO
 Training
 ```

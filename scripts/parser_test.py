@@ -6,6 +6,7 @@ def get_test_parser():
 
     #dataset
     parser.add_argument('--dataset', type=str, default='taco', choices=['taco'])
+    parser.add_argument('--split', type=str, default='test', choices=['val', 'test'])
     parser.add_argument('--root', type=str, help='dataset path')
     
     # model

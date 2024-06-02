@@ -49,7 +49,7 @@ class Engine(object):
                 id = data['id'][0]
                 v = data['variants'][0]
                 video_in = data['videos']
-                scenario = map + '_'+id + '_' + v
+                scenario = map + '/'+id + '/' + v
 
                 # -------get input------                    
                 inputs = []
@@ -104,7 +104,7 @@ num_ego_class = 4
 num_actor_class = 64
 
 # Data
-test_set = taco_test.TACO_TEST(args=args, split='test')
+test_set = taco_test.TACO_TEST(args=args, split=args.split)
 dataloader_test = DataLoader(test_set, batch_size=1, shuffle=False, num_workers=4, pin_memory=True, drop_last=False)
 
 model = generate_model(args, num_ego_class, num_actor_class).cuda()

@@ -59,43 +59,6 @@ class TACO(Dataset):
 
         n=0
 
-        # statistic
-        c_stat = {'c:z1-z2': 0, 'c:z1-z3':0, 'c:z1-z4':0,
-                    'c:z2-z1': 0, 'c:z2-z3': 0, 'c:z2-z4': 0,
-                    'c:z3-z1': 0, 'c:z3-z2': 0, 'c:z3-z4': 0,
-                    'c:z4-z1': 0, 'c:z4-z2': 0, 'c:z4-z3': 0}
-        b_stat = {'b:z1-z2': 0, 'b:z1-z3':0, 'b:z1-z4':0,
-                    'b:z2-z1': 0, 'b:z2-z3': 0, 'b:z2-z4': 0,
-                    'b:z3-z1': 0, 'b:z3-z2': 0, 'b:z3-z4': 0,
-                    'b:z4-z1': 0, 'b:z4-z2': 0, 'b:z4-z3': 0}
-
-
-        c_plus_stat = {'c+:z1-z2': 0, 'c+:z1-z3':0, 'c+:z1-z4':0,
-                    'c+:z2-z1': 0, 'c+:z2-z3': 0, 'c+:z2-z4': 0,
-                    'c+:z3-z1': 0, 'c+:z3-z2': 0, 'c+:z3-z4': 0,
-                    'c+:z4-z1': 0, 'c+:z4-z2': 0, 'c+:z4-z3': 0}
-        b_plus_stat = {'b+:z1-z2': 0, 'b+:z1-z3':0, 'b+:z1-z4':0,
-                    'b+:z2-z1': 0, 'b+:z2-z3': 0, 'b+:z2-z4': 0,
-                    'b+:z3-z1': 0, 'b+:z3-z2': 0, 'b+:z3-z4': 0,
-                    'b+:z4-z1': 0, 'b+:z4-z2': 0, 'b+:z4-z3': 0}
-
-
-        p_stat = {'p:c1-c2': 0, 'p:c1-c4': 0, 
-                        'p:c2-c1': 0, 'p:c2-c3': 0, 
-                        'p:c3-c2': 0, 'p:c3-c4': 0, 
-                        'p:c4-c1': 0, 'p:c4-c3': 0 
-                        }
-        p_plus_stat = {'p+:c1-c2': 0, 'p+:c1-c4': 0, 
-                        'p+:c2-c1': 0, 'p+:c2-c3': 0, 
-                        'p+:c3-c2': 0, 'p+:c3-c4': 0, 
-                        'p+:c4-c1': 0, 'p+:c4-c3': 0 
-                        }
-
-        ego_stat = {'e:z1-z1': 0,'e:z1-z2': 0, 'e:z1-z3':0, 'e:z1-z4': 0}
-
-        label_stat = [c_stat, b_stat, c_plus_stat, b_plus_stat, p_stat, p_plus_stat, ego_stat]
-
-
         f = open('../datasets/taco_'+split+'_data.json')
         scenario_list = json.load(f)
         f_label = open('../datasets/taco_'+split+'_label.json')

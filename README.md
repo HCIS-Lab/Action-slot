@@ -9,6 +9,7 @@
 This repository contains the official code for training and evaluating baselines presented in the paper.
 
 ## :fire: News
+- **`2024/06/03`**: **Challenge** for the **Atomic Activity Recognition Challenge** is launched, come join us!
 - **`2024/05/26`**: **Code** for the **Atomic Activity Recognition Challenge** is released!
 - **`2024/04/12`**: **Challenge for Atomic Activity Recognition**  got accepted by **ECCV 2024**! Check more details [here](https://sites.google.com/view/road-eccv2024/home?authuser=0).
 - **`2024/02/27`**: Action-slot got accepted by **CVPR 2024**!
@@ -22,7 +23,7 @@ Create and activate the conda environment:
 
 ## 📦 Datasets Download
 
-**TACO** [[Coming soon]
+**TACO** [https://nycu1-my.sharepoint.com/:f:/g/personal/ychen_m365_nycu_edu_tw/EnRg1zT7CeZGg3Ju2TIP1j8B0NB0fCpYsjGQBc0Tcf2H6w?e=FGJvTc]
 
 The TACO dataset consists of 13 folders of videos (scenarios), which are separated based on different maps (e.g., Town01, Town02...) in the CARLA simulator and different collecting methods (i.e., autopilot (AP), scenario runner (runner), and manual collecting [1] (i.e., interactive & non-interactive)). Please refer to the supplementary material for more dataset details.
 
@@ -32,6 +33,17 @@ The TACO dataset consists of 13 folders of videos (scenarios), which are separat
 [1] Kung et al. "RiskBench: A Scenario-based Benchmark for Risk Identification". ICRA 2024.
 
 [2] Agarwal and Chen "Ordered Atomic Activity for Fine-grained Interactive Traffic Scenario Understanding". ICCV 2023
+
+
+## :fire::fire::fire: 3rd ROAD Challenge for Atomic Activity Recognition
+We provide the script to generate .pkl prediction file for the challenge on TACO. The script takes Action-slot as an example:
+```
+cd scripts/
+python generate_test_results.py --split [val/test] --cp path_checkpoint --model_name action_slot --backbone x3d --bg_slot --bg_mask --allocated_slot  --root path_taco 
+
+```
+
+
 ## 🌐 Train & Evaluation on TACO
 Training
 ```

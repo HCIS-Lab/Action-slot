@@ -122,7 +122,7 @@ class TACO_TEST(Dataset):
 
             self.maps.append(parent_folder)
             self.id.append(basic)
-            self.variants.append(scenario)
+            self.variants.append(variant)
             self.scenario_name.append(os.path.join(parent_folder, basic, variant))
             self.videos_list.append(videos)
             self.idx.append(idx)

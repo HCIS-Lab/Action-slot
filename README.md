@@ -23,7 +23,7 @@ Create and activate the conda environment:
 
 ## 📦 Datasets Download
 
-**TACO** [https://nycu1-my.sharepoint.com/:f:/g/personal/ychen_m365_nycu_edu_tw/EnRg1zT7CeZGg3Ju2TIP1j8B0NB0fCpYsjGQBc0Tcf2H6w?e=FGJvTc]
+**TACO**: [[One-drive](https://nycu1-my.sharepoint.com/:f:/g/personal/ychen_m365_nycu_edu_tw/EnRg1zT7CeZGg3Ju2TIP1j8B0NB0fCpYsjGQBc0Tcf2H6w?e=FGJvTc)]
 
 The TACO dataset consists of 13 folders of videos (scenarios), which are separated based on different maps (e.g., Town01, Town02...) in the CARLA simulator and different collecting methods (i.e., autopilot (AP), scenario runner (runner), and manual collecting [1] (i.e., interactive & non-interactive)). Please refer to the supplementary material for more dataset details.
 
@@ -40,7 +40,6 @@ We provide the script to generate .pkl prediction file for the challenge on TACO
 ```
 cd scripts/
 python generate_test_results.py --split [val/test] --cp path_checkpoint --model_name action_slot --backbone x3d --bg_slot --bg_mask --allocated_slot  --root path_taco 
-
 ```
 
 

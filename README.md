@@ -4,12 +4,12 @@
 
 <sup>1</sup>National Yang Ming Chiao Tung University,  <sup>2</sup>Google
 
-[[arxiv](https://arxiv.org/abs/2311.17948)] [[Project Page](https://hcis-lab.github.io/Action-slot/)]
+[[arxiv](https://arxiv.org/abs/2311.17948)] [[Project Page](https://hcis-lab.github.io/Action-slot/)] [[Challenge ECCV'24](https://sites.google.com/view/road-eccv2024/challenge?authuser=0)]
 
 This repository contains the official code for training and evaluating baselines presented in the paper.
 
 ## :fire: News
-- **`2024/06/03`**: **Challenge** for the **Atomic Activity Recognition Challenge** is launched, come join us!
+- **`2024/06/03`**: **Challenge** for the **Atomic Activity Recognition Challenge** is launched, [come win the prize](https://eval.ai/web/challenges/challenge-page/2301/overview)!
 - **`2024/05/26`**: **Code** for the **Atomic Activity Recognition Challenge** is released!
 - **`2024/04/12`**: **Challenge for Atomic Activity Recognition**  got accepted by **ECCV 2024**! Check more details [here](https://sites.google.com/view/road-eccv2024/home?authuser=0).
 - **`2024/02/27`**: Action-slot got accepted by **CVPR 2024**!

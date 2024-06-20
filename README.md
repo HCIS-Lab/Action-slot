@@ -4,7 +4,7 @@
 
 <sup>1</sup>National Yang Ming Chiao Tung University,  <sup>2</sup>Google
 
-[[arxiv](https://arxiv.org/abs/2311.17948)] [[Project Page](https://hcis-lab.github.io/Action-slot/)] [[Challenge ECCV'24](https://sites.google.com/view/road-eccv2024/challenge?authuser=0)]
+[[CVPR](https://openaccess.thecvf.com/content/CVPR2024/papers/Kung_Action-slot_Visual_Action-centric_Representations_for_Multi-label_Atomic_Activity_Recognition_in_CVPR_2024_paper.pdf)] [[arxiv](https://arxiv.org/abs/2311.17948)] [[Project Page](https://hcis-lab.github.io/Action-slot/)] [[Challenge ECCV'24](https://sites.google.com/view/road-eccv2024/challenge?authuser=0)]
 
 This repository contains the official code for training and evaluating baselines presented in the paper.
 

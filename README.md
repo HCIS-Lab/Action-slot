@@ -25,7 +25,7 @@ Create and activate the conda environment:
 
 **TACO**: [[One-drive](https://nycu1-my.sharepoint.com/:f:/g/personal/ychen_m365_nycu_edu_tw/EnRg1zT7CeZGg3Ju2TIP1j8B0NB0fCpYsjGQBc0Tcf2H6w?e=FGJvTc)]
 
-The TACO dataset consists of 13 folders of videos (scenarios), which are separated based on different maps (e.g., Town01, Town02...) in the CARLA simulator and different collecting methods (i.e., autopilot (AP), scenario runner (runner), and manual collecting [1] (i.e., interactive & non-interactive)). Please refer to the supplementary material for more dataset details.
+The TACO dataset consists of 13 folders of videos (scenarios), which are separated based on different maps (e.g., Town01, Town02...) in the CARLA simulator and different collecting methods (i.e., autopilot (AP), scenario runner (runner), and manual collecting [1] (i.e., interactive & non-interactive)). We use data collected in Town03 as val set and Town10HD as the test set. Please refer to the supplementary material for more dataset details.
 
 
 **OATS** [2] [[Website](https://usa.honda-ri.com/oats)]

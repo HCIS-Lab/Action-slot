@@ -34,7 +34,7 @@ from parser_eval import get_eval_parser
 torch.backends.cudnn.benchmark = True
 
 
-os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH")
+# os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH")
 
 
 actor_table = ['c:z1-z2', 'c:z1-z3', 'c:z1-z4',

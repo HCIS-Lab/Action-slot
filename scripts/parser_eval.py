@@ -13,7 +13,7 @@ def get_eval_parser():
     
     # model
     parser.add_argument('--model_name', type=str, help='Unique experiment identifier.')
-    parser.add_argument('--backbone', type=str, help="x3d-2")
+    parser.add_argument('--backbone', type=str, default="x3d")
     parser.add_argument('--num_slots', type=int, default=64, help='')
     parser.add_argument('--seq_len', type=int, default=16, help='')
     parser.add_argument('--allocated_slot', help="", action="store_true")

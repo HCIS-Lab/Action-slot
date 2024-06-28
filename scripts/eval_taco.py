@@ -484,8 +484,7 @@ class Engine(object):
             correct_actor = 0
             label_actor_list = []
             map_pred_actor_list = []
-            f1_pred_actor_list = []
-            num_selected_sample = 0
+            # num_selected_sample = 0
             for batch_num, data in enumerate(tqdm(dataloader)):
                 # if args.plot_mode == '':
                 #     max_num_obj = data['max_num_obj']
@@ -539,13 +538,12 @@ class Engine(object):
                     else:
                         pred_ego, pred_actor, attn = model(inputs)
                         if args.plot and args.plot_mode != '':
-                            channel_idx = [-1]
+                            
                             if ('mvit' in args.model_name):
+                                channel_idx = [-1]
                                 for j,(attn,thw) in enumerate(attn):
-
                                     for c_idx in channel_idx:
                                         plot_mvit(attn[0], c_idx, raw, logdir , id, v, j, grid_size=(thw[1],thw[2]))
-                                # raise BaseException
                             else:
                                 plot_slot(attn, args.model_name, map, id, v, raw, actor, pred_actor, logdir, args.plot_threshold, args.plot_mode)
 
@@ -578,24 +576,19 @@ class Engine(object):
                     map_pred_actor_list.append(pred_actor.detach().cpu().numpy())
                     label_actor_list.append(actor.detach().cpu().numpy())
 
-                    f1_pred_actor = pred_actor > 0.5
-                    f1_pred_actor = f1_pred_actor.float()
-                    f1_pred_actor_list.append(f1_pred_actor.detach().cpu().numpy())
-
-                if args.val_confusion:
-                    confuse_sample, confuse_both_sample, confuse_pred, confuse_both_pred, confuse_both_miss, confuse_far_both_sample, confuse_far_both_miss= calculate_confusion(confusion_label, f1_pred_actor)
-                    t_confuse_sample = t_confuse_sample + confuse_sample
-                    t_confuse_both_sample = t_confuse_both_sample + confuse_both_sample
-                    t_confuse_pred = t_confuse_pred + confuse_pred
-                    t_confuse_both_pred = t_confuse_both_pred + confuse_both_pred
-                    t_confuse_both_miss = t_confuse_both_miss + confuse_both_miss
-                    t_confuse_far_both_sample = t_confuse_far_both_sample + confuse_far_both_sample
-                    t_confuse_far_both_miss = t_confuse_far_both_miss + confuse_far_both_miss
+                # if args.val_confusion:
+                #     confuse_sample, confuse_both_sample, confuse_pred, confuse_both_pred, confuse_both_miss, confuse_far_both_sample, confuse_far_both_miss= calculate_confusion(confusion_label, f1_pred_actor)
+                #     t_confuse_sample = t_confuse_sample + confuse_sample
+                #     t_confuse_both_sample = t_confuse_both_sample + confuse_both_sample
+                #     t_confuse_pred = t_confuse_pred + confuse_pred
+                #     t_confuse_both_pred = t_confuse_both_pred + confuse_both_pred
+                #     t_confuse_both_miss = t_confuse_both_miss + confuse_both_miss
+                #     t_confuse_far_both_sample = t_confuse_far_both_sample + confuse_far_both_sample
+                #     t_confuse_far_both_miss = t_confuse_far_both_miss + confuse_far_both_miss
                 total_ego += ego.size(0)
                 correct_ego += (pred_ego == ego).sum().item()
 
 
-            f1_pred_actor_list = np.stack(f1_pred_actor_list, axis=0)
             map_pred_actor_list = np.stack(map_pred_actor_list, axis=0)
             label_actor_list = np.stack(label_actor_list, axis=0)
             
@@ -604,19 +597,6 @@ class Engine(object):
             map_pred_actor_list = np.array(map_pred_actor_list)
             label_actor_list = np.array(label_actor_list)
             
-            f1_pred_actor_list = f1_pred_actor_list.reshape((f1_pred_actor_list.shape[0], num_actor_class))
-            f1_pred_actor_list = np.array(f1_pred_actor_list)
-            precision = precision_score(
-                        label_actor_list.astype('int64'), 
-                        f1_pred_actor_list.astype('int64'),
-                        average='samples',
-                        zero_division=0)
-            recall = recall_score(
-                        label_actor_list.astype('int64'), 
-                        f1_pred_actor_list.astype('int64'),
-                        average='samples',
-                        zero_division=0)
-
             mAP = average_precision_score(
                     label_actor_list,
                     map_pred_actor_list.astype(np.float32),
@@ -667,17 +647,11 @@ class Engine(object):
             print(f'(val) AP of the p: {mAP_per_class[48:56]}')
             print(f'(val) AP of the p+: {mAP_per_class[56:64]}')
 
-
-            print('**********************')
-            print('precision: ')
-            print(precision)
-            print('recall: ')
-            print(recall)
             print('**********************')
             print(f'acc of the ego: {correct_ego/total_ego}')
             print('**********************')
 
-            print(num_selected_sample)
+            # print(num_selected_sample)
 
             
 torch.cuda.empty_cache() 
@@ -691,7 +665,6 @@ dataloader_val = DataLoader(val_set, batch_size=1, shuffle=False, num_workers=4,
 
 model = generate_model(args, num_ego_class, num_actor_class).cuda()
 trainer = Engine(args)
-# model.load_state_dict(torch.load(os.path.join(args.logdir, 'model_100.pth')))
 
 model_path = os.path.join(args.cp)
 model.load_state_dict(torch.load(model_path))

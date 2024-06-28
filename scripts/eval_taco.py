@@ -487,20 +487,20 @@ class Engine(object):
             f1_pred_actor_list = []
             num_selected_sample = 0
             for batch_num, data in enumerate(tqdm(dataloader)):
-                if args.plot_mode == '':
-                    max_num_obj = data['max_num_obj']
-                    if self.args.num_objects == 5 and max_num_obj > 5:
-                        print('skip')
-                        num_selected_sample +=1
-                        continue
-                    if self.args.num_objects == 15 and (max_num_obj > 15 or max_num_obj <6):
-                        print('skip')
-                        num_selected_sample +=1
-                        continue
-                    if self.args.num_objects == 16 and max_num_obj < 16:
-                        print('skip')
-                        num_selected_sample +=1
-                        continue
+                # if args.plot_mode == '':
+                #     max_num_obj = data['max_num_obj']
+                #     if self.args.num_objects == 5 and max_num_obj > 5:
+                #         print('skip')
+                #         num_selected_sample +=1
+                #         continue
+                #     if self.args.num_objects == 15 and (max_num_obj > 15 or max_num_obj <6):
+                #         print('skip')
+                #         num_selected_sample +=1
+                #         continue
+                #     if self.args.num_objects == 16 and max_num_obj < 16:
+                #         print('skip')
+                #         num_selected_sample +=1
+                #         continue
 
 
                 map = data['map'][0]

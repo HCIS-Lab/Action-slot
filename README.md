@@ -47,8 +47,7 @@ python generate_test_results.py --split [val/test] --cp path_checkpoint --model_
 Training
 ```
 # Action-slot
-python train_taco.py --dataset taco --root [path_to_TACO] --model_name action_slot --num_slots 64\
- --bg_slot --bg_mask --action_attn_weight 1 --allocated_slot --bg_attn_weight 0.5
+python train_taco.py --dataset taco --root [path_to_TACO] --model_name action_slot --num_slots 64 --bg_slot --bg_mask --action_attn_weight 1 --allocated_slot --bg_attn_weight 0.5
 
 # X3D
 python train_taco.py --dataset taco --root [path_to_TACO] --model_name x3d 
@@ -57,8 +56,7 @@ python train_taco.py --dataset taco --root [path_to_TACO] --model_name x3d
 Evaluation
 ```
 # Action-slot
-python eval_taco.py --cp [path_to_checkpoint] --root [path_to_TACO] --dataset taco\
- --model_name action_slot --num_slots 64 --bg_slot --allocated_slot
+python eval_taco.py --cp [path_to_checkpoint] --root [path_to_TACO] --dataset taco --model_name action_slot --num_slots 64 --bg_slot --allocated_slot
 
 # X3D
 python eval_taco.py --root [path_to_TACO] --cp [path_to_checkpoint] --dataset taco --model_name x3d 
@@ -67,37 +65,27 @@ python eval_taco.py --root [path_to_TACO] --cp [path_to_checkpoint] --dataset ta
 ## 🌐 Train & Evaluation on OATS
 ```
 # Action-slot
-python train_oats.py --dataset oats --oats_test_split s1 --model_name action_slot --epochs 50\
-   --num_slots 35 --bg_slot --bg_mask --action_attn_weight 0.1 --allocated_slot\
-   --bg_attn_weight 0.1 --ego_loss_weight 0
+python train_oats.py --dataset oats --oats_test_split s1 --model_name action_slot --epochs 50 --num_slots 35 --bg_slot --bg_mask --action_attn_weight 0.1 --allocated_slot --bg_attn_weight 0.1 --ego_loss_weight 0
 
-python eval_oats.py --cp [path_to_checkpoint] --dataset oats --oats_test_split s3  --root [path_to_dataset]\
-    --model_name action_slot --allocated_slot --backbone x3d --num_slots 35 --bg_slot 
+python eval_oats.py --cp [path_to_checkpoint] --dataset oats --oats_test_split s3  --root [path_to_dataset] --model_name action_slot --allocated_slot --backbone x3d --num_slots 35 --bg_slot 
 ```
 
 ## 🌐 Train & Evaluation on nuScenes
 ```
 # train from scratch
-python train_nuscenes.py --dataset nuscenes --root [path]/nuscenes/trainval/samples\
-   --model_name action_slot --num_slots 64 --bg_slot --bg_mask --action_attn_weight 1\
- --allocated_slot --bg_attn_weight 0.5 --bce_pos_weight 7
+python train_nuscenes.py --dataset nuscenes --root [path]/nuscenes/trainval/samples --model_name action_slot --num_slots 64 --bg_slot --bg_mask --action_attn_weight 1 --allocated_slot --bg_attn_weight 0.5 --bce_pos_weight 7
 
 # transfer learning: TACO -> nuScenes
-python train_nuscenes.py --pretrain taco --root [path]/nuscenes/trainval/samples --cp [path_to_checkpoint] --dataset nuscenes\
-   --model_name action_slot --num_slots 64 --bg_slot --bg_mask --action_attn_weight 1\
-   --allocated_slot --bg_attn_weight 0.5 --bce_pos_weight 20 --root /media/hcis-s20/SRL/nuscenes/trainval/samples
+python train_nuscenes.py --pretrain taco --root [path]/nuscenes/trainval/samples --cp [path_to_checkpoint] --dataset nuscenes --model_name action_slot --num_slots 64 --bg_slot --bg_mask --action_attn_weight 1 --allocated_slot --bg_attn_weight 0.5 --bce_pos_weight 20 --root /media/hcis-s20/SRL/nuscenes/trainval/samples
 
 # transfer learning: OATS -> nuScenes
-python train_nuscenes.py --pretrain oats --root [path]/nuscenes/trainval/samples --cp [path_to_checkpoint] --dataset nuscenes\
-   --model_name action_slot--num_slots 64 --bg_slot --bg_mask --action_attn_weight 1 --allocated_slot --bg_attn_weight 0.5\
-   --bce_pos_weight 15  
+python train_nuscenes.py --pretrain oats --root [path]/nuscenes/trainval/samples --cp [path_to_checkpoint] --dataset nuscenes --model_name action_slot--num_slots 64 --bg_slot --bg_mask --action_attn_weight 1 --allocated_slot --bg_attn_weight 0.5 --bce_pos_weight 15  
 ```
 
 ## 📊 Attention Visualization
 ![image](https://github.com/HCIS-Lab/Action-slot/blob/main/img/taco_attn.gif)
 ```
-python eval_taco.py --cp [path_to_checkpoint] --plot --dataset taco --root [path_to_TACO]\
-    --model_name action_slot --num_slots 64 --bg_slot --allocated_slot --plot_threshold 0.2
+python eval_taco.py --cp [path_to_checkpoint] --plot --dataset taco --root [path_to_TACO] --model_name action_slot --num_slots 64 --bg_slot --allocated_slot --plot_threshold 0.2
 ```
 
 ## Citation

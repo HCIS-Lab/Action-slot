@@ -430,7 +430,6 @@ def get_labels(args, gt, num_slots=64):
                     'p+:c4-c1': 62, 'p+:c4-c3': 63 
                     }
 
-    actor_class = [0]*64
     ego_label = torch.tensor(ego_label)
     agent_label = torch.FloatTensor(agent_label)
     proposal_train_label = []
@@ -439,8 +438,6 @@ def get_labels(args, gt, num_slots=64):
         while (len(proposal_train_label)!= num_slots):
             proposal_train_label.append(num_class)
         proposal_train_label = torch.LongTensor(proposal_train_label)
-        # actor_class = torch.FloatTensor(actor_class)
         return proposal_train_label, ego_label, agent_label
     else:
-        # actor_class = torch.FloatTensor(actor_class)
         return ego_label, agent_label

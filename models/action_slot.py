@@ -6,8 +6,6 @@ from classifier import Head, Allocated_Head
 from pytorchvideo.models.hub import i3d_r50
 from pytorchvideo.models.hub import csn_r101
 from pytorchvideo.models.hub import mvit_base_16x4
-import i3d
-import inception
 import r50
 import numpy as np
 from math import ceil 

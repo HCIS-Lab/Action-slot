@@ -64,6 +64,8 @@ class TACO(Dataset):
         f_label = open('../datasets/taco_'+split+'_label.json')
         label_list = json.load(f_label)
         for scenario in tqdm(scenario_list):
+            if not scenario in label_list:
+                continue
             gt = label_list[scenario]
                     
 

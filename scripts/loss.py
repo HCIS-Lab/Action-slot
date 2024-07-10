@@ -43,6 +43,7 @@ class ActionSlotLoss(nn.Module):
                 flag = 4
         if flag >0:
             self.obj_bce = nn.BCELoss()
+
         
         return flag
     
@@ -81,6 +82,8 @@ class ActionSlotLoss(nn.Module):
         bg_attn_loss = None
         action_attn = None
         bg_attn = None
+
+        # prepare background mask
         if self.args.bg_attn_weight>0:
             bg_seg = []
             bg_seg_in = label['bg_seg']
@@ -92,6 +95,7 @@ class ActionSlotLoss(nn.Module):
             bg_seg = torch.reshape(bg_seg, (l, b, h, w))
             bg_seg = torch.permute(bg_seg, (1, 0, 2, 3)) #[batch, len, h, w]
             
+        # object mask supervision for action slot
         if self.attn_loss_type == 1:
             obj_mask_list = []
             obj_mask = label['obj_masks']
@@ -137,13 +141,14 @@ class ActionSlotLoss(nn.Module):
                 attn = attn.reshape(b, l, n, h, w)
             action_attn = attn[:, :, :self.num_actor_class, :, :]
 
-            class_idx = actor == 0.0
+            class_idx = label['actor'] == 0.0
             class_idx = class_idx.view(b, self.num_actor_class, 1, 1, 1).repeat(1, 1, l, h, w)
             class_idx = torch.permute(class_idx, (0, 2, 1, 3, 4))
 
             attn_gt = torch.zeros([b, l, self.num_actor_class, h, w], dtype=torch.float32).cuda()
             attn_loss = self.obj_bce(action_attn[class_idx], attn_gt[class_idx])
 
+        # Action-slot, background mask + negative mask
         elif self.attn_loss_type == 3:
             b, l, n, h, w = attn.shape
 
@@ -156,17 +161,17 @@ class ActionSlotLoss(nn.Module):
             action_attn = attn[:, :, :self.num_actor_class, :, :]
             bg_attn = attn[:, ::self.args.mask_every_frame, -1, :, :].reshape(b, -1, h, w)
 
-            class_idx = actor == 0.0
+            class_idx = label['actor'] == 0.0
             class_idx = class_idx.view(b, self.num_actor_class, 1, 1, 1).repeat(1, 1, l, h, w)
             class_idx = torch.permute(class_idx, (0, 2, 1, 3, 4))
 
             attn_gt = torch.zeros([b, l, self.num_actor_class, h, w], dtype=torch.float32).cuda()
 
             attn_loss = self.obj_bce(action_attn[class_idx], attn_gt[class_idx])
-
             bg_attn_loss = self.obj_bce(bg_attn, bg_seg)
             # attn_loss = self.args.action_attn_weight*action_attn_loss + self.args.bg_attn_weight*bg_attn_loss
             
+        # background mask only
         elif self.attn_loss_type == 4:
             b, l, n, h, w = attn.shape
 
@@ -178,6 +183,7 @@ class ActionSlotLoss(nn.Module):
 
             bg_attn = attn[:, ::self.args.mask_every_frame, -1, :, :].reshape(b, l//self.args.mask_every_frame, h, w)
             bg_attn_loss = self.obj_bce(bg_attn, bg_seg)
+
         loss = {'attn_loss':attn_loss,'bg_attn_loss':bg_attn_loss}
         if validate:
             loss['action_inter'] = None

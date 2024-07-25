@@ -44,7 +44,7 @@ The script takes Action-slot as an example:
 cd scripts/
 python generate_test_results.py --split [val/test] --cp path_checkpoint --model_name action_slot --backbone x3d --bg_slot --bg_mask --allocated_slot  --root path_taco 
 ```
-
+To participate the challenge, you only need to upload the generated .pkl file to [eval.ai platform](https://eval.ai/web/challenges/challenge-page/2301/submission).
 
 ## 🌐 Train & Evaluation on TACO
 Training

@@ -99,6 +99,10 @@ python eval_taco.py --cp [path_to_checkpoint] --plot --dataset taco --root [path
   journal={IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
   year={2024}
 }
+
+## Contact
+Chi-Hsi Kung - hank910140@gmail dot com
+
 ```
 
 ### Acknowledgement

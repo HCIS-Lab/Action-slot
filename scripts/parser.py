@@ -34,7 +34,7 @@ def get_parser():
     parser.add_argument('--bce_pos_weight', type=float, default=10, help='')
     parser.add_argument('--ce_pos_weight', type=float, default=1, help='')
     parser.add_argument('--ce_neg_weight', type=float, default=0.05, help='')
-    parser.add_argument('--ego_loss_weight', type=float, default=0.03, help='')
+    parser.add_argument('--ego_loss_weight', type=float, default=0.5, help='')
 
     
     # training

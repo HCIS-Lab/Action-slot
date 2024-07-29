@@ -36,12 +36,15 @@ Note that we use both train and val splits for training in our benchmark. Please
 
 
 ## :fire::fire::fire: 3rd ROAD Challenge for Atomic Activity Recognition
-We provide the script to generate .pkl prediction file for the challenge on TACO. The script takes Action-slot as an example:
+We provide the script to generate .pkl prediction file on the test set for the challenge on TACO. 
+Please note that we use **both train_split and val_split for training**, and report the performance on the val and test set.
+
+The script takes Action-slot as an example:
 ```
 cd scripts/
 python generate_test_results.py --split [val/test] --cp path_checkpoint --model_name action_slot --backbone x3d --bg_slot --bg_mask --allocated_slot  --root path_taco 
 ```
-
+To participate the challenge, you only need to upload the generated .pkl file to [eval.ai platform](https://eval.ai/web/challenges/challenge-page/2301/submission).
 
 ## 🌐 Train & Evaluation on TACO
 Training
@@ -98,7 +101,13 @@ python eval_taco.py --cp [path_to_checkpoint] --plot --dataset taco --root [path
 }
 ```
 
+### Contact
+Chi-Hsi Kung - hank910140@gmail dot com
+
+
 ### Acknowledgement
 * Slot attention is adapted from [Discovering Object that Can Move](https://github.com/zpbao/Discovery_Obj_Move)
 * DeepLabV3+ is adapted from [DeepLabV3Plus-Pytorch](https://github.com/VainF/DeepLabV3Plus-Pytorch)
 * VideoMAE is adapted from [VideoMAE](https://github.com/MCG-NJU/VideoMAE?tab=readme-ov-file)
+
+

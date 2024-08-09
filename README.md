@@ -37,8 +37,10 @@ Note that we use both train and val splits for training in our benchmark. Please
 
 ## :fire::fire::fire: 3rd ROAD Challenge for Atomic Activity Recognition
 We provide the script to generate .pkl prediction file on the test set for the challenge on TACO. 
-Please note that we use **both train_split and val_split for training**, and report the performance on the val and test set.
-
+Please note that 
+- we use **both train_split and val_split for training**, and report the baseline performance on the val and test set.
+- The dataset is sampled for 16 frames as input.
+  
 The script takes Action-slot as an example:
 ```
 cd scripts/

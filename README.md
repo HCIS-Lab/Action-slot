@@ -29,6 +29,7 @@ The TACO dataset consists of 13 folders of videos (scenarios), which are separat
 Note that we use both train and val splits for training in our benchmark. Please also note that there's an updated number of videos in each split, train: 2753, val: 977, test: 1446.
 
 The test set used in the paper is currently on hold. Please contact the author via hank910140@gmail dot com if the test set is needed.
+
 **OATS** [2] [[Website](https://usa.honda-ri.com/oats)]
 
 [1] Kung et al. "RiskBench: A Scenario-based Benchmark for Risk Identification". ICRA 2024.
